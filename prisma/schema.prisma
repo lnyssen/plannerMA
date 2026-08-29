@@ -1,0 +1,316 @@
+// Schéma de la base de données — Planning des studios (Média Animation asbl)
+//
+// Conventions : modèles et champs en anglais (écosystème Prisma/TypeScript),
+// tables et colonnes SQL en snake_case (@@map/@map) pour rester lisible en
+// psql. Les commentaires métier sont en français : c'est la langue de
+// l'équipe qui maintiendra cette base après la livraison.
+//
+// Ce schéma reprend le modèle de données du prototype
+// `planning-studios-v6.jsx` (projets, tâches, sous-tâches, personnes,
+// absences, demandes, commentaires, pièces jointes, journal), en le
+// transformant en un schéma relationnel réel : identifiants générés côté
+// serveur, clés étrangères, migrations versionnées.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 : l'URL de connexion ne vit plus ici mais dans prisma.config.ts
+// (pour la CLI) et dans src/lib/db.ts (pour l'application, via l'adaptateur
+// @prisma/adapter-pg). Voir https://pris.ly/d/prisma7-client-config.
+datasource db {
+  provider = "postgresql"
+}
+
+// --------------------------------------------------------------------------
+// Comptes et rôles
+// --------------------------------------------------------------------------
+
+/// Les trois rôles définis par le brief. STUDIO_LEAD n'a aujourd'hui pas plus
+/// de droits qu'un COLLABORATOR au niveau des données (à affiner à l'usage) ;
+/// seul ADMIN débloque la vue Réglages, la corbeille et la suppression
+/// définitive.
+enum Role {
+  ADMIN
+  STUDIO_LEAD
+  COLLABORATOR
+}
+
+/// Compte de connexion nominatif. Remplace le mot de passe commun du
+/// prototype (lignes 996-1043 du fichier source) : une vraie identité, liée
+/// à une fiche Person pour retrouver "mes tâches" sans sélecteur déclaratif.
+///
+/// Authentification par identifiants (courriel + mot de passe haché) pour le
+/// lancement. `passwordHash` reste nullable pour permettre plus tard un
+/// compte relié uniquement à un fournisseur externe (Entra ID / Microsoft
+/// 365), sans migration de schéma — il suffira d'ajouter les tables
+/// `Account`/`Session` du provider OAuth choisi le jour venu.
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String?   @map("password_hash")
+  role         Role      @default(COLLABORATOR)
+  person       Person?   @relation(fields: [personId], references: [id])
+  personId     String?   @unique @map("person_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  lastLoginAt  DateTime? @map("last_login_at")
+
+  @@map("users")
+}
+
+// --------------------------------------------------------------------------
+// Studios, personnes, équipe
+// --------------------------------------------------------------------------
+
+/// Les cinq studios de Média Animation, plus ceux qu'un administrateur
+/// ajouterait depuis les Réglages. Couleur et initiale portées telles
+/// quelles depuis la charte (`--ma-*` à brancher une fois les jetons reçus),
+/// double canal couleur + initiale conservé pour le daltonisme.
+model Studio {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  colorHex  String   @map("color_hex")
+  initial   String
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tasks    Task[]
+  projects ProjectStudio[]
+  people   PersonStudio[]
+  requests Request[]
+
+  @@map("studios")
+}
+
+/// Une personne de l'équipe : membre d'un studio, personne hors studio
+/// (services internes), ou invité extérieur (freelance, partenaire). Le
+/// compte de connexion (User) est optionnel : une personne peut exister sans
+/// jamais se connecter (ex. ressource externe qu'on planifie sans lui donner
+/// d'accès).
+model Person {
+  id        String   @id @default(cuid())
+  name      String
+  team      String? // "équipe ou service" en texte libre, comme le prototype
+  external  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user            User?
+  studios         PersonStudio[]
+  tasks           Task[]
+  subtasks        Subtask[]
+  absences        Absence[]
+  comments        Comment[]
+  uploadedFiles   Attachment[]
+  journalEntries  JournalEntry[]
+
+  @@map("people")
+}
+
+/// Rattachement d'une personne à un ou plusieurs studios (facultatif).
+model PersonStudio {
+  personId String @map("person_id")
+  studioId String @map("studio_id")
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@id([personId, studioId])
+  @@map("person_studios")
+}
+
+// --------------------------------------------------------------------------
+// Projets et tâches
+// --------------------------------------------------------------------------
+
+enum ClientType {
+  INTERNAL
+  EXTERNAL
+}
+
+/// Un projet peut concerner plusieurs studios à la fois (ex. une campagne
+/// Graphisme + Web) : voir ProjectStudio.
+model Project {
+  id        String     @id @default(cuid())
+  name      String
+  client    String
+  type      ClientType
+  archived  Boolean    @default(false)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  studios ProjectStudio[]
+  tasks   Task[]
+
+  @@map("projects")
+}
+
+model ProjectStudio {
+  projectId String @map("project_id")
+  studioId  String @map("studio_id")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  studio  Studio  @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, studioId])
+  @@map("project_studios")
+}
+
+enum TaskStatus {
+  TODO // "À faire"
+  IN_PROGRESS // "En cours"
+  VALIDATION // "Validation"
+  DELIVERED // "Livré"
+}
+
+/// Une tâche appartient à un seul studio (contrairement au projet). La
+/// corbeille du prototype (`corbeille`/`jete`) devient `trashedAt` : une
+/// tâche à la corbeille garde son historique, elle est filtrée par requête
+/// plutôt que supprimée, jusqu'à destruction définitive par un administrateur
+/// (Réglages → Corbeille).
+///
+/// `version` sert au verrouillage optimiste : chaque écriture transactionnelle
+/// vérifie que `version` n'a pas changé depuis la lecture, puis l'incrémente
+/// — reprend l'idée du compteur `rev` global du prototype (ligne 254 du
+/// fichier source), appliquée par ligne plutôt que sur tout le jeu de
+/// données.
+model Task {
+  id                String     @id @default(cuid())
+  title             String
+  project           Project?   @relation(fields: [projectId], references: [id])
+  projectId         String?    @map("project_id")
+  studio            Studio     @relation(fields: [studioId], references: [id])
+  studioId          String     @map("studio_id")
+  assignee          Person?    @relation(fields: [assigneeId], references: [id])
+  assigneeId        String?    @map("assignee_id")
+  startDate         DateTime   @map("start_date") @db.Date
+  endDate           DateTime   @map("end_date") @db.Date
+  status            TaskStatus @default(TODO)
+  dependsOn         Task?      @relation("TaskDependency", fields: [dependsOnId], references: [id])
+  dependsOnId       String?    @map("depends_on_id")
+  dependents        Task[]     @relation("TaskDependency")
+  validationRounds  Int        @default(0) @map("validation_rounds")
+  version           Int        @default(0)
+  trashedAt         DateTime?  @map("trashed_at")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  subtasks    Subtask[]
+  comments    Comment[]
+  attachments Attachment[]
+
+  @@index([studioId])
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([startDate, endDate])
+  @@map("tasks")
+}
+
+/// Sous-tâche avec échéance propre, éventuellement attribuée à quelqu'un
+/// d'autre que le titulaire de la tâche (repris tel quel du prototype).
+model Subtask {
+  id       String    @id @default(cuid())
+  task     Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId   String    @map("task_id")
+  title    String
+  dueDate  DateTime? @map("due_date") @db.Date
+  assignee Person?   @relation(fields: [assigneeId], references: [id])
+  assigneeId String? @map("assignee_id")
+  done     Boolean   @default(false)
+  position Int       @default(0)
+
+  @@index([taskId])
+  @@map("subtasks")
+}
+
+// --------------------------------------------------------------------------
+// Absences, demandes, commentaires, pièces jointes, journal
+// --------------------------------------------------------------------------
+
+model Absence {
+  id        String   @id @default(cuid())
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId  String   @map("person_id")
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([personId])
+  @@map("absences")
+}
+
+/// File d'attente des demandes non planifiées ("ce qu'on vous demande dans
+/// un couloir"). Convertie en Task par un responsable, puis supprimée —
+/// même comportement que le prototype (la demande ne laisse pas de trace une
+/// fois planifiée ; le journal, lui, garde l'écriture de création de tâche).
+model Request {
+  id           String   @id @default(cuid())
+  subject      String
+  requester    String?
+  studio       Studio   @relation(fields: [studioId], references: [id])
+  studioId     String   @map("studio_id")
+  wantedFor    DateTime? @map("wanted_for") @db.Date
+  detail       String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  createdBy    String? // nom affiché au dépôt, pas de FK : peut être "Anonyme"
+
+  @@map("requests")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String   @map("task_id")
+  author    Person?  @relation(fields: [authorId], references: [id])
+  authorId  String?  @map("author_id")
+  authorName String  @map("author_name") // figé à la publication, même si la personne est retirée plus tard
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("comments")
+}
+
+enum AttachmentKind {
+  LINK // adresse collée (SharePoint, Drive, autre)
+  FILE // fichier déposé, stocké dans l'espace objet
+}
+
+model Attachment {
+  id           String         @id @default(cuid())
+  task         Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId       String         @map("task_id")
+  name         String
+  kind         AttachmentKind
+  url          String? // lien externe si kind = LINK
+  storageKey   String?        @map("storage_key") // clé objet si kind = FILE
+  mimeType     String?        @map("mime_type")
+  sizeBytes    Int?           @map("size_bytes")
+  uploadedBy   Person?        @relation(fields: [uploadedById], references: [id])
+  uploadedById String?        @map("uploaded_by_id")
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("attachments")
+}
+
+/// Journal global des écritures (renommages, changements d'état,
+/// suppressions...), lisible depuis Réglages → Journal. Le texte de
+/// l'écriture (`action`) est une phrase française prête à afficher, comme
+/// dans le prototype ("Tâche « X » créée") plutôt qu'une structure à
+/// recomposer côté client.
+model JournalEntry {
+  id        String   @id @default(cuid())
+  actor     Person?  @relation(fields: [actorId], references: [id])
+  actorId   String?  @map("actor_id")
+  actorName String   @map("actor_name")
+  action    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("journal_entries")
+}

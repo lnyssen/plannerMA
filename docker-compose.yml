@@ -1,0 +1,45 @@
+# Environnement de développement reproductible : PostgreSQL + un stockage
+# compatible S3 (MinIO) qui simule localement l'Object Storage Infomaniak
+# utilisé en production pour les pièces jointes.
+#
+# Usage : voir README.md. En bref :
+#   docker compose up -d
+#   cp .env.example .env   # les valeurs par défaut correspondent à ce fichier
+#   npm run db:migrate
+#   npm run db:seed
+#   npm run dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: planning_studios
+      POSTGRES_PASSWORD: planning_studios_dev
+      POSTGRES_DB: planning_studios_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U planning_studios"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  object-storage:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: planning_studios
+      MINIO_ROOT_PASSWORD: planning_studios_dev
+    ports:
+      - "9000:9000" # API compatible S3
+      - "9001:9001" # console web
+    volumes:
+      - object_storage_data:/data
+
+volumes:
+  db_data:
+  object_storage_data:
