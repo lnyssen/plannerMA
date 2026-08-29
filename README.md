@@ -8,10 +8,14 @@ palier par palier.
 
 ## État du projet
 
-**Palier 1 (socle) en cours.** Ce qui existe aujourd'hui : schéma de base de
-données, migrations, jeu de données de démonstration, module de calculs
-sensibles (jours fériés belges, Pâques, disponibilité, chevauchement de
-dépendances) avec tests. L'interface n'est pas encore branchée dessus.
+**Palier 2 (authentification + coquille) livré.** Ce qui existe aujourd'hui :
+schéma de base de données, migrations, jeu de données de démonstration,
+module de calculs sensibles avec tests, connexion par comptes nominatifs (3
+rôles), garde d'accès aux routes (middleware + vérification par page),
+coquille de l'application (barre latérale desktop, tiroir mobile, filtres de
+studio). Les six vues (Mes tâches, Projets, Planning, Demandes, Équipe,
+Réglages) sont pour l'instant des pages d'attente : leur contenu réel arrive
+palier par palier — voir `docs/plan-architecture.md`.
 
 ## Pile technique
 
@@ -57,9 +61,14 @@ npm run db:seed
 npm run dev
 ```
 
-Dans les deux cas, ouvrez <http://localhost:3000>. Un compte administrateur de
-démonstration est créé par le seed : `admin@media-animation.be` /
-`changez-moi` — **à changer avant tout déploiement réel**.
+Dans les deux cas, ouvrez <http://localhost:3000>. Deux comptes de
+démonstration sont créés par le seed — **mots de passe à changer avant tout
+déploiement réel** :
+
+| Rôle | Courriel | Mot de passe |
+| --- | --- | --- |
+| Administrateur | `admin@media-animation.be` | `changez-moi` |
+| Collaborateur | `bilal@media-animation.be` | `changez-moi` |
 
 ### Scripts utiles
 

@@ -22,6 +22,21 @@ const STUDIOS = [
 ];
 
 async function main() {
+  // Projets/tâches/absences ne sont pas des données nominatives réelles :
+  // on repart de zéro à chaque semis plutôt que d'accumuler des doublons à
+  // chaque exécution. Studios, personnes et comptes restent stables (upsert
+  // par clé naturelle) puisqu'on veut pouvoir re-semer sans casser les liens
+  // déjà créés en développement.
+  console.log("Nettoyage des données de démonstration précédentes…");
+  await db.comment.deleteMany();
+  await db.attachment.deleteMany();
+  await db.subtask.deleteMany();
+  await db.journalEntry.deleteMany();
+  await db.task.deleteMany();
+  await db.absence.deleteMany();
+  await db.request.deleteMany();
+  await db.project.deleteMany();
+
   console.log("Semis des studios…");
   const studios: Record<string, string> = {};
   for (const [i, s] of STUDIOS.entries()) {
@@ -65,6 +80,18 @@ async function main() {
       passwordHash: await bcrypt.hash("changez-moi", 12),
       role: "ADMIN",
       personId: people.elena,
+    },
+  });
+
+  console.log("Semis d'un compte collaborateur (bilal@media-animation.be / changez-moi)…");
+  await db.user.upsert({
+    where: { email: "bilal@media-animation.be" },
+    update: {},
+    create: {
+      email: "bilal@media-animation.be",
+      passwordHash: await bcrypt.hash("changez-moi", 12),
+      role: "COLLABORATOR",
+      personId: people.bilal,
     },
   });
 

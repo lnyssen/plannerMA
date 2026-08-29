@@ -1,26 +1,99 @@
 @import "tailwindcss";
 
+/*
+ * Jetons de style — voir .impeccable.md pour le contexte complet.
+ *
+ * PROVISOIRE : --color-ink, --color-accent, --color-alert, --color-line,
+ * --color-wash, --font-display et --font-body sont des neutres de
+ * remplacement, en attendant tokens/colors.css et tokens/typography.css
+ * (identité réelle de media-animation.be, projet Claude Design séparé).
+ * Ne pas les prendre pour des choix de marque : ils seront remplacés dans ce
+ * seul fichier le jour venu, rien d'autre à toucher dans le code.
+ *
+ * FIXE : les cinq couleurs de studio (--color-studio-*) sont la charte
+ * réelle, vérifiées AA sur blanc par le brief — ne pas les traiter comme
+ * provisoires.
+ *
+ * Direction déjà actée (brief-claude-design.md, indépendante des jetons) :
+ * angles vifs, aplats pleins, pas de dégradé ni d'ombre portée — voir
+ * l'absence volontaire de tokens `--radius-*` et `--shadow-*` non nuls.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Neutres — PROVISOIRES */
+  --color-paper: #ffffff;
+  --color-ink: #1f2124;
+  --color-ink-muted: #55585e;
+  --color-line: #d8d9dc;
+  --color-wash: #f4f4f5;
+  --color-accent: #2f3237;
+  --color-accent-contrast: #ffffff;
+  --color-alert: #a6303a;
+  --color-alert-wash: #fbeced;
+
+  /* Surface de la barre latérale — même neutre que --color-ink pour l'instant,
+     nommée séparément pour que le futur --ma-purple-900 n'ait qu'un seul
+     endroit à changer sans toucher aux tons de texte courant. */
+  --color-rail: var(--color-ink);
+  --color-rail-contrast: #ffffff;
+
+  /* Studios — FIXE (brief-claude-code.md) */
+  --color-studio-graphisme: #0b7c6b;
+  --color-studio-web: #b5530c;
+  --color-studio-video: #b0264b;
+  --color-studio-son: #7a6200;
+  --color-studio-consultance: #1d5fa3;
+
+  /* Polices — PROVISOIRES : piles système neutres, aucun choix de marque fait */
+  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-paper: var(--color-paper);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-line: var(--color-line);
+  --color-wash: var(--color-wash);
+  --color-accent: var(--color-accent);
+  --color-accent-contrast: var(--color-accent-contrast);
+  --color-alert: var(--color-alert);
+  --color-alert-wash: var(--color-alert-wash);
+  --color-rail: var(--color-rail);
+  --color-rail-contrast: var(--color-rail-contrast);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-studio-graphisme: var(--color-studio-graphisme);
+  --color-studio-web: var(--color-studio-web);
+  --color-studio-video: var(--color-studio-video);
+  --color-studio-son: var(--color-studio-son);
+  --color-studio-consultance: var(--color-studio-consultance);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  /* Échelle typographique resserrée, tailles fixes (app dense, pas de fluid type) */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.35;
+  --text-xl: 1.75rem;
+  --text-xl--line-height: 1.2;
+
+  /* Angles vifs assumés : pas de rayon par défaut (brief-claude-design.md) */
+  --radius-none: 0;
+
+  /* Le brief fixe le basculement responsive à 900px, pas au 768px par
+     défaut de Tailwind — on réutilise donc la variante `md:` existante
+     plutôt que d'en inventer une nouvelle. */
+  --breakpoint-md: 56.25rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
 }

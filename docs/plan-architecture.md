@@ -5,6 +5,9 @@ Décisions validées avec Média Animation avant le début du développement
 version tenue à jour dans le dépôt ; il reprend le plan d'architecture soumis
 et approuvé au démarrage du projet.
 
+**État : palier 2 livré** (paliers 1 et 2 de la liste ci-dessous). Prochain :
+palier 3, vue Tableau (projets et tâches).
+
 ## Décisions actées
 
 | Sujet | Choix | Pourquoi |
