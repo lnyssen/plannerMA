@@ -13,12 +13,16 @@ import { addDaysIso, today } from "../src/lib/planning/dates";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
 
+// Jetons réels (Claude Design, à partir de media-animation.be) : chaque
+// studio associe un aplat clair (fillHex) et un texte saturé (colorHex) de
+// la même teinte, contraste AA vérifié — remplace les valeurs provisoires
+// du brief initial (solides + texte blanc), désormais obsolètes.
 const STUDIOS = [
-  { slug: "graphisme", name: "Graphisme", colorHex: "#0B7C6B", initial: "G" },
-  { slug: "web", name: "Web", colorHex: "#B5530C", initial: "W" },
-  { slug: "video", name: "Vidéo", colorHex: "#B0264B", initial: "V" },
-  { slug: "son", name: "Son", colorHex: "#7A6200", initial: "S" },
-  { slug: "consultance", name: "Consultance", colorHex: "#1D5FA3", initial: "C" },
+  { slug: "graphisme", name: "Graphisme", fillHex: "#f4e9d7", colorHex: "#8b6118", initial: "G" }, // AA 4.58:1
+  { slug: "web", name: "Web", fillHex: "#d7f4f1", colorHex: "#15796f", initial: "W" }, // AA 4.53:1
+  { slug: "video", name: "Vidéo", fillHex: "#d7e4f4", colorHex: "#1a5193", initial: "V" }, // AA 6.17:1
+  { slug: "son", name: "Son", fillHex: "#e3f4d7", colorHex: "#3d7915", initial: "S" }, // AA 4.61:1
+  { slug: "consultance", name: "Consultance", fillHex: "#f4ded7", colorHex: "#93361a", initial: "C" }, // AA 5.85:1
 ];
 
 async function main() {
@@ -42,7 +46,7 @@ async function main() {
   for (const [i, s] of STUDIOS.entries()) {
     const studio = await db.studio.upsert({
       where: { slug: s.slug },
-      update: {},
+      update: s,
       create: { ...s, position: i },
     });
     studios[s.slug] = studio.id;

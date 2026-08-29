@@ -12,11 +12,10 @@ export default async function ConnexionPage({
   const redirectTo = depuis && depuis.startsWith("/") ? depuis : "/projets";
 
   return (
-    <div className="w-full max-w-sm border border-line bg-paper p-8">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        Média Animation
-      </p>
-      <h1 className="mt-1 mb-6 font-[family-name:var(--font-display)] text-xl font-semibold text-ink">
+    <div className="w-full max-w-sm border border-heading bg-paper p-8">
+      {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel */}
+      <img src="/logo/media-animation-couleur.png" alt="Média Animation" className="mb-4 h-9 w-auto" />
+      <h1 className="mb-6 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px] text-heading">
         Planning des studios
       </h1>
       <ConnexionForm redirectTo={redirectTo} />

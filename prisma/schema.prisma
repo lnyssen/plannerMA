@@ -64,14 +64,19 @@ model User {
 // --------------------------------------------------------------------------
 
 /// Les cinq studios de Média Animation, plus ceux qu'un administrateur
-/// ajouterait depuis les Réglages. Couleur et initiale portées telles
-/// quelles depuis la charte (`--ma-*` à brancher une fois les jetons reçus),
-/// double canal couleur + initiale conservé pour le daltonisme.
+/// ajouterait depuis les Réglages. Deux couleurs par studio, reçues du
+/// système de jetons réel (Claude Design, à partir de media-animation.be) :
+/// `colorHex` est le ton saturé (texte sur aplat clair, petits indicateurs
+/// pleins) et `fillHex` l'aplat clair associé (fond des badges/puces) —
+/// chaque paire est vérifiée AA 4.5:1 minimum. `initial` reste utile dans
+/// les contextes exigus (barres du Gantt) où le nom complet ne tient pas ;
+/// partout ailleurs le nom complet du studio sert de second canal visuel.
 model Studio {
   id        String   @id @default(cuid())
   slug      String   @unique
   name      String
   colorHex  String   @map("color_hex")
+  fillHex   String   @map("fill_hex")
   initial   String
   position  Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")

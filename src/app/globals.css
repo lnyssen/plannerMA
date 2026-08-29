@@ -1,94 +1,94 @@
 @import "tailwindcss";
 
 /*
- * Jetons de style — voir .impeccable.md pour le contexte complet.
+ * Jetons de style — identité réelle de Média Animation.
  *
- * PROVISOIRE : --color-ink, --color-accent, --color-alert, --color-line,
- * --color-wash, --font-display et --font-body sont des neutres de
- * remplacement, en attendant tokens/colors.css et tokens/typography.css
- * (identité réelle de media-animation.be, projet Claude Design séparé).
- * Ne pas les prendre pour des choix de marque : ils seront remplacés dans ce
- * seul fichier le jour venu, rien d'autre à toucher dans le code.
+ * Source : projet Claude Design séparé, à partir de media-animation.be
+ * (voir docs/design-system.md pour le détail et la provenance). Couleurs et
+ * polices ne sont plus provisoires : ce fichier est la seule source de
+ * vérité, à mettre à jour ici seulement si la charte évolue.
  *
- * FIXE : les cinq couleurs de studio (--color-studio-*) sont la charte
- * réelle, vérifiées AA sur blanc par le brief — ne pas les traiter comme
- * provisoires.
- *
- * Direction déjà actée (brief-claude-design.md, indépendante des jetons) :
- * angles vifs, aplats pleins, pas de dégradé ni d'ombre portée — voir
- * l'absence volontaire de tokens `--radius-*` et `--shadow-*` non nuls.
+ * Les cinq couleurs de studio ont été redéfinies par ce travail de design en
+ * paires aplat clair / texte saturé, contraste AA vérifié pour chacune —
+ * elles remplacent les valeurs (solides, texte blanc) esquissées dans le
+ * brief initial avant que ce travail n'existe. Stockées en base
+ * (Studio.fillHex / Studio.colorHex), pas ici : ce sont des données, pas des
+ * jetons statiques.
  */
 
+@font-face{font-family:"Noka";src:url("/fonts/Noka-Hairline.otf");font-weight:100;font-style:normal;font-display:swap}
+@font-face{font-family:"Noka";src:url("/fonts/Noka-Light.otf");font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:"Noka";src:url("/fonts/Noka-Medium.otf");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Noka";src:url("/fonts/Noka-SemiBold.otf");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Noka";src:url("/fonts/Noka-Bold.otf");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Noka";src:url("/fonts/Noka-Black.otf");font-weight:900;font-style:normal;font-display:swap}
+
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-Thin.ttf");font-weight:100;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-ExtraLight.ttf");font-weight:200;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-Light.ttf");font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-Regular.ttf");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-Medium.ttf");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-SemiBold.ttf");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-Bold.ttf");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-ExtraBold.ttf");font-weight:800;font-style:normal;font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url("/fonts/HankenGrotesk-Black.ttf");font-weight:900;font-style:normal;font-display:swap}
+
 :root {
-  /* Neutres — PROVISOIRES */
+  /* Couleurs de marque et de surface — réelles (media-animation.be) */
   --color-paper: #ffffff;
-  --color-ink: #1f2124;
-  --color-ink-muted: #55585e;
-  --color-line: #d8d9dc;
-  --color-wash: #f4f4f5;
-  --color-accent: #2f3237;
-  --color-accent-contrast: #ffffff;
-  --color-alert: #a6303a;
-  --color-alert-wash: #fbeced;
-
-  /* Surface de la barre latérale — même neutre que --color-ink pour l'instant,
-     nommée séparément pour que le futur --ma-purple-900 n'ait qu'un seul
-     endroit à changer sans toucher aux tons de texte courant. */
-  --color-rail: var(--color-ink);
+  --color-ink: #444444;
+  --color-ink-muted: rgba(68, 68, 68, 0.65);
+  --color-heading: #612dfa;
+  --color-rail: #2d1592;
   --color-rail-contrast: #ffffff;
+  --color-line: #dddeff;
+  --color-wash: #f7f7fc;
+  --color-alert: #ff175e;
+  --color-alert-wash: #fdd7df;
+  --color-tint: #b9bbff;
 
-  /* Studios — FIXE (brief-claude-code.md) */
-  --color-studio-graphisme: #0b7c6b;
-  --color-studio-web: #b5530c;
-  --color-studio-video: #b0264b;
-  --color-studio-son: #7a6200;
-  --color-studio-consultance: #1d5fa3;
-
-  /* Polices — PROVISOIRES : piles système neutres, aucun choix de marque fait */
-  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Noka", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --text-tracking-display: -0.1px;
 }
 
 @theme inline {
   --color-paper: var(--color-paper);
   --color-ink: var(--color-ink);
   --color-ink-muted: var(--color-ink-muted);
-  --color-line: var(--color-line);
-  --color-wash: var(--color-wash);
-  --color-accent: var(--color-accent);
-  --color-accent-contrast: var(--color-accent-contrast);
-  --color-alert: var(--color-alert);
-  --color-alert-wash: var(--color-alert-wash);
+  --color-heading: var(--color-heading);
   --color-rail: var(--color-rail);
   --color-rail-contrast: var(--color-rail-contrast);
-
-  --color-studio-graphisme: var(--color-studio-graphisme);
-  --color-studio-web: var(--color-studio-web);
-  --color-studio-video: var(--color-studio-video);
-  --color-studio-son: var(--color-studio-son);
-  --color-studio-consultance: var(--color-studio-consultance);
+  --color-line: var(--color-line);
+  --color-wash: var(--color-wash);
+  --color-alert: var(--color-alert);
+  --color-alert-wash: var(--color-alert-wash);
+  --color-tint: var(--color-tint);
 
   --font-display: var(--font-display);
   --font-body: var(--font-body);
 
-  /* Échelle typographique resserrée, tailles fixes (app dense, pas de fluid type) */
-  --text-xs: 0.75rem;
-  --text-xs--line-height: 1.4;
-  --text-sm: 0.875rem;
-  --text-sm--line-height: 1.45;
-  --text-base: 1rem;
-  --text-base--line-height: 1.5;
-  --text-lg: 1.25rem;
-  --text-lg--line-height: 1.35;
-  --text-xl: 1.75rem;
-  --text-xl--line-height: 1.2;
+  /* Échelle resserrée aux tailles réellement utilisées dans les écrans
+     conçus (titres de vue, titres de modale/état vide, libellé de section,
+     corps dense, emphase de carte, micro-libellé de formulaire) — pas
+     l'échelle Tailwind par défaut. */
+  --text-2xs: 0.75rem; /* 12px — texte de badge */
+  --text-2xs--line-height: 1.333;
+  --text-xs: 0.875rem; /* 14px — micro-libellés de formulaire */
+  --text-xs--line-height: 1.286;
+  --text-sm: 1rem; /* 16px — corps dense par défaut, cellules de tableau */
+  --text-sm--line-height: 1.25;
+  --text-base: 1.125rem; /* 18px — emphase de carte (titre de projet, etc.) */
+  --text-base--line-height: 1.333;
+  --text-lg: 1.5625rem; /* 25px — titres de modale, états vides */
+  --text-lg--line-height: 1.28;
+  --text-xl: 2.25rem; /* 36px — titres de vue */
+  --text-xl--line-height: 1.25;
 
-  /* Angles vifs assumés : pas de rayon par défaut (brief-claude-design.md) */
+  /* Angles vifs assumés : pas de rayon par défaut (registre plat et éditorial) */
   --radius-none: 0;
 
-  /* Le brief fixe le basculement responsive à 900px, pas au 768px par
-     défaut de Tailwind — on réutilise donc la variante `md:` existante
-     plutôt que d'en inventer une nouvelle. */
+  /* Basculement responsive à 900px (brief), pas le 768px par défaut de Tailwind */
   --breakpoint-md: 56.25rem;
 }
 
@@ -96,4 +96,5 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
 }

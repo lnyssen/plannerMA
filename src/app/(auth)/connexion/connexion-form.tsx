@@ -10,7 +10,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="flex h-11 w-full items-center justify-center bg-accent text-sm font-semibold text-accent-contrast transition-opacity hover:opacity-90 disabled:opacity-60"
+      className="flex h-11 w-full items-center justify-center bg-heading text-sm font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
     >
       {pending ? "Connexion…" : "Se connecter"}
     </button>
@@ -37,7 +37,7 @@ export function ConnexionForm({ redirectTo }: { redirectTo: string }) {
           required
           autoComplete="email"
           autoFocus
-          className="h-11 border border-line bg-paper px-3 text-sm text-ink outline-none focus:border-ink"
+          className="h-11 border-[1.5px] border-heading bg-paper px-3 text-sm text-ink outline-none"
         />
       </div>
 
@@ -51,7 +51,7 @@ export function ConnexionForm({ redirectTo }: { redirectTo: string }) {
           type="password"
           required
           autoComplete="current-password"
-          className="h-11 border border-line bg-paper px-3 text-sm text-ink outline-none focus:border-ink"
+          className="h-11 border-[1.5px] border-heading bg-paper px-3 text-sm text-ink outline-none"
         />
       </div>
 

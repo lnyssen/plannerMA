@@ -8,14 +8,17 @@ palier par palier.
 
 ## État du projet
 
-**Palier 2 (authentification + coquille) livré.** Ce qui existe aujourd'hui :
-schéma de base de données, migrations, jeu de données de démonstration,
-module de calculs sensibles avec tests, connexion par comptes nominatifs (3
-rôles), garde d'accès aux routes (middleware + vérification par page),
-coquille de l'application (barre latérale desktop, tiroir mobile, filtres de
-studio). Les six vues (Mes tâches, Projets, Planning, Demandes, Équipe,
-Réglages) sont pour l'instant des pages d'attente : leur contenu réel arrive
-palier par palier — voir `docs/plan-architecture.md`.
+**Palier 3 (Projets/Tâches/Semaine/Gantt) en cours, largement livré.** Ce qui
+fonctionne aujourd'hui, avec de vraies données en base : connexion par
+comptes nominatifs (3 rôles), coquille de l'application avec l'identité
+visuelle réelle de Média Animation (jetons + logo), création de projets et de
+tâches, vue Projets (cartes par client interne/externe), vue Tâches (tableau
+triable et cherchable), vue Semaine (matrice personnes × jours), vue Gantt
+avec glisser-déposer pour replanifier (verrouillage optimiste). Équipe et
+Réglages restent des pages d'attente — voir `docs/plan-architecture.md` pour
+le détail palier par palier et les écarts assumés par rapport au plan
+initial (nav simplifiée à 5+1 entrées, pas encore de « Mes tâches »/
+« Demandes »).
 
 ## Pile technique
 
@@ -83,14 +86,18 @@ déploiement réel** :
 
 ## Jetons de style
 
-Les couleurs et polices du prototype (violets, roses, Poppins/Inter) sont
-**provisoires**. Les valeurs définitives (`--ma-purple-600`, `--ma-purple-900`,
-`--ma-pink-600`, `--font-display`, `--font-body`, et la charte des cinq
-couleurs de studio) doivent provenir de `tokens/colors.css` et
-`tokens/typography.css` — normalement produits par un projet Claude Design
-séparé à partir de l'identité visuelle réelle de media-animation.be. Tant que
-ces fichiers ne sont pas fournis, aucune valeur définitive n'est figée dans le
-code.
+Réels, plus provisoires : couleurs, polices (Noka + Hanken Grotesk, fichiers
+dans `public/fonts/`) et logo (`public/logo/`) viennent d'un projet Claude
+Design séparé, à partir de l'identité visuelle réelle de media-animation.be.
+Tout est centralisé dans `src/app/globals.css` — c'est le seul fichier à
+modifier si la charte évolue. Détail complet, provenance et écarts assumés
+par rapport aux jetons livrés : voir `docs/design-system.md`.
+
+Les cinq couleurs de studio (`Studio.fillHex`/`Studio.colorHex` en base) ont
+été redéfinies par ce travail de design en paires aplat clair / texte saturé,
+contraste AA vérifié — elles remplacent les valeurs (solides, texte blanc)
+esquissées dans une première version du brief, avant que ce travail
+n'existe.
 
 ## Sécurité et vie privée
 

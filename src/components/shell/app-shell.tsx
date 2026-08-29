@@ -1,18 +1,30 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import { Calendar, Inbox, ListChecks, Menu, Plus, Settings, Users, User as UserIcon, X } from "lucide-react";
+import { BarChart3, CalendarDays, ListChecks, Menu, Plus, Settings, Table2, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { CreateProjectModal } from "@/components/modals/create-project-modal";
+import { CreateTaskModal } from "@/components/modals/create-task-modal";
+import type { PersonSummary } from "@/lib/data/people";
+import type { ProjectWithCounts } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import { signOutAction } from "./actions";
 
+// Nav conforme à la maquette Claude Design (5 écrans conçus : Semaine,
+// Projets, Tâches, Équipe, Réglages) + Gantt, ajouté ici avec le même
+// système visuel : la maquette n'a pas couvert cet écran mais le brief
+// fonctionnel et la demande explicite de l'utilisateur le requièrent
+// (glisser-déposer des barres). « Mes tâches » et « Demandes », présents
+// dans le brief initial mais absents de la maquette livrée, ne sont plus
+// des entrées de navigation pour l'instant — à confirmer.
+// Projets et Tâches en tête, à la demande explicite de l'utilisateur.
 const NAV_ENTRIES = [
-  { href: "/mes-taches", label: "Mes tâches", icon: UserIcon, adminOnly: false },
   { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false },
-  { href: "/planning", label: "Planning", icon: Calendar, adminOnly: false },
-  { href: "/demandes", label: "Demandes", icon: Inbox, adminOnly: false },
+  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false },
+  { href: "/semaine", label: "Semaine", icon: CalendarDays, adminOnly: false },
+  { href: "/gantt", label: "Gantt", icon: BarChart3, adminOnly: false },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
   { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true },
 ] as const;
@@ -25,18 +37,21 @@ const ROLE_LABEL: Record<Role, string> = {
 
 interface AppShellProps {
   studios: StudioSummary[];
+  people: PersonSummary[];
+  projects: Pick<ProjectWithCounts, "id" | "name" | "client">[];
   userName: string;
   role: Role;
-  pendingRequestsCount: number;
   children: React.ReactNode;
 }
 
-export function AppShell({ studios, userName, role, pendingRequestsCount, children }: AppShellProps) {
+export function AppShell({ studios, people, projects, userName, role, children }: AppShellProps) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // Filtre studio : état d'affichage local pour l'instant. Le brancher sur
-  // les vues Projets/Planning viendra avec ces vues (palier 3), pas avant —
-  // pas de contexte partagé prématuré tant qu'il n'y a rien à filtrer.
+  const [modal, setModal] = useState<"task" | "project" | null>(null);
+  // Filtre studio : état d'affichage local pour l'instant, la maquette elle-
+  // même ne précise pas de persistance particulière au-delà de la session
+  // d'écran. Le brancher sur les vues consommatrices vient palier par
+  // palier, au fur et à mesure qu'elles existent.
   const [activeStudios, setActiveStudios] = useState<Set<string>>(
     () => new Set(studios.map((s) => s.id)),
   );
@@ -54,7 +69,7 @@ export function AppShell({ studios, userName, role, pendingRequestsCount, childr
   }
 
   const nav = (
-    <nav aria-label="Navigation principale" className="flex flex-col gap-0.5">
+    <nav aria-label="Navigation principale" className="flex flex-col border-b border-white/15 pb-3">
       {NAV_ENTRIES.filter((e) => !e.adminOnly || role === "ADMIN").map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
@@ -63,23 +78,16 @@ export function AppShell({ studios, userName, role, pendingRequestsCount, childr
             href={href}
             onClick={() => setDrawerOpen(false)}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-2.5 px-3.5 py-2.5 text-sm ${
-              active
-                ? "bg-white font-semibold text-rail"
-                : "font-normal text-rail-contrast hover:bg-white/10"
-            }`}
+            className="flex items-center gap-2.5 border-l-[3px] px-5 py-2.5 font-[family-name:var(--font-body)] text-[22px] leading-[28px]"
+            style={{
+              borderLeftColor: active ? "#FFFFFF" : "transparent",
+              background: active ? "rgba(255,255,255,0.1)" : "transparent",
+              color: active ? "#FFFFFF" : "rgba(255,255,255,0.85)",
+              fontWeight: active ? 700 : 600,
+            }}
           >
-            <Icon size={17} aria-hidden="true" />
+            <Icon size={19} aria-hidden="true" />
             {label}
-            {href === "/demandes" && pendingRequestsCount > 0 && (
-              <span
-                className={`ml-auto px-1.5 text-xs font-bold ${
-                  active ? "bg-rail text-white" : "bg-white text-rail"
-                }`}
-              >
-                {pendingRequestsCount}
-              </span>
-            )}
           </Link>
         );
       })}
@@ -88,89 +96,97 @@ export function AppShell({ studios, userName, role, pendingRequestsCount, childr
 
   const railContent = (
     <>
-      <div className="flex items-start justify-between gap-2">
-        <div className="font-[family-name:var(--font-display)] text-lg font-semibold leading-tight text-rail-contrast">
-          Média Animation
+      <div className="flex items-start justify-between gap-2 px-5 pt-5 pb-5">
+        <div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel, pas d'optimisation next/image nécessaire pour cette taille */}
+          <img src="/logo/media-animation-blanc.png" alt="Média Animation" className="h-8 w-auto" />
+          <div className="mt-1.5 text-sm text-white/70">Planning des studios</div>
         </div>
         <button
           type="button"
           onClick={() => setDrawerOpen(false)}
-          className="text-rail-contrast md:hidden"
+          className="text-white md:hidden"
           aria-label="Fermer le menu"
         >
           <X size={22} />
         </button>
       </div>
-      <p className="mt-1 text-xs text-rail-contrast/80">{ROLE_LABEL[role]}</p>
-
-      <div className="my-4 h-px bg-white/25" />
 
       {nav}
 
-      <p className="mt-6 mb-2 text-xs font-semibold uppercase tracking-wide text-rail-contrast/75">
-        Studios
-      </p>
-      <ul className="flex flex-col gap-2">
-        {studios.map((studio) => {
-          const checked = activeStudios.has(studio.id);
-          return (
-            <li key={studio.id}>
-              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-rail-contrast">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleStudio(studio.id)}
-                  className="sr-only"
-                />
-                <span
-                  aria-hidden="true"
-                  className="flex h-5 w-5 flex-shrink-0 items-center justify-center border-2 text-[10px] font-bold text-white"
-                  style={{
-                    borderColor: checked ? studio.colorHex : "rgba(255,255,255,0.5)",
-                    background: checked ? studio.colorHex : "transparent",
-                  }}
-                >
-                  {checked ? studio.initial : ""}
-                </span>
-                {studio.name}
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="px-5 pt-5 pb-3">
+        <p className="mb-2.5 text-xs font-semibold tracking-wide text-white/70 uppercase">Studios</p>
+        <ul className="flex flex-col gap-2">
+          {studios.map((studio) => {
+            const checked = activeStudios.has(studio.id);
+            return (
+              <li key={studio.id}>
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm text-white" style={{ opacity: checked ? 1 : 0.55 }}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleStudio(studio.id)}
+                    className="sr-only"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 flex-shrink-0 border-[1.5px]"
+                    style={{
+                      borderColor: studio.colorHex,
+                      background: checked ? studio.colorHex : "transparent",
+                    }}
+                  />
+                  {studio.name}
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       <div className="flex-1" />
 
-      <div className="mt-6 flex flex-col gap-2">
-        <Link
-          href="/projets"
-          className="flex h-10 items-center justify-center gap-1.5 bg-white text-sm font-semibold text-rail"
+      <div className="flex flex-col gap-2.5 px-5 pt-4 pb-4">
+        <button
+          type="button"
+          onClick={() => {
+            setModal("task");
+            setDrawerOpen(false);
+          }}
+          className="flex h-10 items-center justify-center gap-1.5 bg-white text-[15px] font-bold text-rail"
         >
-          <Plus size={16} /> Nouveau projet
-        </Link>
-        <Link
-          href="/projets"
-          className="flex h-10 items-center justify-center gap-1.5 border border-white/50 text-sm font-medium text-rail-contrast"
+          <Plus size={17} /> Nouvelle tâche
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setModal("project");
+            setDrawerOpen(false);
+          }}
+          className="flex h-10 items-center justify-center gap-1.5 border-[1.5px] border-white text-[15px] font-bold text-white"
         >
-          <Plus size={16} /> Nouvelle tâche
-        </Link>
+          <Plus size={17} /> Nouveau projet
+        </button>
       </div>
 
-      <p className="mt-6 truncate text-sm text-rail-contrast">{userName}</p>
-      <form action={signOutAction} className="mt-1">
-        <button
-          type="submit"
-          className="text-left text-xs font-medium text-rail-contrast/80 underline-offset-2 hover:underline"
-        >
-          Se déconnecter
-        </button>
-      </form>
+      <div className="px-5 pt-2 pb-5">
+        <p className="mb-1 truncate text-sm text-white">{userName}</p>
+        <p className="mb-2 text-xs text-white/70">{ROLE_LABEL[role]}</p>
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline"
+          >
+            Se déconnecter
+          </button>
+        </form>
+      </div>
     </>
   );
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      <aside className="hidden bg-rail px-5 py-5 md:sticky md:top-0 md:flex md:h-screen md:w-[264px] md:flex-shrink-0 md:flex-col md:overflow-y-auto">
+      <aside className="hidden bg-rail md:sticky md:top-0 md:flex md:h-screen md:w-[260px] md:flex-shrink-0 md:flex-col md:overflow-y-auto">
         {railContent}
       </aside>
 
@@ -179,20 +195,20 @@ export function AppShell({ studios, userName, role, pendingRequestsCount, childr
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="Ouvrir le menu"
-          className="text-rail-contrast"
+          className="text-white"
         >
           <Menu size={24} />
         </button>
-        <span className="font-[family-name:var(--font-display)] text-base font-semibold text-rail-contrast">
-          Média Animation
-        </span>
-        <Link
-          href="/projets"
-          aria-label="Nouveau projet"
+        {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel */}
+        <img src="/logo/media-animation-blanc.png" alt="Média Animation" className="h-6 w-auto" />
+        <button
+          type="button"
+          onClick={() => setModal("task")}
+          aria-label="Nouvelle tâche"
           className="flex h-9 w-9 items-center justify-center bg-white text-rail"
         >
           <Plus size={18} />
-        </Link>
+        </button>
       </header>
 
       {drawerOpen && (
@@ -201,15 +217,32 @@ export function AppShell({ studios, userName, role, pendingRequestsCount, childr
             type="button"
             aria-label="Fermer le menu"
             onClick={() => setDrawerOpen(false)}
-            className="absolute inset-0 bg-ink/50"
+            className="absolute inset-0 bg-rail/70"
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[280px] flex-col overflow-y-auto bg-rail px-5 py-5">
+          <aside className="absolute inset-y-0 left-0 flex w-[280px] flex-col overflow-y-auto bg-rail">
             {railContent}
           </aside>
         </div>
       )}
 
       <main className="min-w-0 flex-1">{children}</main>
+
+      {modal === "task" && (
+        <CreateTaskModal
+          studios={studios}
+          projects={projects}
+          people={people}
+          onClose={() => setModal(null)}
+          onCreated={() => setModal(null)}
+        />
+      )}
+      {modal === "project" && (
+        <CreateProjectModal
+          studios={studios}
+          onClose={() => setModal(null)}
+          onCreated={() => setModal(null)}
+        />
+      )}
     </div>
   );
 }

@@ -5,8 +5,12 @@ Décisions validées avec Média Animation avant le début du développement
 version tenue à jour dans le dépôt ; il reprend le plan d'architecture soumis
 et approuvé au démarrage du projet.
 
-**État : palier 2 livré** (paliers 1 et 2 de la liste ci-dessous). Prochain :
-palier 3, vue Tableau (projets et tâches).
+**État : palier 3 en cours, largement livré** (Projets, Tâches, Semaine et
+Gantt fonctionnels avec de vraies données — voir `docs/design-system.md`
+pour les jetons de style réels reçus entre-temps, et les écarts assumés par
+rapport à la maquette et au plan initial : nav simplifiée, Gantt ajouté hors
+maquette, création par modales plutôt qu'édition en place). Restent : Équipe
+et Réglages (encore des pages d'attente), puis paliers 5 à 8.
 
 ## Décisions actées
 
