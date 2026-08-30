@@ -234,8 +234,59 @@ export function TaskDetailModal({
     });
   }
 
+  // Barre d'actions fixée hors de la zone qui défile (voir ModalShell) : sur
+  // une fiche aussi longue (sous-tâches, pièces jointes, commentaires),
+  // Enregistrer pouvait se retrouver hors champ sans avoir à tout faire
+  // défiler jusqu'en bas.
+  const footer = task && (
+    <div>
+      {error && (
+        <p role="alert" className="mb-3 text-xs font-semibold text-alert">
+          {error}
+        </p>
+      )}
+      <div className="flex items-center justify-between gap-2.5">
+        {task.trashedAt ? (
+          <button
+            type="button"
+            onClick={restore}
+            className={`flex items-center gap-1.5 text-sm font-semibold text-heading ${textButtonClass}`}
+          >
+            <RotateCcw size={14} /> Restaurer
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={trash}
+            className={`flex items-center gap-1.5 px-2 py-1 text-sm font-semibold ${dangerButtonClass}`}
+          >
+            <Trash2 size={14} /> Corbeille
+          </button>
+        )}
+        <div className="flex gap-2.5">
+          <button type="button" onClick={onClose} className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}>
+            Fermer
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={save}
+            className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
+          >
+            {pending ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <ModalShell title={loading ? "Chargement…" : (task?.title ?? "Tâche introuvable")} onClose={onClose} size="lg">
+    <ModalShell
+      title={loading ? "Chargement…" : (task?.title ?? "Tâche introuvable")}
+      onClose={onClose}
+      size="lg"
+      footer={footer}
+    >
       {loading && <p className="text-sm text-ink-muted">Chargement…</p>}
       {!loading && !task && <p className="text-sm text-ink-muted">Cette tâche n’existe plus.</p>}
 
@@ -423,48 +474,6 @@ export function TaskDetailModal({
             </button>
           </div>
 
-          {error && (
-            <p role="alert" className="mb-3 text-xs font-semibold text-alert">
-              {error}
-            </p>
-          )}
-
-          <div className="flex items-center justify-between gap-2.5">
-            {task.trashedAt ? (
-              <button
-                type="button"
-                onClick={restore}
-                className={`flex items-center gap-1.5 text-sm font-semibold text-heading ${textButtonClass}`}
-              >
-                <RotateCcw size={14} /> Restaurer
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={trash}
-                className={`flex items-center gap-1.5 px-2 py-1 text-sm font-semibold ${dangerButtonClass}`}
-              >
-                <Trash2 size={14} /> Corbeille
-              </button>
-            )}
-            <div className="flex gap-2.5">
-              <button
-                type="button"
-                onClick={onClose}
-                className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
-              >
-                Fermer
-              </button>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={save}
-                className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
-              >
-                {pending ? "Enregistrement…" : "Enregistrer"}
-              </button>
-            </div>
-          </div>
         </>
       )}
     </ModalShell>

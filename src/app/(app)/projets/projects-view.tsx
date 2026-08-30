@@ -134,7 +134,7 @@ export function ProjectsView({
 
       <input
         type="text"
-        placeholder="Rechercher un projet, un client…"
+        placeholder="Rechercher…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="mb-6 w-full max-w-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"

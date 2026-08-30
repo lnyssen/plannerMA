@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { addDays, belgianHolidaysRange, fromIsoDate, mondayOf, today } from "@/lib/planning/dates";
 import { weeklyLoad, type LoadAbsence, type LoadTask } from "@/lib/planning/availability";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 interface ChargePerson {
   id: string;
@@ -168,7 +169,7 @@ export function ChargeView({
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          <ScrollFade>
           <table className="border-collapse">
             <thead>
               <tr>
@@ -220,7 +221,7 @@ export function ChargeView({
               ))}
             </tbody>
           </table>
-          </div>
+          </ScrollFade>
         </>
       )}
 

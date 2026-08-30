@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { TaskDetailModal } from "@/components/modals/task-detail-modal";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import { updateTaskStatus } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
@@ -102,7 +103,7 @@ export function KanbanView({
       <div className="mb-5 flex flex-wrap gap-3">
         <input
           type="text"
-          placeholder="Rechercher une tâche, un projet, une personne…"
+          placeholder="Rechercher…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-md flex-1 border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
@@ -145,7 +146,7 @@ export function KanbanView({
           un tableau Kanban classique) : si elles ne tiennent pas toutes,
           la rangée défile horizontalement plutôt que d'empiler les colonnes
           les unes sous les autres. */}
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <ScrollFade className="flex gap-4 pb-2">
         {columns.map(({ status, tasks: colTasks }) => (
           <div
             key={status.id}
@@ -175,7 +176,7 @@ export function KanbanView({
             ))}
           </div>
         ))}
-      </div>
+      </ScrollFade>
 
       <p className="mt-4 text-xs text-ink-muted">
         Glissez une carte vers une autre colonne pour changer son statut (ordinateur uniquement) — sur mobile, ouvrez

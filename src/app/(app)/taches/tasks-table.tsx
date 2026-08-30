@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { TaskDetailModal } from "@/components/modals/task-detail-modal";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { PersonSummary } from "@/lib/data/people";
@@ -120,7 +121,7 @@ export function TasksTable({
       <div className="mb-5 flex flex-wrap gap-3">
         <input
           type="text"
-          placeholder="Rechercher une tâche, un projet, une personne…"
+          placeholder="Rechercher…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-md flex-1 border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
@@ -163,7 +164,49 @@ export function TasksTable({
           <p className="text-sm text-ink">Essayez une autre recherche.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+          {/* Sous sm : cartes empilées plutôt qu'un tableau qui déborde —
+              7 colonnes ne tiennent pas sur un écran de téléphone, et le
+              texte qui s'enroule dans des cellules trop étroites est
+              illisible. Le tableau réapparaît dès qu'il y a la place. */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            {rows.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setOpenTaskId(t.id)}
+                className="border border-line p-3 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
+              >
+                <div className="mb-1.5 flex items-start justify-between gap-2">
+                  <span className="text-sm font-semibold text-rail">{t.title}</span>
+                  <StatusBadge status={t.status} />
+                </div>
+                <div className="mb-2 text-xs text-ink-muted">
+                  {t.project ? (
+                    <>
+                      {t.project.name} — {t.project.client.name}
+                    </>
+                  ) : (
+                    "Sans projet"
+                  )}
+                </div>
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  <StudioBadge name={t.studio.name} fillHex={t.studio.fillHex} colorHex={t.studio.colorHex} />
+                  {t.project && (
+                    <span className="px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
+                      {t.project.type === "INTERNAL" ? "Interne" : "Externe"}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-xs text-ink-muted">
+                  {!hidePersonColumn && <span>{t.assignee?.name ?? "Non attribué"}</span>}
+                  <span className="tabular-nums">{formatRange(t.startDate, t.endDate)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <ScrollFade className="hidden sm:block">
           <table className="w-full min-w-[760px] border-collapse">
             <thead>
               <tr>
@@ -218,7 +261,8 @@ export function TasksTable({
               ))}
             </tbody>
           </table>
-        </div>
+          </ScrollFade>
+        </>
       )}
 
       {openTaskId && (

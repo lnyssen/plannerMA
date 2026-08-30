@@ -80,7 +80,7 @@ export function GlobalSearch() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Rechercher une tâche, un projet, un client…"
+                placeholder="Rechercher…"
                 className="w-full border-[1.5px] border-heading px-2.5 py-2 text-sm text-ink outline-none"
               />
             </div>

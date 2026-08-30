@@ -11,12 +11,15 @@ export function ModalShell({
   title,
   onClose,
   size = "md",
+  footer,
   children,
 }: {
   title: string;
   onClose: () => void;
   /** "lg" pour les formulaires denses (fiche de tâche) — voir SIZE_CLASS. */
   size?: keyof typeof SIZE_CLASS;
+  /** Barre d'actions fixée en bas, hors de la zone qui défile — pour qu'Enregistrer reste toujours atteignable sur un contenu long (fiche de tâche notamment). Sans ce prop, les boutons passés en `children` défilent avec le reste, comme avant. */
+  footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -46,6 +49,7 @@ export function ModalShell({
         </div>
         {/* Le contenu défile si trop long pour l'écran plutôt que de déborder la fenêtre (fenêtre tâche notamment). */}
         <div className="overflow-y-auto px-6 py-4">{children}</div>
+        {footer && <div className="border-t border-line px-6 py-4">{footer}</div>}
       </div>
     </div>
   );
