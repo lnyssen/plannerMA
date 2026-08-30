@@ -122,8 +122,7 @@ export async function updateProject(input: UpdateProjectInput): Promise<{ error?
 
   revalidatePath("/projets");
   revalidatePath("/taches");
-  revalidatePath("/semaine");
-  revalidatePath("/gantt");
+  revalidatePath("/planning");
   return {};
 }
 

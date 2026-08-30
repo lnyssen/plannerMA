@@ -333,7 +333,6 @@ export async function destroyTask(taskId: string): Promise<{ error?: string }> {
 function revalidateTaskViews() {
   revalidatePath("/taches");
   revalidatePath("/projets");
-  revalidatePath("/semaine");
-  revalidatePath("/gantt");
+  revalidatePath("/planning");
   revalidatePath("/reglages");
 }

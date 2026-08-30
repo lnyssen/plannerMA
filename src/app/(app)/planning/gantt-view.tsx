@@ -40,7 +40,7 @@ interface Row {
   task?: GanttTask;
 }
 
-export function GanttChart({
+export function GanttView({
   initialTasks,
   studios,
   people,
@@ -272,11 +272,8 @@ export function GanttChart({
   const rangeLabel = formatRangeFr(startIsoOfView, viewEndIso);
 
   return (
-    <div className="px-8 py-8">
+    <div>
       <div className="mb-1 flex flex-wrap items-center gap-3">
-        <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
-          Gantt
-        </h1>
         <select
           value={weeks}
           onChange={(e) => setWeeks(Number(e.target.value))}

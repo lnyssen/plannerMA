@@ -12,7 +12,7 @@ import { addDays, formatShortFr, fromIsoDate, mondayOf, toIsoDate, today, type I
 
 const JOUR_LABEL = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
-interface WeekTask {
+export interface WeekTask {
   id: string;
   title: string;
   assigneeId: string | null;
@@ -43,14 +43,11 @@ export function SemaineView({
   const covers = (t: WeekTask, dayIso: string) => toIsoDate(t.startDate) <= dayIso && dayIso <= toIsoDate(t.endDate);
 
   function goTo(iso: IsoDate) {
-    router.push(`/semaine?debut=${toIsoDate(mondayOf(fromIsoDate(iso)))}`);
+    router.push(`/planning?vue=semaine&debut=${toIsoDate(mondayOf(fromIsoDate(iso)))}`);
   }
 
   return (
-    <div className="px-8 py-8">
-      <h1 className="mb-1 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
-        Semaine
-      </h1>
+    <div>
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <p className="text-sm text-ink">
           Semaine du {formatShortFr(monday)} au {formatShortFr(toIsoDate(days[4]))}

@@ -68,7 +68,6 @@ export async function addComment(input: z.infer<typeof addCommentSchema>): Promi
   }
 
   revalidatePath("/taches");
-  revalidatePath("/gantt");
-  revalidatePath("/semaine");
+  revalidatePath("/planning");
   return { error: comment ? undefined : "Échec de l’enregistrement." };
 }

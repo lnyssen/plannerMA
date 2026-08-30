@@ -9,8 +9,7 @@ import { deleteUploadedFile, MAX_UPLOAD_BYTES, saveUploadedFile } from "@/lib/st
 function revalidateTaskViews() {
   revalidatePath("/taches");
   revalidatePath("/projets");
-  revalidatePath("/semaine");
-  revalidatePath("/gantt");
+  revalidatePath("/planning");
 }
 
 const linkSchema = z.object({

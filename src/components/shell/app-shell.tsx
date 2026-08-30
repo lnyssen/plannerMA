@@ -1,20 +1,7 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import {
-  Activity,
-  BarChart3,
-  Building2,
-  CalendarDays,
-  Columns3,
-  ListChecks,
-  Menu,
-  Plus,
-  Settings,
-  Table2,
-  Users,
-  X,
-} from "lucide-react";
+import { Activity, Building2, Columns3, ListChecks, Menu, Plus, Settings, Table2, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -42,9 +29,7 @@ import { NotificationBell } from "./notification-bell";
 const NAV_ENTRIES = [
   { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false },
   { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false },
-  { href: "/kanban", label: "Kanban", icon: Columns3, adminOnly: false },
-  { href: "/semaine", label: "Semaine", icon: CalendarDays, adminOnly: false },
-  { href: "/gantt", label: "Gantt", icon: BarChart3, adminOnly: false },
+  { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
   { href: "/charge", label: "Charge", icon: Activity, adminOnly: true },

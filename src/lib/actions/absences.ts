@@ -20,8 +20,7 @@ export type AbsenceInput = z.input<typeof absenceSchema>;
 
 function revalidateAbsenceViews() {
   revalidatePath("/equipe");
-  revalidatePath("/semaine");
-  revalidatePath("/gantt");
+  revalidatePath("/planning");
 }
 
 export async function createAbsence(input: AbsenceInput): Promise<{ error?: string }> {

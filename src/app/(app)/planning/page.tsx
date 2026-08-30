@@ -1,21 +1,29 @@
-import { db } from "@/lib/db";
+import { listTasksForGantt } from "@/lib/data/gantt";
 import { listPeople } from "@/lib/data/people";
 import { listActiveProjectsForForms } from "@/lib/data/projects";
 import { listStudios } from "@/lib/data/studios";
+import { listActiveTasksForListing } from "@/lib/data/tasks";
+import { db } from "@/lib/db";
 import { addDays, fromIsoDate, mondayOf, toIsoDate, today } from "@/lib/planning/dates";
-import { SemaineView } from "./semaine-view";
+import { PlanningView, type PlanningTab } from "./planning-view";
 
-export default async function SemainePage({
+const TABS: PlanningTab[] = ["gantt", "kanban", "semaine"];
+
+export default async function PlanningPage({
   searchParams,
 }: {
-  searchParams: Promise<{ debut?: string }>;
+  searchParams: Promise<{ vue?: string; debut?: string }>;
 }) {
-  const { debut } = await searchParams;
+  const { vue, debut } = await searchParams;
+  const initialTab = TABS.includes(vue as PlanningTab) ? (vue as PlanningTab) : "gantt";
+
   const monday = debut ? mondayOf(fromIsoDate(debut)) : mondayOf(fromIsoDate(today()));
   const mondayIso = toIsoDate(monday);
   const rangeEnd = toIsoDate(addDays(monday, 6));
 
-  const [people, tasks, studios, allPeople, projects] = await Promise.all([
+  const [ganttTasks, boardTasks, weekPeople, weekTasks, studios, people, projects] = await Promise.all([
+    listTasksForGantt(),
+    listActiveTasksForListing(),
     db.person.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.task.findMany({
       where: {
@@ -31,13 +39,16 @@ export default async function SemainePage({
   ]);
 
   return (
-    <SemaineView
+    <PlanningView
+      initialTab={initialTab}
       monday={mondayIso}
-      people={people}
-      tasks={tasks}
+      weekPeople={weekPeople}
+      weekTasks={weekTasks}
+      ganttTasks={ganttTasks}
+      boardTasks={boardTasks}
       studios={studios}
+      people={people}
       projects={projects}
-      allPeople={allPeople}
     />
   );
 }

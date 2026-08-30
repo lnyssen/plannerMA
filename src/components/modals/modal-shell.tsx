@@ -3,7 +3,7 @@
 import { X } from "lucide-react";
 
 const SIZE_CLASS = {
-  md: "max-w-md",
+  md: "max-w-xl",
   lg: "max-w-2xl",
 } as const;
 

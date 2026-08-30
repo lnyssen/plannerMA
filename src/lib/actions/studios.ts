@@ -17,8 +17,7 @@ function revalidateStudioViews() {
   revalidatePath("/reglages");
   revalidatePath("/projets");
   revalidatePath("/taches");
-  revalidatePath("/semaine");
-  revalidatePath("/gantt");
+  revalidatePath("/planning");
   revalidatePath("/equipe");
 }
 

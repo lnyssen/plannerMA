@@ -16,8 +16,7 @@ export type PersonInput = z.input<typeof personSchema>;
 
 function revalidatePeopleViews() {
   revalidatePath("/equipe");
-  revalidatePath("/semaine");
-  revalidatePath("/gantt");
+  revalidatePath("/planning");
   revalidatePath("/taches");
 }
 

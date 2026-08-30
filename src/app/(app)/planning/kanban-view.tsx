@@ -138,7 +138,14 @@ export function KanbanView({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 overflow-x-auto sm:grid-cols-2 lg:grid-cols-4">
+      {/* minmax(220px, 320px) plutôt que des colonnes en fraction (1fr) : sur
+          un grand écran, des colonnes purement proportionnelles s'étirent
+          indéfiniment et les cartes finissent noyées dans le vide plutôt que
+          de rester lisibles — la grille se contente d'ajouter des colonnes. */}
+      <div
+        className="grid gap-4 overflow-x-auto"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 320px))" }}
+      >
         {columns.map(({ status, tasks: colTasks }) => (
           <div
             key={status}
