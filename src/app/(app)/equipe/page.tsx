@@ -8,7 +8,7 @@ export default async function EquipePage() {
       orderBy: { name: "asc" },
       include: {
         studios: { include: { studio: true } },
-        _count: { select: { tasks: { where: { trashedAt: null, status: { not: "DELIVERED" } } } } },
+        _count: { select: { tasks: { where: { trashedAt: null, status: { isNot: { isDone: true } } } } } },
       },
     }),
     db.absence.findMany({ orderBy: { startDate: "asc" }, include: { person: true } }),

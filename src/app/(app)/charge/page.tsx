@@ -15,7 +15,7 @@ export default async function ChargePage() {
       people={people.map((p) => ({ id: p.id, name: p.name, studios: p.studios.map((s) => s.studio.name) }))}
       tasks={tasks.map((t) => ({
         personId: t.assigneeId!,
-        status: t.status,
+        isDone: t.status.isDone,
         startDate: toIsoDate(t.startDate),
         endDate: toIsoDate(t.endDate),
       }))}

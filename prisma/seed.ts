@@ -25,6 +25,15 @@ const STUDIOS = [
   { slug: "consultance", name: "Consultance", fillHex: "#f4ded7", colorHex: "#93361a", initial: "C" }, // AA 5.85:1
 ];
 
+// Statuts par défaut (personnalisables depuis Réglages une fois l'appli en
+// service — voir prisma/migrations/20260830150000_customizable_task_statuses).
+const STATUSES = [
+  { key: "todo", name: "À faire", fillHex: "#f7f7fc", colorHex: "#444444", isDone: false },
+  { key: "inProgress", name: "En cours", fillHex: "#b9bbff", colorHex: "#612dfa", isDone: false },
+  { key: "validation", name: "Validation", fillHex: "#fdecd2", colorHex: "#8a5a00", isDone: false },
+  { key: "delivered", name: "Livré", fillHex: "#dcf3e3", colorHex: "#1c7a3d", isDone: true },
+];
+
 async function main() {
   // Projets/tâches/absences ne sont pas des données nominatives réelles :
   // on repart de zéro à chaque semis plutôt que d'accumuler des doublons à
@@ -50,6 +59,17 @@ async function main() {
       create: { ...s, position: i },
     });
     studios[s.slug] = studio.id;
+  }
+
+  console.log("Semis des statuts…");
+  const statuses: Record<string, string> = {};
+  for (const [i, s] of STATUSES.entries()) {
+    const status = await db.taskStatus.upsert({
+      where: { name: s.name },
+      update: { fillHex: s.fillHex, colorHex: s.colorHex, isDone: s.isDone, position: i },
+      create: { name: s.name, fillHex: s.fillHex, colorHex: s.colorHex, isDone: s.isDone, position: i },
+    });
+    statuses[s.key] = status.id;
   }
 
   console.log("Semis de l'équipe…");
@@ -121,7 +141,7 @@ async function main() {
             assigneeId: people.bilal,
             startDate: new Date(auj),
             endDate: new Date(addDaysIso(auj, 4)),
-            status: "IN_PROGRESS",
+            statusId: statuses.inProgress,
             subtasks: {
               create: [
                 { title: "Page d'accueil", dueDate: new Date(addDaysIso(auj, 2)), done: true },
@@ -135,7 +155,7 @@ async function main() {
             assigneeId: people.amelie,
             startDate: new Date(addDaysIso(auj, 2)),
             endDate: new Date(addDaysIso(auj, 8)),
-            status: "TODO",
+            statusId: statuses.todo,
           },
         ],
       },
@@ -156,7 +176,7 @@ async function main() {
             assigneeId: people.chloe,
             startDate: new Date(addDaysIso(auj, 5)),
             endDate: new Date(addDaysIso(auj, 6)),
-            status: "TODO",
+            statusId: statuses.todo,
           },
           {
             title: "Cadrage stratégique avec le client",
@@ -164,7 +184,7 @@ async function main() {
             assigneeId: people.driss,
             startDate: new Date(auj),
             endDate: new Date(auj),
-            status: "VALIDATION",
+            statusId: statuses.validation,
             validationRounds: 1,
           },
         ],

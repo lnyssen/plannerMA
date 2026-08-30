@@ -49,7 +49,7 @@ export async function runDailyDigest(): Promise<{ sent: number; skipped: number 
         startDate: { lte: new Date(to) },
         endDate: { gte: new Date(from) },
       },
-      include: { project: true },
+      include: { project: true, status: true },
       orderBy: { startDate: "asc" },
     });
 
@@ -63,7 +63,7 @@ export async function runDailyDigest(): Promise<{ sent: number; skipped: number 
       tasks.map((t) => ({
         title: t.title,
         projectName: t.project?.name ?? null,
-        status: t.status,
+        statusName: t.status.name,
         startDate: t.startDate.toISOString().slice(0, 10),
         endDate: t.endDate.toISOString().slice(0, 10),
       })),

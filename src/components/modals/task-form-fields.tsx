@@ -3,7 +3,7 @@
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
-import { STATUS_COLORS, STATUS_LABEL, STATUS_ORDER } from "@/lib/planning/status";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { FieldLabel, fieldInputClass } from "./modal-shell";
 
 export interface TaskFormValues {
@@ -15,10 +15,8 @@ export interface TaskFormValues {
   startDate: string;
   endDate: string;
   maxDurationDays: string; // chaîne vide = pas de borne, sinon un entier positif
-  status: TaskStatusValue;
+  statusId: string;
 }
-
-type TaskStatusValue = (typeof STATUS_ORDER)[number];
 
 export function TaskFormFields({
   values,
@@ -26,6 +24,7 @@ export function TaskFormFields({
   studios,
   projects,
   people,
+  statuses = [],
   showStatus,
 }: {
   values: TaskFormValues;
@@ -33,8 +32,10 @@ export function TaskFormFields({
   studios: StudioSummary[];
   projects: ProjectOption[];
   people: PersonSummary[];
+  statuses?: TaskStatusSummary[];
   showStatus?: boolean;
 }) {
+  const currentStatus = statuses.find((s) => s.id === values.statusId);
   return (
     <div className="mb-4 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
@@ -82,13 +83,13 @@ export function TaskFormFields({
           <select
             id="task-status"
             className={fieldInputClass}
-            value={values.status}
-            onChange={(e) => onChange({ status: e.target.value as TaskStatusValue })}
-            style={{ background: STATUS_COLORS[values.status].fill, color: STATUS_COLORS[values.status].text }}
+            value={values.statusId}
+            onChange={(e) => onChange({ statusId: e.target.value })}
+            style={currentStatus ? { background: currentStatus.fillHex, color: currentStatus.colorHex } : undefined}
           >
-            {STATUS_ORDER.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
+            {statuses.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
               </option>
             ))}
           </select>
@@ -178,5 +179,5 @@ export const EMPTY_TASK_FORM: TaskFormValues = {
   startDate: "",
   endDate: "",
   maxDurationDays: "",
-  status: "TODO",
+  statusId: "",
 };

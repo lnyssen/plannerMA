@@ -16,21 +16,29 @@ fonctionne aujourd'hui, avec de vraies données en base :
   quel écran ou en cliquant une tâche/un projet existant).
 - Tâches : description, pièces jointes (liens **et** fichiers déposés —
   stockage local en développement, voir `src/lib/storage/local.ts`), durée
-  maximale facultative (validée à la création/édition), statut coloré,
-  corbeille + destruction définitive (Réglages).
+  maximale facultative (validée à la création/édition), corbeille +
+  destruction définitive (Réglages).
+- **Statuts personnalisables** (Réglages → Statuts, admin) : plus de liste
+  figée à quatre valeurs — un administrateur crée, renomme et réordonne les
+  statuts (haut/bas), et coche « Terminé » sur ceux qui doivent compter une
+  tâche à 100 % d'avancement et la sortir du calcul de charge. Une nouvelle
+  tâche démarre toujours dans le premier statut. Remplace l'ancienne énumération
+  fixe TODO/IN_PROGRESS/VALIDATION/DELIVERED — voir `TaskStatus` dans
+  `prisma/schema.prisma`.
 - Vue Projets (cartes internes/externes + archives), vue Tâches (tableau
   triable et cherchable).
 - **Planning** : un seul écran, trois onglets sur les mêmes tâches — Gantt
   (par défaut ; glisser-déposer pour replanifier, colonne des libellés
   redimensionnable, navigation par calendrier, plage affichée en toutes
-  lettres, en-tête fixe au défilement), Kanban (glisser une carte pour
-  changer son statut — sur mobile, ouvrir la tâche fait la même chose depuis
-  sa fiche) et Semaine. Changer d'onglet est immédiat ; la date affichée par
-  Semaine reste dans l'URL (`/planning?vue=semaine&debut=…`), comme avant la
-  fusion. Les anciennes adresses `/gantt`, `/semaine`, `/kanban` redirigent
-  vers le bon onglet.
+  lettres, en-tête fixe au défilement), Kanban (colonnes par statut, toujours
+  en ligne — largeur fixe, défilement horizontal plutôt que de retomber à la
+  ligne ; glisser une carte pour changer son statut — sur mobile, ouvrir la
+  tâche fait la même chose depuis sa fiche) et Semaine. Changer d'onglet est
+  immédiat ; la date affichée par Semaine reste dans l'URL
+  (`/planning?vue=semaine&debut=…`), comme avant la fusion. Les anciennes
+  adresses `/gantt`, `/semaine`, `/kanban` redirigent vers le bon onglet.
 - Vue Équipe (personnes, studios de rattachement, absences), vue Réglages
-  (studios, corbeille).
+  (studios, statuts, corbeille).
 - **Clients** : écran dédié dans la navigation (au-dessus d'Équipe), avec
   fiche détaillée (contact, courriel, téléphone, site web, notes) — entité
   propre plutôt que du texte libre ; sélection dans une liste existante ou

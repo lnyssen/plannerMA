@@ -3,27 +3,30 @@
 
 import { fromIsoDate, type IsoDate } from "./dates";
 
-export type TaskStatus = "TODO" | "IN_PROGRESS" | "VALIDATION" | "DELIVERED";
-
-const STATUS_PROGRESS: Record<TaskStatus, number> = {
-  TODO: 0,
-  IN_PROGRESS: 0.4,
-  VALIDATION: 0.75,
-  DELIVERED: 1,
-};
-
 export interface ProgressSubtask {
   done: boolean;
 }
 
+export interface ProgressStatus {
+  position: number;
+  isDone: boolean;
+}
+
 /**
- * Avancement d'une tâche entre 0 et 1. Sans sous-tâches, dérivé de l'état ;
- * avec sous-tâches, fraction de sous-tâches cochées — l'état seul ne suffit
- * plus à représenter l'avancement dès qu'il y a une décomposition.
+ * Avancement d'une tâche entre 0 et 1. Sans sous-tâches, dérivé du rang du
+ * statut parmi les statuts "non terminés" (0 pour le premier, en progressant
+ * vers 1 sans jamais l'atteindre — seul `isDone` vaut 1) ; avec sous-tâches,
+ * fraction de sous-tâches cochées, qui l'emporte sur le statut. Les statuts
+ * étant personnalisables (Réglages), il n'y a plus de barème figé par nom.
  */
-export function taskProgress(status: TaskStatus, subtasks: ProgressSubtask[]): number {
-  if (subtasks.length === 0) return STATUS_PROGRESS[status];
-  return subtasks.filter((s) => s.done).length / subtasks.length;
+export function taskProgress(status: ProgressStatus, allStatuses: ProgressStatus[], subtasks: ProgressSubtask[]): number {
+  if (subtasks.length > 0) return subtasks.filter((s) => s.done).length / subtasks.length;
+  if (status.isDone) return 1;
+
+  const pending = allStatuses.filter((s) => !s.isDone).sort((a, b) => a.position - b.position);
+  if (pending.length <= 1) return 0;
+  const index = pending.findIndex((s) => s.position === status.position);
+  return index <= 0 ? 0 : index / pending.length;
 }
 
 export interface OverdueSubtask {

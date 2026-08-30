@@ -1,8 +1,9 @@
 // Calcul de charge, porté du prototype (`chargeDe`, lignes 1421-1427).
 //
 // Volontairement binaire pour l'instant : un jour couvert par au moins une
-// tâche non livrée compte comme occupé, qu'il y ait une ou trois tâches ce
-// jour-là. C'est exactement la limite que le brief pointe comme fonctionnalité
+// tâche pas encore terminée (statut sans `isDone`) compte comme occupé,
+// qu'il y ait une ou trois tâches ce jour-là. C'est exactement la limite que
+// le brief pointe comme fonctionnalité
 // n°1 à corriger (estimation en demi-journées) — ne pas anticiper cette
 // correction ici, elle a son propre palier de livraison.
 
@@ -10,7 +11,7 @@ import { addDays, fromIsoDate, isBusinessDay, type IsoDate } from "./dates";
 
 export interface LoadTask {
   personId: string;
-  status: string; // comparé à "DELIVERED" ; voir TaskStatus dans tasks.ts
+  isDone: boolean;
   startDate: IsoDate;
   endDate: IsoDate;
 }
@@ -50,7 +51,7 @@ export function weeklyLoad(
     tasks.some(
       (t) =>
         t.personId === personId &&
-        t.status !== "DELIVERED" &&
+        !t.isDone &&
         d >= fromIsoDate(t.startDate) &&
         d <= fromIsoDate(t.endDate),
     );

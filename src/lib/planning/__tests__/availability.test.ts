@@ -25,10 +25,10 @@ describe("weeklyLoad", () => {
     expect(load.available).toBe(3);
   });
 
-  it("ne compte que les tâches non livrées comme occupant un jour", () => {
+  it("ne compte que les tâches non terminées comme occupant un jour", () => {
     const tasks = [
-      { personId: PERSON, status: "IN_PROGRESS", startDate: "2026-01-05", endDate: "2026-01-07" },
-      { personId: PERSON, status: "DELIVERED", startDate: "2026-01-08", endDate: "2026-01-09" },
+      { personId: PERSON, isDone: false, startDate: "2026-01-05", endDate: "2026-01-07" },
+      { personId: PERSON, isDone: true, startDate: "2026-01-08", endDate: "2026-01-09" },
     ];
     const load = weeklyLoad(PERSON, new Date("2026-01-05T00:00:00.000Z"), tasks, [], holidays);
     expect(load.occupied).toBe(3);
@@ -37,16 +37,16 @@ describe("weeklyLoad", () => {
 
   it("compte un jour couvert par plusieurs tâches une seule fois (limite binaire assumée)", () => {
     const tasks = [
-      { personId: PERSON, status: "TODO", startDate: "2026-01-05", endDate: "2026-01-06" },
-      { personId: PERSON, status: "TODO", startDate: "2026-01-05", endDate: "2026-01-06" },
-      { personId: PERSON, status: "TODO", startDate: "2026-01-05", endDate: "2026-01-06" },
+      { personId: PERSON, isDone: false, startDate: "2026-01-05", endDate: "2026-01-06" },
+      { personId: PERSON, isDone: false, startDate: "2026-01-05", endDate: "2026-01-06" },
+      { personId: PERSON, isDone: false, startDate: "2026-01-05", endDate: "2026-01-06" },
     ];
     const load = weeklyLoad(PERSON, new Date("2026-01-05T00:00:00.000Z"), tasks, [], holidays);
     expect(load.occupied).toBe(2);
   });
 
   it("ignore les tâches et absences d'une autre personne", () => {
-    const tasks = [{ personId: "quelqu-un-d-autre", status: "TODO", startDate: "2026-01-05", endDate: "2026-01-09" }];
+    const tasks = [{ personId: "quelqu-un-d-autre", isDone: false, startDate: "2026-01-05", endDate: "2026-01-09" }];
     const load = weeklyLoad(PERSON, new Date("2026-01-05T00:00:00.000Z"), tasks, [], holidays);
     expect(load.occupied).toBe(0);
   });

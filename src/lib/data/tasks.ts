@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 export function listActiveTasksForListing() {
   return db.task.findMany({
     where: { trashedAt: null },
-    include: { project: true, studio: true, assignee: true },
+    include: { project: true, studio: true, assignee: true, status: true },
     orderBy: { startDate: "asc" },
   });
 }

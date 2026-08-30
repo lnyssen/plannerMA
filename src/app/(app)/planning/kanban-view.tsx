@@ -1,6 +1,5 @@
 "use client";
 
-import type { TaskStatus } from "@prisma/client";
 import { useMemo, useState, useTransition } from "react";
 import { TaskDetailModal } from "@/components/modals/task-detail-modal";
 import { StudioBadge } from "@/components/ui/studio-badge";
@@ -8,9 +7,9 @@ import { updateTaskStatus } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskListItem } from "@/lib/data/tasks";
 import { formatShortFr, toIsoDate } from "@/lib/planning/dates";
-import { STATUS_COLORS, STATUS_LABEL, STATUS_ORDER } from "@/lib/planning/status";
 
 function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) => void }) {
   return (
@@ -41,11 +40,13 @@ export function KanbanView({
   studios,
   people,
   projects,
+  statuses,
 }: {
   tasks: TaskListItem[];
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
+  statuses: TaskStatusSummary[];
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [syncedInitial, setSyncedInitial] = useState(initialTasks);
@@ -57,7 +58,7 @@ export function KanbanView({
   const [search, setSearch] = useState("");
   const [studioFilter, setStudioFilter] = useState("");
   const [personFilter, setPersonFilter] = useState("");
-  const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
+  const [dragOverStatusId, setDragOverStatusId] = useState<string | null>(null);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -73,21 +74,21 @@ export function KanbanView({
   }, [tasks, search, studioFilter, personFilter]);
 
   const columns = useMemo(
-    () => STATUS_ORDER.map((status) => ({ status, tasks: filtered.filter((t) => t.status === status) })),
-    [filtered],
+    () => statuses.map((status) => ({ status, tasks: filtered.filter((t) => t.statusId === status.id) })),
+    [filtered, statuses],
   );
 
-  function moveTask(taskId: string, status: TaskStatus) {
+  function moveTask(taskId: string, statusId: string) {
     const task = tasks.find((t) => t.id === taskId);
-    if (!task || task.status === status) return;
+    if (!task || task.statusId === statusId) return;
     setError(null);
-    const previousStatus = task.status;
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status } : t)));
+    const previousStatusId = task.statusId;
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, statusId } : t)));
     startTransition(async () => {
-      const result = await updateTaskStatus({ taskId, status, expectedVersion: task.version });
+      const result = await updateTaskStatus({ taskId, statusId, expectedVersion: task.version });
       if (result.error) {
         setError(result.error);
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: previousStatus } : t)));
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, statusId: previousStatusId } : t)));
       } else if (result.version != null) {
         setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, version: result.version! } : t)));
       }
@@ -138,36 +139,33 @@ export function KanbanView({
         </p>
       )}
 
-      {/* minmax(220px, 320px) plutôt que des colonnes en fraction (1fr) : sur
-          un grand écran, des colonnes purement proportionnelles s'étirent
-          indéfiniment et les cartes finissent noyées dans le vide plutôt que
-          de rester lisibles — la grille se contente d'ajouter des colonnes. */}
-      <div
-        className="grid gap-4 overflow-x-auto"
-        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 320px))" }}
-      >
+      {/* Colonnes en ligne, largeur fixe (jamais de retour à la ligne, comme
+          un tableau Kanban classique) : si elles ne tiennent pas toutes,
+          la rangée défile horizontalement plutôt que d'empiler les colonnes
+          les unes sous les autres. */}
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {columns.map(({ status, tasks: colTasks }) => (
           <div
-            key={status}
+            key={status.id}
             onDragOver={(e) => {
               e.preventDefault();
-              setDragOverStatus(status);
+              setDragOverStatusId(status.id);
             }}
-            onDragLeave={() => setDragOverStatus((s) => (s === status ? null : s))}
+            onDragLeave={() => setDragOverStatusId((s) => (s === status.id ? null : s))}
             onDrop={(e) => {
               e.preventDefault();
-              setDragOverStatus(null);
+              setDragOverStatusId(null);
               const taskId = e.dataTransfer.getData("text/plain");
-              if (taskId) moveTask(taskId, status);
+              if (taskId) moveTask(taskId, status.id);
             }}
-            className="flex min-h-[200px] flex-col gap-2 border border-line bg-wash p-2.5"
-            style={{ outline: dragOverStatus === status ? "2px solid var(--color-heading)" : undefined, outlineOffset: -2 }}
+            className="flex min-h-[200px] w-72 flex-shrink-0 flex-col gap-2 border border-line bg-wash p-2.5"
+            style={{ outline: dragOverStatusId === status.id ? "2px solid var(--color-heading)" : undefined, outlineOffset: -2 }}
           >
             <div
               className="flex items-center justify-between px-1.5 py-1 text-xs font-bold tracking-wide uppercase"
-              style={{ background: STATUS_COLORS[status].fill, color: STATUS_COLORS[status].text }}
+              style={{ background: status.fillHex, color: status.colorHex }}
             >
-              <span>{STATUS_LABEL[status]}</span>
+              <span>{status.name}</span>
               <span className="tabular-nums">{colTasks.length}</span>
             </div>
             {colTasks.map((t) => (
@@ -188,6 +186,7 @@ export function KanbanView({
           studios={studios}
           projects={projects}
           people={people}
+          statuses={statuses}
           onClose={() => setOpenTaskId(null)}
         />
       )}

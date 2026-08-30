@@ -193,11 +193,26 @@ model ProjectStudio {
   @@map("project_studios")
 }
 
-enum TaskStatus {
-  TODO // "À faire"
-  IN_PROGRESS // "En cours"
-  VALIDATION // "Validation"
-  DELIVERED // "Livré"
+/// Statuts de tâche personnalisables (Réglages → Statuts), sur le même
+/// principe que Studio : un administrateur les crée, les renomme et les
+/// réordonne (`position`) plutôt que de choisir dans une liste figée.
+/// `isDone` porte la seule sémantique qui compte pour le reste de
+/// l'application (avancement à 100 %, sortie du calcul de charge) — les
+/// anciens tests figés sur "DELIVERED" n'existent plus, seul ce booléen
+/// distingue "terminé" de "pas terminé".
+model TaskStatus {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  colorHex  String   @map("color_hex")
+  fillHex   String   @map("fill_hex")
+  position  Int      @default(0)
+  isDone    Boolean  @default(false) @map("is_done")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tasks Task[]
+
+  @@map("task_statuses")
 }
 
 /// Une tâche appartient à un seul studio (contrairement au projet). La
@@ -228,7 +243,8 @@ model Task {
   /// charge (voir le module `src/lib/planning` pour l'avancement/la charge,
   /// qui restent distincts de cette borne).
   maxDurationDays   Int?       @map("max_duration_days")
-  status            TaskStatus @default(TODO)
+  status            TaskStatus @relation(fields: [statusId], references: [id])
+  statusId          String     @map("status_id")
   dependsOn         Task?      @relation("TaskDependency", fields: [dependsOnId], references: [id])
   dependsOnId       String?    @map("depends_on_id")
   dependents        Task[]     @relation("TaskDependency")
@@ -245,6 +261,7 @@ model Task {
   @@index([studioId])
   @@index([projectId])
   @@index([assigneeId])
+  @@index([statusId])
   @@index([startDate, endDate])
   @@map("tasks")
 }

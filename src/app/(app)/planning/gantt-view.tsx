@@ -8,6 +8,7 @@ import type { GanttTask } from "@/lib/data/gantt";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { rescheduleTask } from "@/lib/actions/tasks";
 import {
   addDays,
@@ -45,11 +46,13 @@ export function GanttView({
   studios,
   people,
   projects,
+  statuses,
 }: {
   initialTasks: GanttTask[];
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
+  statuses: TaskStatusSummary[];
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
@@ -517,6 +520,7 @@ export function GanttView({
           studios={studios}
           projects={projects}
           people={people}
+          statuses={statuses}
           onClose={() => setOpenTaskId(null)}
         />
       )}

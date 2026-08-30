@@ -9,17 +9,26 @@ import { StudioBadge } from "@/components/ui/studio-badge";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { ProjectWithCounts } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { taskProgress } from "@/lib/planning/tasks";
 
-function averageProgress(project: ProjectWithCounts): number {
+function averageProgress(project: ProjectWithCounts, allStatuses: TaskStatusSummary[]): number {
   if (project.tasks.length === 0) return 0;
-  const total = project.tasks.reduce((sum, t) => sum + taskProgress(t.status, []), 0);
+  const total = project.tasks.reduce((sum, t) => sum + taskProgress(t.status, allStatuses, []), 0);
   return total / project.tasks.length;
 }
 
-function ProjectCard({ project, onOpen }: { project: ProjectWithCounts; onOpen: (id: string) => void }) {
+function ProjectCard({
+  project,
+  statuses,
+  onOpen,
+}: {
+  project: ProjectWithCounts;
+  statuses: TaskStatusSummary[];
+  onOpen: (id: string) => void;
+}) {
   const count = project._count.tasks;
-  const progress = averageProgress(project);
+  const progress = averageProgress(project, statuses);
 
   return (
     <button
@@ -55,7 +64,17 @@ function ProjectCard({ project, onOpen }: { project: ProjectWithCounts; onOpen: 
   );
 }
 
-function ProjectGroup({ title, projects, onOpen }: { title: string; projects: ProjectWithCounts[]; onOpen: (id: string) => void }) {
+function ProjectGroup({
+  title,
+  projects,
+  statuses,
+  onOpen,
+}: {
+  title: string;
+  projects: ProjectWithCounts[];
+  statuses: TaskStatusSummary[];
+  onOpen: (id: string) => void;
+}) {
   if (projects.length === 0) return null;
   return (
     <section className="mb-10">
@@ -64,7 +83,7 @@ function ProjectGroup({ title, projects, onOpen }: { title: string; projects: Pr
       </p>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
         {projects.map((p) => (
-          <ProjectCard key={p.id} project={p} onOpen={onOpen} />
+          <ProjectCard key={p.id} project={p} statuses={statuses} onOpen={onOpen} />
         ))}
       </div>
     </section>
@@ -75,11 +94,13 @@ export function ProjectsView({
   projects,
   studios,
   clients,
+  statuses,
   showArchived,
 }: {
   projects: ProjectWithCounts[];
   studios: StudioSummary[];
   clients: ClientSummary[];
+  statuses: TaskStatusSummary[];
   showArchived: boolean;
 }) {
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
@@ -132,8 +153,8 @@ export function ProjectsView({
         </div>
       ) : (
         <>
-          <ProjectGroup title="Clients internes" projects={internal} onOpen={setOpenProjectId} />
-          <ProjectGroup title="Clients externes" projects={external} onOpen={setOpenProjectId} />
+          <ProjectGroup title="Clients internes" projects={internal} statuses={statuses} onOpen={setOpenProjectId} />
+          <ProjectGroup title="Clients externes" projects={external} statuses={statuses} onOpen={setOpenProjectId} />
         </>
       )}
 

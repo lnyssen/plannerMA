@@ -2,17 +2,28 @@ import { describe, expect, it } from "vitest";
 import { hasDependencyConflict, isSubtaskOverdue, taskProgress } from "../tasks";
 
 describe("taskProgress", () => {
-  it("dérive l'avancement de l'état quand il n'y a pas de sous-tâches", () => {
-    expect(taskProgress("TODO", [])).toBe(0);
-    expect(taskProgress("IN_PROGRESS", [])).toBe(0.4);
-    expect(taskProgress("VALIDATION", [])).toBe(0.75);
-    expect(taskProgress("DELIVERED", [])).toBe(1);
+  // Quatre statuts par défaut (voir prisma/seed.ts), le dernier "terminé".
+  const todo = { position: 0, isDone: false };
+  const inProgress = { position: 1, isDone: false };
+  const validation = { position: 2, isDone: false };
+  const delivered = { position: 3, isDone: true };
+  const allStatuses = [todo, inProgress, validation, delivered];
+
+  it("dérive l'avancement du rang du statut parmi les statuts non terminés, quand il n'y a pas de sous-tâches", () => {
+    expect(taskProgress(todo, allStatuses, [])).toBe(0);
+    expect(taskProgress(inProgress, allStatuses, [])).toBeCloseTo(1 / 3);
+    expect(taskProgress(validation, allStatuses, [])).toBeCloseTo(2 / 3);
+    expect(taskProgress(delivered, allStatuses, [])).toBe(1);
   });
 
-  it("utilise la fraction de sous-tâches cochées quand il y en a, quel que soit l'état", () => {
+  it("utilise la fraction de sous-tâches cochées quand il y en a, quel que soit le statut", () => {
     const subtasks = [{ done: true }, { done: true }, { done: false }, { done: false }];
-    expect(taskProgress("TODO", subtasks)).toBe(0.5);
-    expect(taskProgress("DELIVERED", subtasks)).toBe(0.5);
+    expect(taskProgress(todo, allStatuses, subtasks)).toBe(0.5);
+    expect(taskProgress(delivered, allStatuses, subtasks)).toBe(0.5);
+  });
+
+  it("reste à 0 sans sous-tâches quand il n'y a qu'un seul statut non terminé", () => {
+    expect(taskProgress(todo, [todo, delivered], [])).toBe(0);
   });
 });
 

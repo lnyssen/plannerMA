@@ -48,7 +48,7 @@ export function ChargeView({
 
   const overlapping = useMemo(() => {
     const flagged = new Set<string>();
-    const active = tasks.filter((t) => t.status !== "DELIVERED");
+    const active = tasks.filter((t) => !t.isDone);
     for (let i = 0; i < active.length; i++) {
       for (let j = i + 1; j < active.length; j++) {
         const a = active[i];

@@ -8,6 +8,7 @@ import { textButtonClass } from "@/components/ui/buttons";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { addDays, formatShortFr, fromIsoDate, mondayOf, toIsoDate, today, type IsoDate } from "@/lib/planning/dates";
 
 const JOUR_LABEL = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
@@ -29,6 +30,7 @@ export function SemaineView({
   studios,
   projects,
   allPeople,
+  statuses,
 }: {
   monday: IsoDate;
   people: { id: string; name: string }[];
@@ -36,6 +38,7 @@ export function SemaineView({
   studios: StudioSummary[];
   projects: ProjectOption[];
   allPeople: PersonSummary[];
+  statuses: TaskStatusSummary[];
 }) {
   const router = useRouter();
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
@@ -132,6 +135,7 @@ export function SemaineView({
           studios={studios}
           projects={projects}
           people={allPeople}
+          statuses={statuses}
           onClose={() => setOpenTaskId(null)}
         />
       )}

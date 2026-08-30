@@ -9,6 +9,7 @@ import { getTaskDetail, restoreTask, trashTask, updateTask, type TaskDetail } fr
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { quandFr, toIsoDate } from "@/lib/planning/dates";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { fieldInputClass, ModalShell } from "./modal-shell";
@@ -19,12 +20,14 @@ export function TaskDetailModal({
   studios,
   projects,
   people,
+  statuses,
   onClose,
 }: {
   taskId: string;
   studios: StudioSummary[];
   projects: ProjectOption[];
   people: PersonSummary[];
+  statuses: TaskStatusSummary[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -53,7 +56,7 @@ export function TaskDetailModal({
           startDate: toIsoDate(t.startDate),
           endDate: toIsoDate(t.endDate),
           maxDurationDays: t.maxDurationDays != null ? String(t.maxDurationDays) : "",
-          status: t.status,
+          statusId: t.statusId,
         });
       }
       setLoading(false);
@@ -86,7 +89,7 @@ export function TaskDetailModal({
         startDate: values.startDate,
         endDate: values.endDate < values.startDate ? values.startDate : values.endDate,
         maxDurationDays: values.maxDurationDays ? Number(values.maxDurationDays) : null,
-        status: values.status,
+        statusId: values.statusId,
         expectedVersion: task.version,
       });
       if (result.error) {
@@ -199,6 +202,7 @@ export function TaskDetailModal({
             studios={studios}
             projects={projects}
             people={people}
+            statuses={statuses}
             showStatus
           />
 

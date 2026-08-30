@@ -2,6 +2,7 @@ import { listTasksForGantt } from "@/lib/data/gantt";
 import { listPeople } from "@/lib/data/people";
 import { listActiveProjectsForForms } from "@/lib/data/projects";
 import { listStudios } from "@/lib/data/studios";
+import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { listActiveTasksForListing } from "@/lib/data/tasks";
 import { db } from "@/lib/db";
 import { addDays, fromIsoDate, mondayOf, toIsoDate, today } from "@/lib/planning/dates";
@@ -21,7 +22,7 @@ export default async function PlanningPage({
   const mondayIso = toIsoDate(monday);
   const rangeEnd = toIsoDate(addDays(monday, 6));
 
-  const [ganttTasks, boardTasks, weekPeople, weekTasks, studios, people, projects] = await Promise.all([
+  const [ganttTasks, boardTasks, weekPeople, weekTasks, studios, people, projects, statuses] = await Promise.all([
     listTasksForGantt(),
     listActiveTasksForListing(),
     db.person.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -36,6 +37,7 @@ export default async function PlanningPage({
     listStudios(),
     listPeople(),
     listActiveProjectsForForms(),
+    listTaskStatuses(),
   ]);
 
   return (
@@ -49,6 +51,7 @@ export default async function PlanningPage({
       studios={studios}
       people={people}
       projects={projects}
+      statuses={statuses}
     />
   );
 }

@@ -8,6 +8,7 @@ import type { GanttTask } from "@/lib/data/gantt";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskListItem } from "@/lib/data/tasks";
 import type { IsoDate } from "@/lib/planning/dates";
 import { GanttView } from "./gantt-view";
@@ -32,6 +33,7 @@ export function PlanningView({
   studios,
   people,
   projects,
+  statuses,
 }: {
   initialTab: PlanningTab;
   monday: IsoDate;
@@ -42,6 +44,7 @@ export function PlanningView({
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
+  statuses: TaskStatusSummary[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<PlanningTab>(initialTab);
@@ -83,11 +86,23 @@ export function PlanningView({
         </div>
       </div>
 
-      {tab === "kanban" && <KanbanView tasks={boardTasks} studios={studios} people={people} projects={projects} />}
-      {tab === "semaine" && (
-        <SemaineView monday={monday} people={weekPeople} tasks={weekTasks} studios={studios} projects={projects} allPeople={people} />
+      {tab === "kanban" && (
+        <KanbanView tasks={boardTasks} studios={studios} people={people} projects={projects} statuses={statuses} />
       )}
-      {tab === "gantt" && <GanttView initialTasks={ganttTasks} studios={studios} people={people} projects={projects} />}
+      {tab === "semaine" && (
+        <SemaineView
+          monday={monday}
+          people={weekPeople}
+          tasks={weekTasks}
+          studios={studios}
+          projects={projects}
+          allPeople={people}
+          statuses={statuses}
+        />
+      )}
+      {tab === "gantt" && (
+        <GanttView initialTasks={ganttTasks} studios={studios} people={people} projects={projects} statuses={statuses} />
+      )}
     </div>
   );
 }

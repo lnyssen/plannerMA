@@ -3,8 +3,6 @@
 // ce sont des notifications utilitaires, pas de la communication externe.
 
 import { formatShortFr } from "@/lib/planning/dates";
-import { STATUS_LABEL } from "@/lib/planning/status";
-import type { TaskStatus } from "@prisma/client";
 
 const APP_URL = process.env.AUTH_URL || "http://localhost:3000";
 
@@ -43,7 +41,7 @@ export function assignmentEmail(personName: string, task: AssignmentTaskInfo) {
 export interface DigestTaskInfo {
   title: string;
   projectName: string | null;
-  status: TaskStatus;
+  statusName: string;
   startDate: string;
   endDate: string;
 }
@@ -52,7 +50,7 @@ export function dailyDigestEmail(personName: string, tasks: DigestTaskInfo[]) {
   const subject = `Votre récap du jour — ${tasks.length} tâche${tasks.length === 1 ? "" : "s"} en cours`;
   const items = tasks.map(
     (t) =>
-      `• ${t.title}${t.projectName ? ` (${t.projectName})` : ""} — ${STATUS_LABEL[t.status]}, ${
+      `• ${t.title}${t.projectName ? ` (${t.projectName})` : ""} — ${t.statusName}, ${
         t.startDate === t.endDate
           ? formatShortFr(t.startDate)
           : `du ${formatShortFr(t.startDate)} au ${formatShortFr(t.endDate)}`

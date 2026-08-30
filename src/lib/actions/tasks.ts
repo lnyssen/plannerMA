@@ -6,7 +6,6 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { notifyAssignment } from "@/lib/mail/notify";
 import { daysBetween, toIsoDate } from "@/lib/planning/dates";
-import { STATUS_LABEL } from "@/lib/planning/status";
 import { createNotification } from "./notifications";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
@@ -22,6 +21,7 @@ export async function getTaskDetail(taskId: string) {
       assignee: true,
       attachments: { orderBy: { createdAt: "desc" } },
       comments: { orderBy: { createdAt: "asc" }, include: { mentions: { include: { person: true } } } },
+      status: true,
     },
   });
 }
@@ -73,6 +73,12 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   const { title, description, studioId, projectId, assigneeId, startDate, endDate, maxDurationDays } = parsed.data;
 
+  // Une tâche démarre toujours dans le premier statut (Réglages → Statuts,
+  // ordre d'affichage) : pas de champ "état" à la création, comme avant la
+  // personnalisation des statuts.
+  const defaultStatus = await db.taskStatus.findFirst({ orderBy: { position: "asc" } });
+  if (!defaultStatus) return { error: "Aucun statut configuré — contactez un administrateur." };
+
   const task = await db.task.create({
     data: {
       title,
@@ -83,6 +89,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       maxDurationDays,
+      statusId: defaultStatus.id,
     },
     include: { project: true },
   });
@@ -126,7 +133,7 @@ async function notifyAssignee(
 const updateTaskSchema = withDurationChecks(
   taskFieldsSchema.extend({
     taskId: z.string(),
-    status: z.enum(["TODO", "IN_PROGRESS", "VALIDATION", "DELIVERED"]),
+    statusId: z.string().min(1, "Le statut est requis."),
     expectedVersion: z.number().int(),
   }),
 );
@@ -149,7 +156,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     startDate,
     endDate,
     maxDurationDays,
-    status,
+    statusId,
     expectedVersion,
   } = parsed.data;
 
@@ -166,7 +173,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       maxDurationDays,
-      status,
+      statusId,
       version: { increment: 1 },
     },
   });
@@ -200,7 +207,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
 
 const updateStatusSchema = z.object({
   taskId: z.string(),
-  status: z.enum(["TODO", "IN_PROGRESS", "VALIDATION", "DELIVERED"]),
+  statusId: z.string().min(1),
   expectedVersion: z.number().int(),
 });
 
@@ -210,23 +217,23 @@ export async function updateTaskStatus(
 ): Promise<{ error?: string; version?: number }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
-  const { taskId, status, expectedVersion } = updateStatusSchema.parse(input);
+  const { taskId, statusId, expectedVersion } = updateStatusSchema.parse(input);
 
   const result = await db.task.updateMany({
     where: { id: taskId, version: expectedVersion },
-    data: { status, version: { increment: 1 } },
+    data: { statusId, version: { increment: 1 } },
   });
 
   if (result.count === 0) {
     return { error: "Cette tâche a été modifiée entre-temps par quelqu’un d’autre. Rechargez la page." };
   }
 
-  const task = await db.task.findUniqueOrThrow({ where: { id: taskId } });
+  const task = await db.task.findUniqueOrThrow({ where: { id: taskId }, include: { status: true } });
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
-      action: `Tâche « ${task.title} » déplacée vers « ${STATUS_LABEL[task.status]} »`,
+      action: `Tâche « ${task.title} » déplacée vers « ${task.status.name} »`,
     },
   });
 

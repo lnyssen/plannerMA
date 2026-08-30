@@ -7,9 +7,9 @@ import { StudioBadge } from "@/components/ui/studio-badge";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskListItem } from "@/lib/data/tasks";
 import { toIsoDate } from "@/lib/planning/dates";
-import { STATUS_LABEL } from "@/lib/planning/status";
 
 type SortKey = "title" | "project" | "studio" | "person" | "dates" | "status";
 
@@ -37,12 +37,14 @@ export function TasksTable({
   studios,
   people,
   projects,
+  statuses,
   initialOpenTaskId = null,
 }: {
   tasks: TaskListItem[];
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
+  statuses: TaskStatusSummary[];
   initialOpenTaskId?: string | null;
 }) {
   const [search, setSearch] = useState("");
@@ -86,7 +88,7 @@ export function TasksTable({
         case "dates":
           return t.startDate.getTime();
         case "status":
-          return STATUS_LABEL[t.status];
+          return t.status.name;
         default:
           return t.title;
       }
@@ -198,6 +200,7 @@ export function TasksTable({
           studios={studios}
           projects={projects}
           people={people}
+          statuses={statuses}
           onClose={() => setOpenTaskId(null)}
         />
       )}

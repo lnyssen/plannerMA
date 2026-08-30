@@ -1,6 +1,7 @@
 import { listClients } from "@/lib/data/clients";
 import { listProjectsWithCounts } from "@/lib/data/projects";
 import { listStudios } from "@/lib/data/studios";
+import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { ProjectsView } from "./projects-view";
 
 export default async function ProjetsPage({
@@ -10,11 +11,14 @@ export default async function ProjetsPage({
 }) {
   const { archives } = await searchParams;
   const showArchived = archives === "1";
-  const [projects, studios, clients] = await Promise.all([
+  const [projects, studios, clients, statuses] = await Promise.all([
     listProjectsWithCounts(showArchived),
     listStudios(),
     listClients(),
+    listTaskStatuses(),
   ]);
 
-  return <ProjectsView projects={projects} studios={studios} clients={clients} showArchived={showArchived} />;
+  return (
+    <ProjectsView projects={projects} studios={studios} clients={clients} statuses={statuses} showArchived={showArchived} />
+  );
 }
