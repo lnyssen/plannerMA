@@ -327,52 +327,59 @@ export function GanttView({
 
   return (
     <div>
-      <div className="mb-1 flex flex-wrap items-center gap-3">
-        <select
-          value={weeks}
-          onChange={(e) => setWeeks(Number(e.target.value))}
-          className="ml-2 border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
-        >
-          {[2, 4, 8, 12, 16].map((n) => (
-            <option key={n} value={n}>
-              {n} semaines
-            </option>
-          ))}
-        </select>
+      {/* Le nombre de semaines et la plage qui en résulte vont ensemble, à
+          gauche ; la navigation (aller à une date, reculer/aujourd'hui/
+          avancer) va ensemble, à droite — plutôt que la plage affichée sur
+          sa propre ligne, séparée du réglage qui la détermine. */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={weeks}
+            onChange={(e) => setWeeks(Number(e.target.value))}
+            className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+          >
+            {[2, 4, 8, 12, 16].map((n) => (
+              <option key={n} value={n}>
+                {n} semaines
+              </option>
+            ))}
+          </select>
+          <span className="text-sm font-semibold text-rail">{rangeLabel}</span>
+        </div>
         <span className="flex-1" />
-        <input
-          type="date"
-          value={startIsoOfView}
-          onChange={(e) => e.target.value && setWeekStart(mondayOf(fromIsoDate(e.target.value)))}
-          aria-label="Aller à une date"
-          className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
-        />
-        <button
-          type="button"
-          onClick={() => setWeekStart((w) => addDays(w, -14))}
-          className={`p-1 text-heading ${textButtonClass}`}
-          aria-label="Reculer"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setWeekStart(mondayOf(addDays(fromIsoDate(today()), -7)))}
-          className={`text-sm font-semibold text-heading underline-offset-2 hover:underline ${textButtonClass}`}
-        >
-          Aujourd’hui
-        </button>
-        <button
-          type="button"
-          onClick={() => setWeekStart((w) => addDays(w, 14))}
-          className={`p-1 text-heading ${textButtonClass}`}
-          aria-label="Avancer"
-        >
-          <ChevronRight size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={startIsoOfView}
+            onChange={(e) => e.target.value && setWeekStart(mondayOf(fromIsoDate(e.target.value)))}
+            aria-label="Aller à une date"
+            className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+          />
+          <button
+            type="button"
+            onClick={() => setWeekStart((w) => addDays(w, -14))}
+            className={`p-1 text-heading ${textButtonClass}`}
+            aria-label="Reculer"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setWeekStart(mondayOf(addDays(fromIsoDate(today()), -7)))}
+            className={`text-sm font-semibold text-heading underline-offset-2 hover:underline ${textButtonClass}`}
+          >
+            Aujourd’hui
+          </button>
+          <button
+            type="button"
+            onClick={() => setWeekStart((w) => addDays(w, 14))}
+            className={`p-1 text-heading ${textButtonClass}`}
+            aria-label="Avancer"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
-
-      <p className="mb-4 text-sm font-semibold text-rail">{rangeLabel}</p>
 
       {error && (
         <p role="alert" className="mb-3 border border-alert bg-alert-wash px-3 py-2 text-sm text-alert">
