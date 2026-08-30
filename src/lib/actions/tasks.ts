@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { daysBetween } from "@/lib/planning/dates";
+import { notifyAssignment } from "@/lib/mail/notify";
+import { daysBetween, toIsoDate } from "@/lib/planning/dates";
+import { createNotification } from "./notifications";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
 
@@ -18,6 +20,7 @@ export async function getTaskDetail(taskId: string) {
       studio: true,
       assignee: true,
       attachments: { orderBy: { createdAt: "desc" } },
+      comments: { orderBy: { createdAt: "asc" }, include: { mentions: { include: { person: true } } } },
     },
   });
 }
@@ -80,6 +83,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
       endDate: new Date(endDate),
       maxDurationDays,
     },
+    include: { project: true },
   });
 
   await db.journalEntry.create({
@@ -90,8 +94,32 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
     },
   });
 
+  if (task.assigneeId) {
+    void notifyAssignee(task.assigneeId, {
+      id: task.id,
+      title: task.title,
+      projectName: task.project?.name ?? null,
+      startDate: toIsoDate(task.startDate),
+      endDate: toIsoDate(task.endDate),
+    });
+  }
+
   revalidateTaskViews();
   return { id: task.id };
+}
+
+/** Notifie l'attribution d'une tâche à la fois par courriel (si activé) et dans l'application. */
+async function notifyAssignee(
+  personId: string,
+  task: { id: string; title: string; projectName: string | null; startDate: string; endDate: string },
+): Promise<void> {
+  void notifyAssignment(personId, task);
+  await createNotification({
+    recipientId: personId,
+    type: "ASSIGNMENT",
+    message: `Vous avez été attribué·e à la tâche « ${task.title} »`,
+    link: `/taches?open=${task.id}`,
+  });
 }
 
 const updateTaskSchema = withDurationChecks(
@@ -124,6 +152,8 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     expectedVersion,
   } = parsed.data;
 
+  const before = await db.task.findUnique({ where: { id: taskId }, select: { assigneeId: true } });
+
   const result = await db.task.updateMany({
     where: { id: taskId, version: expectedVersion },
     data: {
@@ -144,7 +174,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     return { error: "Cette tâche a été modifiée entre-temps par quelqu’un d’autre. Rechargez la page." };
   }
 
-  const task = await db.task.findUniqueOrThrow({ where: { id: taskId } });
+  const task = await db.task.findUniqueOrThrow({ where: { id: taskId }, include: { project: true } });
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
@@ -152,6 +182,16 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
       action: `Tâche « ${title} » modifiée`,
     },
   });
+
+  if (task.assigneeId && task.assigneeId !== before?.assigneeId) {
+    void notifyAssignee(task.assigneeId, {
+      id: task.id,
+      title: task.title,
+      projectName: task.project?.name ?? null,
+      startDate: toIsoDate(task.startDate),
+      endDate: toIsoDate(task.endDate),
+    });
+  }
 
   revalidateTaskViews();
   return { version: task.version };

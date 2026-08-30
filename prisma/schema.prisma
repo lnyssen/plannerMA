@@ -56,6 +56,11 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   lastLoginAt  DateTime? @map("last_login_at")
 
+  /// Alerte par courriel à l'attribution d'une tâche (soi-même comme destinataire).
+  notifyOnAssignment Boolean @default(true) @map("notify_on_assignment")
+  /// Récapitulatif quotidien par courriel des tâches en cours/à venir.
+  notifyDailyDigest  Boolean @default(true) @map("notify_daily_digest")
+
   @@map("users")
 }
 
@@ -111,6 +116,8 @@ model Person {
   comments        Comment[]
   uploadedFiles   Attachment[]
   journalEntries  JournalEntry[]
+  notifications   Notification[]
+  mentions        CommentMention[]
 
   @@map("people")
 }
@@ -304,8 +311,52 @@ model Comment {
   body      String
   createdAt DateTime @default(now()) @map("created_at")
 
+  mentions CommentMention[]
+
   @@index([taskId])
   @@map("comments")
+}
+
+/// Personnes taguées ("@Nom") dans un commentaire — détectées à la saisie en
+/// comparant le texte aux personnes existantes (voir addComment), stockées à
+/// part plutôt que reparsées à chaque affichage. Chaque mention déclenche une
+/// Notification de type MENTION pour la personne taguée.
+model CommentMention {
+  id        String   @id @default(cuid())
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String   @map("comment_id")
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId  String   @map("person_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([commentId, personId])
+  @@map("comment_mentions")
+}
+
+enum NotificationType {
+  ASSIGNMENT
+  MENTION
+  REQUEST
+}
+
+/// Notifications dans l'application (cloche de la barre latérale) — distinctes
+/// des courriels envoyés par src/lib/mail : mêmes déclencheurs (attribution,
+/// mention, nouvelle demande), mais toujours créées, sans préférence
+/// d'activation (contrairement aux courriels, volontairement plus rares).
+/// Pas de temps réel (WebSocket) par choix du brief : la cloche interroge par
+/// sondage court côté client (voir notification-bell.tsx).
+model Notification {
+  id          String           @id @default(cuid())
+  recipient   Person           @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String           @map("recipient_id")
+  type        NotificationType
+  message     String
+  link        String?
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@index([recipientId, read])
+  @@map("notifications")
 }
 
 enum AttachmentKind {

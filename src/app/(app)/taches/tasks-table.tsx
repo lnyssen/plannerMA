@@ -37,16 +37,20 @@ export function TasksTable({
   studios,
   people,
   projects,
+  initialOpenTaskId = null,
 }: {
   tasks: TaskListItem[];
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
+  initialOpenTaskId?: string | null;
 }) {
   const [search, setSearch] = useState("");
+  const [studioFilter, setStudioFilter] = useState("");
+  const [personFilter, setPersonFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("dates");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(initialOpenTaskId);
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -60,7 +64,7 @@ export function TasksTable({
     const q = search.trim().toLowerCase();
     let filtered = tasks;
     if (q) {
-      filtered = tasks.filter((t) =>
+      filtered = filtered.filter((t) =>
         [t.title, t.project?.name, t.studio.name, t.assignee?.name]
           .filter(Boolean)
           .join(" ")
@@ -68,6 +72,8 @@ export function TasksTable({
           .includes(q),
       );
     }
+    if (studioFilter) filtered = filtered.filter((t) => t.studioId === studioFilter);
+    if (personFilter) filtered = filtered.filter((t) => t.assigneeId === personFilter);
 
     const value = (t: TaskListItem): string | number => {
       switch (sortKey) {
@@ -94,17 +100,45 @@ export function TasksTable({
       return 0;
     });
     return sorted;
-  }, [tasks, search, sortKey, sortDir]);
+  }, [tasks, search, studioFilter, personFilter, sortKey, sortDir]);
 
   return (
     <div>
-      <input
-        type="text"
-        placeholder="Rechercher une tâche, un projet, une personne…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-5 w-full max-w-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
-      />
+      <div className="mb-5 flex flex-wrap gap-3">
+        <input
+          type="text"
+          placeholder="Rechercher une tâche, un projet, une personne…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full max-w-md flex-1 border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
+        />
+        <select
+          value={studioFilter}
+          onChange={(e) => setStudioFilter(e.target.value)}
+          aria-label="Filtrer par studio"
+          className="border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+        >
+          <option value="">Tous les studios</option>
+          {studios.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={personFilter}
+          onChange={(e) => setPersonFilter(e.target.value)}
+          aria-label="Filtrer par personne"
+          className="border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+        >
+          <option value="">Toutes les personnes</option>
+          {people.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {rows.length === 0 ? (
         <div className="border border-line p-16 text-center">

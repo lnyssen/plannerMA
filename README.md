@@ -30,10 +30,35 @@ fonctionne aujourd'hui, avec de vraies données en base :
   création à la volée depuis un formulaire projet.
 - Effets hover/pressed cohérents sur les éléments interactifs
   (`src/components/ui/buttons.ts` centralise les styles).
+- **Notifications par courriel** : alerte à l'attribution d'une tâche, récap
+  quotidien des tâches en cours/à venir sous sept jours — chacune activable
+  ou non par compte (« Mes notifications », en bas de la barre latérale).
+  Sans SMTP configuré (développement), les courriels sont écrits dans
+  `.data/mail/` plutôt qu'envoyés — voir `src/lib/mail/`. Le récap quotidien
+  se déclenche via `GET /api/cron/daily-digest` (en-tête `x-cron-secret`),
+  à programmer une fois par jour ouvré en production (planificateur
+  Infomaniak ou cron externe) ; un bouton de test manuel existe dans
+  Réglages.
+- **Notifications dans l'application** (cloche, sondage court — pas de
+  temps réel) : attribution d'une tâche, mention dans un commentaire,
+  nouvelle demande (pour les administrateurs). Toujours actives,
+  indépendamment des préférences de courriel ci-dessus.
+- **Commentaires et mentions** sur une tâche (fiche de détail) : taguer
+  quelqu'un (`@Nom`) via les puces proposées notifie la personne.
+- **Demandes** : dépôt rapide d'une demande non planifiée (« + Nouvelle
+  demande »), qui notifie les administrateurs — pas encore d'écran de
+  gestion/conversion en tâche dédié (backlog).
+- **Charge** (admin) : occupation par personne et par semaine (jours
+  ouvrables couverts par une tâche non livrée, absences déduites), avec un
+  repère de chevauchement quand une personne a deux tâches actives qui se
+  recoupent.
+- Filtres par studio et par personne dans la liste des tâches, en plus de
+  la recherche ; le Gantt signale (contour rose, double-clic pour le
+  détail) les tâches d'une même personne qui se chevauchent dans le temps.
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav
-resserrée à 6+1 entrées, pas de « Mes tâches »/« Demandes » pour l'instant) :
-voir `docs/plan-architecture.md`.
+resserrée à 8+1 entrées, pas de « Mes tâches » ni d'écran de gestion des
+demandes pour l'instant) : voir `docs/plan-architecture.md`.
 
 ## Pile technique
 
@@ -49,6 +74,11 @@ voir `docs/plan-architecture.md`.
   (`src/lib/storage/local.ts`, servi via une route authentifiée), à
   remplacer par l'Object Storage Infomaniak en production (seul ce fichier
   change, pas le reste du code).
+- Courriels (alerte d'attribution, récap quotidien) via
+  [Nodemailer](https://nodemailer.com) — sans `SMTP_HOST` configuré
+  (développement), écrits dans `.data/mail/` plutôt qu'envoyés, à remplacer
+  par Infomaniak Mail ou un autre fournisseur SMTP en production (seul
+  `src/lib/mail/transport.ts` change).
 - Hébergement cible : Infomaniak (Jelastic Cloud + Object Storage).
 
 ## Installation (développement local)

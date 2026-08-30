@@ -1,8 +1,9 @@
 "use client";
 
-import { Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
+import { Mail, Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { sendDailyDigestNow } from "@/lib/actions/account";
 import { createStudio, renameStudio } from "@/lib/actions/studios";
 import { destroyTask, restoreTask } from "@/lib/actions/tasks";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -32,6 +33,7 @@ export function ReglagesView({
   const [tab, setTab] = useState<"general" | "corbeille">("general");
   const [, startTransition] = useTransition();
   const [newStudioName, setNewStudioName] = useState("");
+  const [digestResult, setDigestResult] = useState<string | null>(null);
 
   const TABS = [
     { id: "general" as const, label: "Général", icon: Settings },
@@ -62,6 +64,28 @@ export function ReglagesView({
 
       {tab === "general" && (
         <div className="max-w-lg">
+          <h2 className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Notifications</h2>
+          <p className="mb-3 text-sm text-ink">
+            Le récap quotidien part normalement via le planificateur programmé (voir README) ; ce bouton l’envoie
+            immédiatement, pour vérifier que l’envoi fonctionne.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setDigestResult(null);
+              startTransition(async () => {
+                const result = await sendDailyDigestNow();
+                setDigestResult(
+                  result.error ? result.error : `Envoyé à ${result.sent} personne(s), ${result.skipped} sans tâche cette semaine.`,
+                );
+              });
+            }}
+            className={`mb-2 flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
+          >
+            <Mail size={14} /> Envoyer le récap maintenant (test)
+          </button>
+          {digestResult && <p className="mb-6 text-xs text-ink-muted">{digestResult}</p>}
+
           <h2 className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Studios</h2>
           <p className="mb-4 text-sm text-ink">
             Les couleurs viennent de l’identité visuelle réelle (voir docs/design-system.md) et ne se modifient pas

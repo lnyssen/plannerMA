@@ -1,9 +1,10 @@
 "use client";
 
-import { ExternalLink, Paperclip, RotateCcw, Trash2 } from "lucide-react";
+import { AtSign, ExternalLink, Paperclip, RotateCcw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { addLinkAttachment, deleteAttachment, uploadFileAttachment } from "@/lib/actions/attachments";
+import { addComment } from "@/lib/actions/comments";
 import { getTaskDetail, restoreTask, trashTask, updateTask, type TaskDetail } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -34,6 +35,8 @@ export function TaskDetailModal({
   const [error, setError] = useState<string | null>(null);
   const [linkName, setLinkName] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
+  const [commentBody, setCommentBody] = useState("");
+  const [commentError, setCommentError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -164,6 +167,25 @@ export function TaskDetailModal({
     });
   }
 
+  function mention(name: string) {
+    const tag = `@${name} `;
+    setCommentBody((b) => (b.includes(tag) ? b : `${b}${b && !b.endsWith(" ") ? " " : ""}${tag}`));
+  }
+
+  function submitComment() {
+    if (!task || !commentBody.trim()) return;
+    setCommentError(null);
+    startTransition(async () => {
+      const result = await addComment({ taskId: task.id, body: commentBody.trim() });
+      if (result.error) {
+        setCommentError(result.error);
+        return;
+      }
+      setCommentBody("");
+      await refreshTask();
+    });
+  }
+
   return (
     <ModalShell title={loading ? "Chargement…" : (task?.title ?? "Tâche introuvable")} onClose={onClose}>
       {loading && <p className="text-sm text-ink-muted">Chargement…</p>}
@@ -243,6 +265,54 @@ export function TaskDetailModal({
               <Paperclip size={14} /> Déposer un fichier
               <input type="file" className="hidden" onChange={onFileChange} />
             </label>
+          </div>
+
+          <h3 className="mb-2 text-xs font-semibold text-ink">Commentaires ({task.comments.length})</h3>
+          <div className="mb-3 flex max-h-40 flex-col gap-2 overflow-y-auto">
+            {task.comments.length === 0 && <p className="text-xs text-ink-muted">Aucun commentaire.</p>}
+            {task.comments.map((c) => (
+              <div key={c.id} className="border border-line p-2.5 text-sm">
+                <div className="mb-0.5 flex items-baseline gap-2">
+                  <span className="font-semibold text-rail">{c.authorName}</span>
+                  <span className="text-2xs text-ink-muted">{quandFr(c.createdAt)}</span>
+                </div>
+                <p className="whitespace-pre-wrap text-ink">{c.body}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mb-4">
+            <textarea
+              value={commentBody}
+              onChange={(e) => setCommentBody(e.target.value)}
+              placeholder="Ajouter un commentaire… utilisez les puces ci-dessous pour mentionner quelqu’un."
+              rows={2}
+              className={`${fieldInputClass} mb-1.5`}
+            />
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {people.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => mention(p.name)}
+                  className={`flex items-center gap-1 border border-line px-2 py-1 text-2xs font-semibold text-ink-muted ${textButtonClass}`}
+                >
+                  <AtSign size={11} /> {p.name}
+                </button>
+              ))}
+            </div>
+            {commentError && (
+              <p role="alert" className="mb-1.5 text-xs font-semibold text-alert">
+                {commentError}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={pending || !commentBody.trim()}
+              onClick={submitComment}
+              className={`px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
+            >
+              Commenter
+            </button>
           </div>
 
           {error && (

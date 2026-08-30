@@ -1,18 +1,21 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import { BarChart3, Building2, CalendarDays, ListChecks, Menu, Plus, Settings, Table2, Users, X } from "lucide-react";
+import { Activity, BarChart3, Building2, CalendarDays, ListChecks, Menu, Plus, Settings, Table2, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { CreateProjectModal } from "@/components/modals/create-project-modal";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
-import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass } from "@/components/ui/buttons";
+import { NotificationPrefsModal } from "@/components/modals/notification-prefs-modal";
+import { RequestModal } from "@/components/modals/request-modal";
+import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass, textButtonClass } from "@/components/ui/buttons";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import { signOutAction } from "./actions";
+import { NotificationBell } from "./notification-bell";
 
 // Nav conforme à la maquette Claude Design (5 écrans conçus : Semaine,
 // Projets, Tâches, Équipe, Réglages) + Gantt, ajouté ici avec le même
@@ -30,6 +33,7 @@ const NAV_ENTRIES = [
   { href: "/gantt", label: "Gantt", icon: BarChart3, adminOnly: false },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
+  { href: "/charge", label: "Charge", icon: Activity, adminOnly: true },
   { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true },
 ] as const;
 
@@ -46,13 +50,25 @@ interface AppShellProps {
   clients: ClientSummary[];
   userName: string;
   role: Role;
+  notifyOnAssignment: boolean;
+  notifyDailyDigest: boolean;
   children: React.ReactNode;
 }
 
-export function AppShell({ studios, people, projects, clients, userName, role, children }: AppShellProps) {
+export function AppShell({
+  studios,
+  people,
+  projects,
+  clients,
+  userName,
+  role,
+  notifyOnAssignment,
+  notifyDailyDigest,
+  children,
+}: AppShellProps) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [modal, setModal] = useState<"task" | "project" | null>(null);
+  const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | null>(null);
 
   const nav = (
     <nav aria-label="Navigation principale" className="flex flex-col border-b border-white/15 pb-3">
@@ -88,14 +104,17 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
           <img src="/logo/media-animation-blanc.png" alt="Média Animation" className="h-8 w-auto" />
           <div className="mt-1.5 text-sm text-white/70">Planning des studios</div>
         </div>
-        <button
-          type="button"
-          onClick={() => setDrawerOpen(false)}
-          className={`md:hidden ${iconButtonOnRailClass}`}
-          aria-label="Fermer le menu"
-        >
-          <X size={22} />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(false)}
+            className={`md:hidden ${iconButtonOnRailClass}`}
+            aria-label="Fermer le menu"
+          >
+            <X size={22} />
+          </button>
+        </div>
       </div>
 
       {nav}
@@ -123,11 +142,28 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
         >
           <Plus size={17} /> Nouveau projet
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setModal("request");
+            setDrawerOpen(false);
+          }}
+          className={`text-center text-xs font-semibold text-white/80 ${textButtonClass}`}
+        >
+          + Nouvelle demande
+        </button>
       </div>
 
       <div className="px-5 pt-2 pb-5">
         <p className="mb-1 truncate text-sm text-white">{userName}</p>
         <p className="mb-2 text-xs text-white/70">{ROLE_LABEL[role]}</p>
+        <button
+          type="button"
+          onClick={() => setModal("notifications")}
+          className={`mb-2 block text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline ${textButtonClass}`}
+        >
+          Mes notifications
+        </button>
         <form action={signOutAction}>
           <button
             type="submit"
@@ -157,14 +193,17 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
         </button>
         {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel */}
         <img src="/logo/media-animation-blanc.png" alt="Média Animation" className="h-6 w-auto" />
-        <button
-          type="button"
-          onClick={() => setModal("task")}
-          aria-label="Nouvelle tâche"
-          className={`flex h-9 w-9 items-center justify-center ${primaryOnRailButtonClass}`}
-        >
-          <Plus size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button
+            type="button"
+            onClick={() => setModal("task")}
+            aria-label="Nouvelle tâche"
+            className={`flex h-9 w-9 items-center justify-center ${primaryOnRailButtonClass}`}
+          >
+            <Plus size={18} />
+          </button>
+        </div>
       </header>
 
       {drawerOpen && (
@@ -198,6 +237,14 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
           clients={clients}
           onClose={() => setModal(null)}
           onCreated={() => setModal(null)}
+        />
+      )}
+      {modal === "request" && <RequestModal studios={studios} onClose={() => setModal(null)} />}
+      {modal === "notifications" && (
+        <NotificationPrefsModal
+          initialNotifyOnAssignment={notifyOnAssignment}
+          initialNotifyDailyDigest={notifyDailyDigest}
+          onClose={() => setModal(null)}
         />
       )}
     </div>

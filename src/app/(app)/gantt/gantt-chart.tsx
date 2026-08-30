@@ -245,6 +245,28 @@ export function GanttChart({
   const width = days.length * DAY_WIDTH;
   const height = Math.max(rows.length * ROW_HEIGHT, 80);
 
+  // Une personne ne peut pas être à deux endroits en même temps : signale
+  // (contour rose, réservé aux rares alertes de surcharge — voir
+  // docs/design-system.md) toute paire de tâches d'une même personne dont les
+  // plages se chevauchent, distinct des conflits de dépendance déjà affichés
+  // (trait pointillé entre tâches liées).
+  const overlappingTaskIds = useMemo(() => {
+    const flagged = new Set<string>();
+    for (let i = 0; i < tasks.length; i++) {
+      const a = tasks[i];
+      if (!a.assigneeId) continue;
+      for (let j = i + 1; j < tasks.length; j++) {
+        const b = tasks[j];
+        if (b.assigneeId !== a.assigneeId) continue;
+        if (a.startDate <= b.endDate && b.startDate <= a.endDate) {
+          flagged.add(a.id);
+          flagged.add(b.id);
+        }
+      }
+    }
+    return flagged;
+  }, [tasks]);
+
   return (
     <div className="px-8 py-8">
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -419,6 +441,7 @@ export function GanttChart({
                 if (r.type !== "tache" || !r.task) return null;
                 const t = r.task;
                 const { x, w } = positionOf(t);
+                const overlapping = overlappingTaskIds.has(t.id);
                 return (
                   <div
                     key={t.id}
@@ -431,16 +454,22 @@ export function GanttChart({
                       background: t.studio.fillHex,
                       color: t.studio.colorHex,
                       cursor: canDrag ? (drag ? "grabbing" : "grab") : "default",
+                      outlineColor: overlapping ? "var(--color-alert)" : undefined,
                     }}
-                    className="flex items-center gap-1.5 overflow-hidden px-2 outline-2 -outline-offset-2 outline-transparent transition-[outline-color] duration-100 hover:outline-current"
+                    className={`flex items-center gap-1.5 overflow-hidden px-2 outline-2 -outline-offset-2 transition-[outline-color] duration-100 hover:outline-current ${
+                      overlapping ? "" : "outline-transparent"
+                    }`}
                     onMouseDown={(e) => {
                       if (!canDrag) return;
                       e.preventDefault();
                       setDrag({ taskId: t.id, mode: "move", startClientX: e.clientX, deltaDays: 0 });
                     }}
                     onDoubleClick={() => setOpenTaskId(t.id)}
-                    title={`${t.title} · ${t.assignee?.name ?? "non attribué"} (double-clic pour les détails)`}
+                    title={`${t.title} · ${t.assignee?.name ?? "non attribué"}${
+                      overlapping ? " · attention : chevauche une autre tâche de cette personne" : ""
+                    } (double-clic pour les détails)`}
                   >
+                    {overlapping && <span aria-hidden="true" className="text-2xs font-bold text-alert">⚠</span>}
                     <span className="truncate text-2xs font-bold whitespace-nowrap">{t.title}</span>
                     {canDrag && (
                       <span
@@ -462,7 +491,7 @@ export function GanttChart({
       </div>
       <p className="mt-3 text-xs text-ink-muted">
         {canDrag
-          ? "Glissez une barre pour décaler la tâche, sa poignée droite pour la durée, double-cliquez pour l’ouvrir. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance."
+          ? "Glissez une barre pour décaler la tâche, sa poignée droite pour la durée, double-cliquez pour l’ouvrir. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance. Contour rose ⚠ : une même personne a deux tâches qui se chevauchent."
           : "Le glisser n’est actif que sur ordinateur."}
       </p>
 

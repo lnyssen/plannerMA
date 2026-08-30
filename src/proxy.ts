@@ -18,7 +18,11 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));
   }
 
-  if (isLoggedIn && pathname.startsWith("/reglages") && req.auth?.user.role !== "ADMIN") {
+  if (
+    isLoggedIn &&
+    (pathname.startsWith("/reglages") || pathname.startsWith("/charge")) &&
+    req.auth?.user.role !== "ADMIN"
+  ) {
     return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));
   }
 

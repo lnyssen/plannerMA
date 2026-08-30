@@ -5,16 +5,19 @@ Décisions validées avec Média Animation avant le début du développement
 version tenue à jour dans le dépôt ; il reprend le plan d'architecture soumis
 et approuvé au démarrage du projet.
 
-**État : palier 3 livré** (Projets, Tâches, Semaine, Gantt, Équipe, Réglages
-fonctionnels avec de vraies données, y compris édition, pièces jointes
-réelles — fichiers et liens —, corbeille et entité Client — voir
-`docs/design-system.md` pour les jetons de style réels reçus entre-temps, et
-les écarts assumés par rapport à la maquette et au plan initial : nav
-resserrée, Gantt ajouté hors maquette, création/édition par modales plutôt
-qu'édition en place dans le tableau). Prochain : paliers 5 à 8 (verrouillage
-optimiste déjà en place pour les tâches, concurrence hors Gantt à
-généraliser ; demandes, recherche globale, export CSV/iCal/JSON,
-notifications, sauvegardes automatiques, accessibilité).
+**État : paliers 3-4 livrés, palier 7 entamé** (Projets, Tâches, Semaine,
+Gantt, Équipe, Réglages, Clients, Charge fonctionnels avec de vraies
+données, y compris édition, pièces jointes réelles — fichiers et liens —,
+corbeille, commentaires avec mentions, notifications par courriel et dans
+l'application — voir `docs/design-system.md` pour les jetons de style réels
+reçus entre-temps, et les écarts assumés par rapport à la maquette et au
+plan initial : nav resserrée, Gantt et Charge ajoutés hors maquette,
+création/édition par modales plutôt qu'édition en place dans le tableau).
+Demandes : dépôt et notification aux administrateurs livrés, pas encore
+d'écran de gestion/conversion en tâche. Prochain : palier 5 (concurrence
+généralisée hors Gantt/journal), reste du palier 6 (Mes tâches, gestion des
+demandes, recherche globale, exports), sauvegardes automatiques (palier 7),
+accessibilité (palier 8).
 
 ## Décisions actées
 
@@ -25,7 +28,7 @@ notifications, sauvegardes automatiques, accessibilité).
 | Hébergement | Infomaniak (Jelastic Cloud) | Imposé. Suisse, hors UE stricte, mais couvert par une décision d'adéquation RGPD de l'UE |
 | Fichiers joints | Liens externes conservés + dépôt réel (Object Storage compatible S3, Infomaniak) | Le brief demande de garder les deux |
 | Concurrence | Écritures transactionnelles + verrouillage optimiste (`version` par ligne) + rafraîchissement court (polling ~20 s) | Le brief accepte ce compromis en repli du temps réel poussé |
-| Notifications | Récap quotidien par courriel + alerte d'attribution uniquement | Le brief exclut explicitement les notifications à chaque changement d'état |
+| Notifications | Récap quotidien par courriel + alerte d'attribution, chacune activable par compte ; en plus, notifications dans l'application (attribution, mention, demande) toujours actives, par sondage court | Le brief exclut les notifications à chaque changement d'état, pas l'attribution/les mentions ; la cloche dans l'application répond à une demande explicite ultérieure, sur le même principe de sondage court que la concurrence (pas de temps réel) |
 | Emplacement du projet | Dépôt séparé (`~/planning-studios`), hors du dépôt `design-system` | Le dépôt existant contient des travaux sans rapport |
 
 ## Paliers de livraison

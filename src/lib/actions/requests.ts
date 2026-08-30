@@ -1,0 +1,59 @@
+"use server";
+
+import { z } from "zod";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { createNotification } from "./notifications";
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
+
+const createRequestSchema = z.object({
+  subject: z.string().trim().min(1, "L’objet est requis.").max(200),
+  studioId: z.string().min(1, "Le studio est requis."),
+  requester: z.string().trim().max(200).nullable(),
+  wantedFor: isoDate.nullable(),
+  detail: z.string().trim().max(2000).nullable(),
+});
+
+export type CreateRequestInput = z.input<typeof createRequestSchema>;
+
+/**
+ * Demande non planifiée ("ce qu'on vous demande dans un couloir") — juste
+ * assez pour recevoir la demande et alerter les administrateurs ; sa mise en
+ * tâche reste manuelle pour l'instant (voir Notification de type REQUEST).
+ * Pas encore d'écran de gestion/conversion dédié (backlog).
+ */
+export async function createRequest(input: CreateRequestInput): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+
+  const parsed = createRequestSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
+  const { subject, studioId, requester, wantedFor, detail } = parsed.data;
+
+  const studio = await db.studio.findUnique({ where: { id: studioId } });
+  if (!studio) return { error: "Studio introuvable." };
+
+  await db.request.create({
+    data: {
+      subject,
+      studioId,
+      requester: requester || null,
+      wantedFor: wantedFor ? new Date(wantedFor) : null,
+      detail: detail || null,
+      createdBy: session.user.name ?? session.user.email ?? "Anonyme",
+    },
+  });
+
+  const admins = await db.user.findMany({ where: { role: "ADMIN", personId: { not: null } } });
+  for (const admin of admins) {
+    if (!admin.personId) continue;
+    await createNotification({
+      recipientId: admin.personId,
+      type: "REQUEST",
+      message: `Nouvelle demande (${studio.name}) : « ${subject} »`,
+    });
+  }
+
+  return {};
+}

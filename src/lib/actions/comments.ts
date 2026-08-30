@@ -1,0 +1,74 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { createNotification } from "./notifications";
+
+const addCommentSchema = z.object({
+  taskId: z.string().min(1),
+  body: z.string().trim().min(1, "Le commentaire est vide.").max(2000),
+});
+
+/**
+ * Une mention est écrite "@Nom Complet" dans le texte — on compare contre la
+ * liste des personnes existantes plutôt que d'imposer un identifiant caché :
+ * plus simple à saisir, et suffisant pour une équipe d'une quinzaine de
+ * personnes aux noms distincts. Les correspondances les plus longues sont
+ * testées en premier pour qu'"@Amélie Verstraeten" ne s'arrête pas à
+ * "@Amélie" si les deux existaient.
+ */
+function findMentionedPersonIds(body: string, people: { id: string; name: string }[]): string[] {
+  const sorted = [...people].sort((a, b) => b.name.length - a.name.length);
+  const found = new Set<string>();
+  let remaining = body;
+  for (const person of sorted) {
+    const needle = `@${person.name}`;
+    if (remaining.includes(needle)) {
+      found.add(person.id);
+      remaining = remaining.split(needle).join(" ".repeat(needle.length));
+    }
+  }
+  return [...found];
+}
+
+export async function addComment(input: z.infer<typeof addCommentSchema>): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+
+  const parsed = addCommentSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
+  const { taskId, body } = parsed.data;
+
+  const task = await db.task.findUnique({ where: { id: taskId }, select: { title: true } });
+  if (!task) return { error: "Cette tâche n’existe plus." };
+
+  const people = await db.person.findMany({ select: { id: true, name: true } });
+  const mentionedIds = findMentionedPersonIds(body, people).filter((id) => id !== session.user.personId);
+
+  const comment = await db.comment.create({
+    data: {
+      taskId,
+      authorId: session.user.personId,
+      authorName: session.user.name ?? session.user.email ?? "Anonyme",
+      body,
+      mentions: { create: mentionedIds.map((personId) => ({ personId })) },
+    },
+  });
+
+  const authorName = session.user.name ?? session.user.email ?? "Quelqu’un";
+  for (const personId of mentionedIds) {
+    await createNotification({
+      recipientId: personId,
+      type: "MENTION",
+      message: `${authorName} vous a mentionné·e dans un commentaire sur « ${task.title} »`,
+      link: `/taches?open=${taskId}`,
+    });
+  }
+
+  revalidatePath("/taches");
+  revalidatePath("/gantt");
+  revalidatePath("/semaine");
+  return { error: comment ? undefined : "Échec de l’enregistrement." };
+}
