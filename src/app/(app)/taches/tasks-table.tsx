@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { TaskDetailModal } from "@/components/modals/task-detail-modal";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { StudioBadge } from "@/components/ui/studio-badge";
+import type { PersonSummary } from "@/lib/data/people";
+import type { ProjectOption } from "@/lib/data/projects";
+import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskListItem } from "@/lib/data/tasks";
 import { toIsoDate } from "@/lib/planning/dates";
 import { STATUS_LABEL } from "@/lib/planning/status";
@@ -27,10 +32,21 @@ function formatRange(start: Date, end: Date) {
   return a === b ? fmt(a) : `${fmt(a)} → ${fmt(b)}`;
 }
 
-export function TasksTable({ tasks }: { tasks: TaskListItem[] }) {
+export function TasksTable({
+  tasks,
+  studios,
+  people,
+  projects,
+}: {
+  tasks: TaskListItem[];
+  studios: StudioSummary[];
+  people: PersonSummary[];
+  projects: ProjectOption[];
+}) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("dates");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -115,7 +131,12 @@ export function TasksTable({ tasks }: { tasks: TaskListItem[] }) {
             </thead>
             <tbody>
               {rows.map((t) => (
-                <tr key={t.id}>
+                <tr
+                  key={t.id}
+                  onClick={() => setOpenTaskId(t.id)}
+                  className="cursor-pointer hover:bg-wash"
+                  title="Ouvrir la fiche"
+                >
                   <td className="border-b border-line px-3 py-2.5 text-sm font-semibold text-rail">{t.title}</td>
                   <td className="border-b border-line px-3 py-2.5 text-sm text-ink">{t.project?.name ?? "—"}</td>
                   <td className="border-b border-line px-3 py-2.5">
@@ -127,14 +148,24 @@ export function TasksTable({ tasks }: { tasks: TaskListItem[] }) {
                   <td className="border-b border-line px-3 py-2.5 text-sm text-ink tabular-nums">
                     {formatRange(t.startDate, t.endDate)}
                   </td>
-                  <td className="border-b border-line px-3 py-2.5 text-sm font-semibold text-ink">
-                    {STATUS_LABEL[t.status]}
+                  <td className="border-b border-line px-3 py-2.5">
+                    <StatusBadge status={t.status} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {openTaskId && (
+        <TaskDetailModal
+          taskId={openTaskId}
+          studios={studios}
+          projects={projects}
+          people={people}
+          onClose={() => setOpenTaskId(null)}
+        />
       )}
     </div>
   );

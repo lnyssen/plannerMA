@@ -47,6 +47,20 @@
   --color-alert-wash: #fdd7df;
   --color-tint: #b9bbff;
 
+  /* Statuts de tâche — sémantiques, pas des jetons de marque. Même langage
+     visuel que les badges studio (aplat clair + texte saturé). À faire et En
+     cours réutilisent les tokens de marque existants ; Validation et Livré
+     sont deux paires ajoutées ici, à ajuster librement sans toucher au reste
+     du fichier. */
+  --status-todo-fill: var(--color-wash);
+  --status-todo-text: var(--color-ink);
+  --status-in-progress-fill: var(--color-tint);
+  --status-in-progress-text: var(--color-heading);
+  --status-validation-fill: #fdecd2;
+  --status-validation-text: #8a5a00;
+  --status-delivered-fill: #dcf3e3;
+  --status-delivered-text: #1c7a3d;
+
   --font-display: "Noka", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-body: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --text-tracking-display: -0.1px;

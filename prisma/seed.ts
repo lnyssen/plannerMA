@@ -105,7 +105,12 @@ async function main() {
   const projetInterne = await db.project.create({
     data: {
       name: "Refonte du site vitrine",
-      client: "Média Animation — communication interne",
+      client: {
+        connectOrCreate: {
+          where: { name: "Média Animation — communication interne" },
+          create: { name: "Média Animation — communication interne" },
+        },
+      },
       type: "INTERNAL",
       studios: { create: [{ studioId: studios.web }, { studioId: studios.graphisme }] },
       tasks: {
@@ -140,7 +145,7 @@ async function main() {
   await db.project.create({
     data: {
       name: "Campagne de sensibilisation",
-      client: "Oxfam Belgique",
+      client: { connectOrCreate: { where: { name: "Oxfam Belgique" }, create: { name: "Oxfam Belgique" } } },
       type: "EXTERNAL",
       studios: { create: [{ studioId: studios.video }, { studioId: studios.consultance }] },
       tasks: {

@@ -136,12 +136,29 @@ enum ClientType {
   EXTERNAL
 }
 
+/// Client au sens organisation (ONG, fédération, service interne…), distinct
+/// du type interne/externe porté par le projet. Une même organisation peut
+/// revenir sur plusieurs projets ; centraliser son nom évite les doublons de
+/// saisie ("Oxfam", "Oxfam Belgique", "OXFAM"…) et permet de gérer la liste
+/// des clients depuis Réglages plutôt qu'en texte libre à chaque création.
+model Client {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  projects Project[]
+
+  @@map("clients")
+}
+
 /// Un projet peut concerner plusieurs studios à la fois (ex. une campagne
 /// Graphisme + Web) : voir ProjectStudio.
 model Project {
   id        String     @id @default(cuid())
   name      String
-  client    String
+  client    Client     @relation(fields: [clientId], references: [id])
+  clientId  String     @map("client_id")
   type      ClientType
   archived  Boolean    @default(false)
   createdAt DateTime   @default(now()) @map("created_at")
@@ -185,6 +202,7 @@ enum TaskStatus {
 model Task {
   id                String     @id @default(cuid())
   title             String
+  description       String?
   project           Project?   @relation(fields: [projectId], references: [id])
   projectId         String?    @map("project_id")
   studio            Studio     @relation(fields: [studioId], references: [id])
@@ -193,6 +211,11 @@ model Task {
   assigneeId        String?    @map("assignee_id")
   startDate         DateTime   @map("start_date") @db.Date
   endDate           DateTime   @map("end_date") @db.Date
+  /// Durée maximale en jours calendaires (Fin - Début + 1). Facultatif : un
+  /// garde-fou contre une plage saisie par erreur, pas une estimation de
+  /// charge (voir le module `src/lib/planning` pour l'avancement/la charge,
+  /// qui restent distincts de cette borne).
+  maxDurationDays   Int?       @map("max_duration_days")
   status            TaskStatus @default(TODO)
   dependsOn         Task?      @relation("TaskDependency", fields: [dependsOnId], references: [id])
   dependsOnId       String?    @map("depends_on_id")

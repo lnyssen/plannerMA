@@ -37,6 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# pièces jointes en stockage local (développement uniquement — voir
+# src/lib/storage/local.ts ; la production utilise l'Object Storage Infomaniak)
+/.data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

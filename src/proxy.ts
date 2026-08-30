@@ -26,5 +26,9 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth).*)"],
+  // Exclut aussi tout chemin avec une extension de fichier (logo, polices…) :
+  // sans ça, la page de connexion elle-même ne pouvait pas charger son
+  // propre logo — la requête de l'image se faisait rediriger vers
+  // /connexion comme n'importe quelle route protégée.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth|.*\\..*).*)"],
 };

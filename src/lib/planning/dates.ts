@@ -60,6 +60,11 @@ export function formatShortFr(s: IsoDate): string {
   return `${d.getUTCDate()} ${MONTHS_FR[d.getUTCMonth()].slice(0, 4)}.`;
 }
 
+/** Formate une date-heure à la française, ex. "5 avril à 14:32". */
+export function quandFr(d: Date): string {
+  return d.toLocaleDateString("fr-BE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 /**
  * Dimanche de Pâques (calendrier grégorien), algorithme de Gauss.
  * Ancre de tous les jours fériés mobiles belges.

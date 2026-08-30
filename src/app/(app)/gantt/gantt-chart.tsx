@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { TaskDetailModal } from "@/components/modals/task-detail-modal";
 import type { GanttTask } from "@/lib/data/gantt";
+import type { PersonSummary } from "@/lib/data/people";
+import type { ProjectOption } from "@/lib/data/projects";
+import type { StudioSummary } from "@/lib/data/studios";
 import { rescheduleTask } from "@/lib/actions/tasks";
 import {
   addDays,
@@ -18,9 +22,11 @@ import {
 import { hasDependencyConflict } from "@/lib/planning/tasks";
 
 const DAY_WIDTH = 30;
-const ROW_HEIGHT = 36;
+const ROW_HEIGHT = 44;
 const HEADER_HEIGHT = 50;
-const LABEL_WIDTH = 230;
+const LABEL_WIDTH_DEFAULT = 230;
+const LABEL_WIDTH_MIN = 140;
+const LABEL_WIDTH_MAX = 480;
 const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 const JOURS1 = ["D", "L", "M", "M", "J", "V", "S"];
 
@@ -32,8 +38,19 @@ interface Row {
   task?: GanttTask;
 }
 
-export function GanttChart({ initialTasks }: { initialTasks: GanttTask[] }) {
+export function GanttChart({
+  initialTasks,
+  studios,
+  people,
+  projects,
+}: {
+  initialTasks: GanttTask[];
+  studios: StudioSummary[];
+  people: PersonSummary[];
+  projects: ProjectOption[];
+}) {
   const [tasks, setTasks] = useState(initialTasks);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   // Resynchronise l'état local sur les données serveur fraîches (après
   // création d'une tâche ailleurs, ou après la revalidation qui suit un
   // glisser) — ajustement pendant le rendu plutôt que dans un effet, cf.
@@ -49,6 +66,9 @@ export function GanttChart({ initialTasks }: { initialTasks: GanttTask[] }) {
   const [drag, setDrag] = useState<DragState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [canDrag, setCanDrag] = useState(true);
+  const [labelWidth, setLabelWidth] = useState(LABEL_WIDTH_DEFAULT);
+  const [resizingLabel, setResizingLabel] = useState(false);
+  const labelResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
   const tasksRef = useRef(tasks);
   useEffect(() => {
     tasksRef.current = tasks;
@@ -84,6 +104,26 @@ export function GanttChart({ initialTasks }: { initialTasks: GanttTask[] }) {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  useEffect(() => {
+    if (!resizingLabel) return;
+    function onMove(e: MouseEvent) {
+      const start = labelResizeRef.current;
+      if (!start) return;
+      const next = Math.min(LABEL_WIDTH_MAX, Math.max(LABEL_WIDTH_MIN, start.startWidth + (e.clientX - start.startX)));
+      setLabelWidth(next);
+    }
+    function onUp() {
+      setResizingLabel(false);
+      labelResizeRef.current = null;
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [resizingLabel]);
 
   const days = useMemo(() => Array.from({ length: weeks * 7 }, (_, i) => addDays(weekStart, i)), [weekStart, weeks]);
   const startIsoOfView = toIsoDate(weekStart);
@@ -222,6 +262,13 @@ export function GanttChart({ initialTasks }: { initialTasks: GanttTask[] }) {
           ))}
         </select>
         <span className="flex-1" />
+        <input
+          type="date"
+          value={startIsoOfView}
+          onChange={(e) => e.target.value && setWeekStart(mondayOf(fromIsoDate(e.target.value)))}
+          aria-label="Aller à une date"
+          className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+        />
         <button type="button" onClick={() => setWeekStart((w) => addDays(w, -14))} className="text-heading" aria-label="Reculer">
           <ChevronLeft size={18} />
         </button>
@@ -244,7 +291,7 @@ export function GanttChart({ initialTasks }: { initialTasks: GanttTask[] }) {
       )}
 
       <div className="flex border border-line">
-        <div style={{ width: LABEL_WIDTH, flexShrink: 0 }} className="border-r border-line">
+        <div style={{ width: labelWidth, flexShrink: 0 }} className="border-r border-line">
           <div style={{ height: HEADER_HEIGHT }} className="flex items-center border-b border-line bg-wash px-3">
             <span className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Projets · tâches</span>
           </div>
@@ -266,6 +313,18 @@ export function GanttChart({ initialTasks }: { initialTasks: GanttTask[] }) {
             ))
           )}
         </div>
+
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Redimensionner la colonne des libellés"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            labelResizeRef.current = { startX: e.clientX, startWidth: labelWidth };
+            setResizingLabel(true);
+          }}
+          className="w-1.5 flex-shrink-0 cursor-col-resize bg-line hover:bg-heading"
+        />
 
         <div className="flex-1 overflow-x-auto">
           <div style={{ width }}>
@@ -368,7 +427,8 @@ export function GanttChart({ initialTasks }: { initialTasks: GanttTask[] }) {
                       e.preventDefault();
                       setDrag({ taskId: t.id, mode: "move", startClientX: e.clientX, deltaDays: 0 });
                     }}
-                    title={`${t.title} · ${t.assignee?.name ?? "non attribué"}`}
+                    onDoubleClick={() => setOpenTaskId(t.id)}
+                    title={`${t.title} · ${t.assignee?.name ?? "non attribué"} (double-clic pour les détails)`}
                   >
                     <span className="truncate text-2xs font-bold whitespace-nowrap">{t.title}</span>
                     {canDrag && (
@@ -391,9 +451,19 @@ export function GanttChart({ initialTasks }: { initialTasks: GanttTask[] }) {
       </div>
       <p className="mt-3 text-xs text-ink-muted">
         {canDrag
-          ? "Glissez une barre pour décaler la tâche, sa poignée droite pour la durée. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance."
+          ? "Glissez une barre pour décaler la tâche, sa poignée droite pour la durée, double-cliquez pour l’ouvrir. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance."
           : "Le glisser n’est actif que sur ordinateur."}
       </p>
+
+      {openTaskId && (
+        <TaskDetailModal
+          taskId={openTaskId}
+          studios={studios}
+          projects={projects}
+          people={people}
+          onClose={() => setOpenTaskId(null)}
+        />
+      )}
     </div>
   );
 }

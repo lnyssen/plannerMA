@@ -57,6 +57,19 @@ antérieure du brief fonctionnel (solides + texte blanc), écrites avant que ce
 travail de design existe — normal, c'est justement ce que le brief demandait
 d'attendre.
 
+**Statuts de tâche** (`--status-*`, même langage visuel que les badges
+studio) : sémantiques, pas des jetons de marque — demandés en couleur par
+l'utilisateur, absents de la maquette livrée (qui affichait le statut en
+texte simple). À faire et En cours réutilisent des jetons de marque déjà
+existants ; Validation et Livré sont deux paires ajoutées librement.
+
+| Statut | Aplat | Texte |
+| --- | --- | --- |
+| À faire | `--color-wash` | `--color-ink` |
+| En cours | `--color-tint` | `--color-heading` |
+| Validation | `#fdecd2` | `#8a5a00` |
+| Livré | `#dcf3e3` | `#1c7a3d` |
+
 ## Typographie
 
 - `--font-display` : Noka (titres, libellés de section, chiffres de date

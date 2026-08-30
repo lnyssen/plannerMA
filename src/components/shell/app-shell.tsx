@@ -7,8 +7,9 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { CreateProjectModal } from "@/components/modals/create-project-modal";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
+import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
-import type { ProjectWithCounts } from "@/lib/data/projects";
+import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import { signOutAction } from "./actions";
 
@@ -38,35 +39,17 @@ const ROLE_LABEL: Record<Role, string> = {
 interface AppShellProps {
   studios: StudioSummary[];
   people: PersonSummary[];
-  projects: Pick<ProjectWithCounts, "id" | "name" | "client">[];
+  projects: ProjectOption[];
+  clients: ClientSummary[];
   userName: string;
   role: Role;
   children: React.ReactNode;
 }
 
-export function AppShell({ studios, people, projects, userName, role, children }: AppShellProps) {
+export function AppShell({ studios, people, projects, clients, userName, role, children }: AppShellProps) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modal, setModal] = useState<"task" | "project" | null>(null);
-  // Filtre studio : état d'affichage local pour l'instant, la maquette elle-
-  // même ne précise pas de persistance particulière au-delà de la session
-  // d'écran. Le brancher sur les vues consommatrices vient palier par
-  // palier, au fur et à mesure qu'elles existent.
-  const [activeStudios, setActiveStudios] = useState<Set<string>>(
-    () => new Set(studios.map((s) => s.id)),
-  );
-
-  function toggleStudio(id: string) {
-    setActiveStudios((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        if (next.size > 1) next.delete(id); // toujours garder au moins un studio actif
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
 
   const nav = (
     <nav aria-label="Navigation principale" className="flex flex-col border-b border-white/15 pb-3">
@@ -78,7 +61,7 @@ export function AppShell({ studios, people, projects, userName, role, children }
             href={href}
             onClick={() => setDrawerOpen(false)}
             aria-current={active ? "page" : undefined}
-            className="flex items-center gap-2.5 border-l-[3px] px-5 py-2.5 font-[family-name:var(--font-body)] text-[22px] leading-[28px]"
+            className="flex items-center gap-2.5 border-l-[3px] px-5 py-2 font-[family-name:var(--font-body)] text-sm leading-5"
             style={{
               borderLeftColor: active ? "#FFFFFF" : "transparent",
               background: active ? "rgba(255,255,255,0.1)" : "transparent",
@@ -86,7 +69,7 @@ export function AppShell({ studios, people, projects, userName, role, children }
               fontWeight: active ? 700 : 600,
             }}
           >
-            <Icon size={19} aria-hidden="true" />
+            <Icon size={17} aria-hidden="true" />
             {label}
           </Link>
         );
@@ -113,36 +96,6 @@ export function AppShell({ studios, people, projects, userName, role, children }
       </div>
 
       {nav}
-
-      <div className="px-5 pt-5 pb-3">
-        <p className="mb-2.5 text-xs font-semibold tracking-wide text-white/70 uppercase">Studios</p>
-        <ul className="flex flex-col gap-2">
-          {studios.map((studio) => {
-            const checked = activeStudios.has(studio.id);
-            return (
-              <li key={studio.id}>
-                <label className="flex cursor-pointer items-center gap-2.5 text-sm text-white" style={{ opacity: checked ? 1 : 0.55 }}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleStudio(studio.id)}
-                    className="sr-only"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5 flex-shrink-0 border-[1.5px]"
-                    style={{
-                      borderColor: studio.colorHex,
-                      background: checked ? studio.colorHex : "transparent",
-                    }}
-                  />
-                  {studio.name}
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
 
       <div className="flex-1" />
 
@@ -239,6 +192,7 @@ export function AppShell({ studios, people, projects, userName, role, children }
       {modal === "project" && (
         <CreateProjectModal
           studios={studios}
+          clients={clients}
           onClose={() => setModal(null)}
           onCreated={() => setModal(null)}
         />

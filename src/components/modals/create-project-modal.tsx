@@ -3,22 +3,27 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createProject } from "@/lib/actions/projects";
+import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
+import { ClientPicker } from "./client-picker";
 import { FieldLabel, ModalShell, fieldInputClass } from "./modal-shell";
 
 export function CreateProjectModal({
   studios,
+  clients,
   onClose,
   onCreated,
 }: {
   studios: StudioSummary[];
+  clients: ClientSummary[];
   onClose: () => void;
   onCreated: () => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
-  const [client, setClient] = useState("");
+  const [clientId, setClientId] = useState<string | null>(clients[0]?.id ?? null);
+  const [newClientName, setNewClientName] = useState<string | null>(clients.length === 0 ? "" : null);
   const [type, setType] = useState<"INTERNAL" | "EXTERNAL">("EXTERNAL");
   const [studioIds, setStudioIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +35,7 @@ export function CreateProjectModal({
   function submit() {
     setError(null);
     startTransition(async () => {
-      const result = await createProject({ name, client, type, studioIds });
+      const result = await createProject({ name, clientId, newClientName, type, studioIds });
       if (result.error) {
         setError(result.error);
         return;
@@ -51,13 +56,14 @@ export function CreateProjectModal({
         autoFocus
       />
 
-      <FieldLabel htmlFor="project-client">Client</FieldLabel>
-      <input
-        id="project-client"
-        className={`${fieldInputClass} mb-3`}
-        value={client}
-        onChange={(e) => setClient(e.target.value)}
-        placeholder="Direction, CSEM, Oxfam…"
+      <ClientPicker
+        clients={clients}
+        clientId={clientId}
+        newClientName={newClientName}
+        onChange={(p) => {
+          setClientId(p.clientId);
+          setNewClientName(p.newClientName);
+        }}
       />
 
       <FieldLabel>Type de client</FieldLabel>

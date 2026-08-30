@@ -8,17 +8,28 @@ palier par palier.
 
 ## État du projet
 
-**Palier 3 (Projets/Tâches/Semaine/Gantt) en cours, largement livré.** Ce qui
-fonctionne aujourd'hui, avec de vraies données en base : connexion par
-comptes nominatifs (3 rôles), coquille de l'application avec l'identité
-visuelle réelle de Média Animation (jetons + logo), création de projets et de
-tâches, vue Projets (cartes par client interne/externe), vue Tâches (tableau
-triable et cherchable), vue Semaine (matrice personnes × jours), vue Gantt
-avec glisser-déposer pour replanifier (verrouillage optimiste). Équipe et
-Réglages restent des pages d'attente — voir `docs/plan-architecture.md` pour
-le détail palier par palier et les écarts assumés par rapport au plan
-initial (nav simplifiée à 5+1 entrées, pas encore de « Mes tâches »/
-« Demandes »).
+**Palier 3 (Projets/Tâches/Semaine/Gantt/Équipe/Réglages) livré.** Ce qui
+fonctionne aujourd'hui, avec de vraies données en base :
+
+- Connexion par comptes nominatifs (3 rôles), identité visuelle réelle.
+- Créer et **modifier** des projets et des tâches (modales, depuis n'importe
+  quel écran ou en cliquant une tâche/un projet existant).
+- Tâches : description, pièces jointes (liens **et** fichiers déposés —
+  stockage local en développement, voir `src/lib/storage/local.ts`), durée
+  maximale facultative (validée à la création/édition), statut coloré,
+  corbeille + destruction définitive (Réglages).
+- Vue Projets (cartes internes/externes + archives), vue Tâches (tableau
+  triable et cherchable), vue Semaine et vue Gantt (glisser-déposer pour
+  replanifier, colonne des libellés redimensionnable, navigation par
+  calendrier, double-clic pour ouvrir le détail d'une tâche).
+- Vue Équipe (personnes, studios de rattachement, absences), vue Réglages
+  (studios, **clients**, corbeille).
+- Client comme entité propre (pas du texte libre) : sélection dans une liste
+  existante ou création à la volée, gérable aussi depuis Réglages.
+
+Détail palier par palier et écarts assumés par rapport au plan initial (nav
+resserrée à 5+1 entrées, pas de « Mes tâches »/« Demandes » pour l'instant) :
+voir `docs/plan-architecture.md`.
 
 ## Pile technique
 
@@ -29,8 +40,11 @@ initial (nav simplifiée à 5+1 entrées, pas encore de « Mes tâches »/
 - Authentification par comptes nominatifs ([Auth.js](https://authjs.dev)),
   conçue pour accueillir un provider Microsoft Entra ID plus tard sans
   réécriture, si Média Animation confirme l'usage de Microsoft 365.
-- Fichiers joints : liens externes (SharePoint, Drive…) **et** dépôt réel
-  vers un stockage compatible S3.
+- Fichiers joints : liens externes (SharePoint, Drive…) **et** dépôt réel de
+  fichiers — stockage local du serveur en développement
+  (`src/lib/storage/local.ts`, servi via une route authentifiée), à
+  remplacer par l'Object Storage Infomaniak en production (seul ce fichier
+  change, pas le reste du code).
 - Hébergement cible : Infomaniak (Jelastic Cloud + Object Storage).
 
 ## Installation (développement local)
