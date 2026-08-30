@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { listRecentJournalEntries } from "@/lib/data/journal";
 import { listStudios } from "@/lib/data/studios";
 import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { ReglagesView } from "./reglages-view";
@@ -9,7 +10,7 @@ export default async function ReglagesPage() {
   const session = await auth();
   if (session?.user.role !== "ADMIN") redirect("/projets"); // filet de sécurité, le middleware couvre déjà ce cas
 
-  const [studios, statuses, trashed] = await Promise.all([
+  const [studios, statuses, trashed, journal] = await Promise.all([
     listStudios(),
     listTaskStatuses(),
     db.task.findMany({
@@ -17,6 +18,7 @@ export default async function ReglagesPage() {
       orderBy: { trashedAt: "desc" },
       include: { project: true },
     }),
+    listRecentJournalEntries(),
   ]);
 
   return (
@@ -29,6 +31,7 @@ export default async function ReglagesPage() {
         projectName: t.project?.name ?? null,
         trashedAt: t.trashedAt,
       }))}
+      journal={journal}
     />
   );
 }

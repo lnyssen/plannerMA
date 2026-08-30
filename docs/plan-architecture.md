@@ -49,10 +49,13 @@ Chaque palier se termine par une démo concrète, pas par un bloc final.
 8. **Accessibilité** — clavier complet (dont Gantt), ARIA, contraste vérifié
    en CI.
 
-Puis, dans l'ordre de priorité du brief : estimation de charge en
-demi-journées, jalons + vue portefeuille, portail client en lecture seule,
-import Outlook des absences, sélecteur SharePoint/Drive, tâches récurrentes,
-historique par tâche, vue Kanban.
+Puis, dans l'ordre de priorité du brief : jalons + vue portefeuille, portail
+client en lecture seule, import Outlook des absences, sélecteur
+SharePoint/Drive, tâches récurrentes.
+
+Déjà livrés depuis, hors plan initial : estimation de charge en
+demi-journées, historique par tâche (+ journal global admin), suppression
+d'un statut personnalisé, détection de dépendance circulaire.
 
 ## Points ouverts
 
@@ -76,9 +79,11 @@ correctes, reprises telles quelles (pas réécrites) dans
   dépendance. Porté depuis `avancement`, `enRetard` et la logique de
   chevauchement du Gantt (ligne 1121).
 - `availability.ts` — charge hebdomadaire d'une personne. Porté depuis
-  `chargeDe` (lignes 1421-1427) ; reste volontairement binaire par jour pour
-  l'instant (limite pointée par le brief comme fonctionnalité n°1 à corriger
-  plus tard avec une estimation en demi-journées — pas anticipée ici).
+  `chargeDe` (lignes 1421-1427), depuis complété par une répartition de
+  l'effort en demi-journées (`Task.estimatedHalfDays`) sur la plage de dates
+  de la tâche, plafonnée à un jour plein par jour ouvrable ; reste binaire
+  par jour uniquement quand l'estimation est absente (comportement
+  historique conservé).
 
 Ces trois modules sont couverts par les tests dans
 `src/lib/planning/__tests__/`.

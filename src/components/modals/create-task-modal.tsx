@@ -59,6 +59,7 @@ export function CreateTaskModal({
         endDate: values.endDate < values.startDate ? values.startDate : values.endDate,
         maxDurationDays: values.maxDurationDays ? Number(values.maxDurationDays) : null,
         dependsOnId: values.dependsOnId || null,
+        estimatedHalfDays: values.estimatedHalfDays ? Number(values.estimatedHalfDays) : null,
       });
       if (result.error) {
         setError(result.error);

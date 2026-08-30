@@ -91,6 +91,27 @@ fonctionne aujourd'hui, avec de vraies données en base :
   comme toutes les autres, défile plutôt que de déborder de l'écran si le
   contenu est trop long. Le panneau de notifications ne se fait plus
   tronquer par la colonne latérale.
+- **Historique par tâche** : onglet « Historique » repliable dans la fiche
+  de détail, listant les écritures journal (`JournalEntry`) propres à cette
+  tâche — création, modification, changement de statut, replanification,
+  mise à la corbeille — avec auteur et horodatage. Un **journal global**
+  équivalent existe aussi côté admin (Réglages → Journal, 100 dernières
+  écritures tous types confondus), avec lien direct vers la tâche concernée
+  quand il y en a une.
+- **Suppression d'un statut** (Réglages → Statuts, admin) : refusée si c'est
+  le dernier statut restant ou si des tâches l'utilisent encore (message
+  donnant le nombre concerné) — évite de casser la clé étrangère `Task.status`.
+- **Détection de dépendance circulaire** : impossible de faire dépendre une
+  tâche d'une autre qui dépend déjà (directement ou via la chaîne) d'elle —
+  rejeté à l'enregistrement avec un message explicite plutôt que de créer une
+  boucle indétectable dans le Gantt.
+- **Estimation de charge en demi-journées** (fiche de tâche, champ « Estim.
+  (demi-j) », facultatif) : la vue Charge répartit l'effort réel sur la plage
+  de dates de la tâche (plafonné à une journée pleine par jour ouvrable) au
+  lieu de compter tout jour couvert comme entièrement occupé ; sans
+  estimation, l'ancien comportement binaire reste inchangé. Résout la
+  limitation « pas encore une estimation de charge réelle » signalée dans
+  `docs/plan-architecture.md`.
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav à
 6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/

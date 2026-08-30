@@ -226,9 +226,10 @@ export function ChargeView({
       )}
 
       <p className="mt-4 max-w-2xl text-xs text-ink-muted">
-        Part des jours ouvrables couverts par au moins une tâche non livrée (jours fériés, week-ends et absences
-        déduits) — voir docs/plan-architecture.md pour la limite assumée (comptage binaire par jour, pas encore une
-        estimation en demi-journées). Puce rose : chevauchement de deux tâches actives pour cette personne.
+        Part des jours ouvrables occupés par des tâches non terminées (jours fériés, week-ends et absences déduits).
+        Une tâche avec une estimation (demi-journées, fiche de tâche) répartit son effort sur sa plage de dates ;
+        sans estimation, tout jour couvert compte comme entièrement occupé. Puce rose : chevauchement de deux tâches
+        actives pour cette personne.
       </p>
     </div>
   );

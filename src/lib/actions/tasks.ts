@@ -24,6 +24,7 @@ export async function getTaskDetail(taskId: string) {
       subtasks: { orderBy: { position: "asc" } },
       status: true,
       dependsOn: { select: { id: true, title: true } },
+      journalEntries: { orderBy: { createdAt: "desc" } },
     },
   });
 }
@@ -62,6 +63,7 @@ const taskFieldsSchema = z.object({
   endDate: isoDate,
   maxDurationDays: z.number().int().positive().nullable(),
   dependsOnId: z.string().nullable(),
+  estimatedHalfDays: z.number().int().min(0).nullable(),
 });
 
 const createTaskSchema = withDurationChecks(taskFieldsSchema);
@@ -74,8 +76,18 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
 
   const parsed = createTaskSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { title, description, studioId, projectId, assigneeId, startDate, endDate, maxDurationDays, dependsOnId } =
-    parsed.data;
+  const {
+    title,
+    description,
+    studioId,
+    projectId,
+    assigneeId,
+    startDate,
+    endDate,
+    maxDurationDays,
+    dependsOnId,
+    estimatedHalfDays,
+  } = parsed.data;
 
   // Une tâche démarre toujours dans le premier statut (Réglages → Statuts,
   // ordre d'affichage) : pas de champ "état" à la création, comme avant la
@@ -95,6 +107,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
       maxDurationDays,
       statusId: defaultStatus.id,
       dependsOnId: dependsOnId || null,
+      estimatedHalfDays,
     },
     include: { project: true },
   });
@@ -104,6 +117,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
       action: `Tâche « ${title} » créée`,
+      taskId: task.id,
     },
   });
 
@@ -135,6 +149,30 @@ async function notifyAssignee(
   });
 }
 
+/**
+ * Remonte la chaîne des prédécesseurs depuis `proposedDependsOnId` : si on
+ * retombe sur `taskId`, l'enregistrer créerait un cycle (A dépend de B qui
+ * dépend de A). `visited` protège contre une boucle infinie si un cycle
+ * existait déjà en base par ailleurs — ne devrait pas arriver puisque ce
+ * contrôle est le seul point d'écriture de `dependsOnId`, mais un filet peu
+ * coûteux plutôt qu'une boucle infinie en cas de donnée déjà incohérente.
+ */
+async function wouldCreateDependencyCycle(taskId: string, proposedDependsOnId: string): Promise<boolean> {
+  let currentId: string | null = proposedDependsOnId;
+  const visited = new Set<string>();
+  while (currentId) {
+    if (currentId === taskId) return true;
+    if (visited.has(currentId)) return false;
+    visited.add(currentId);
+    const row: { dependsOnId: string | null } | null = await db.task.findUnique({
+      where: { id: currentId },
+      select: { dependsOnId: true },
+    });
+    currentId = row?.dependsOnId ?? null;
+  }
+  return false;
+}
+
 const updateTaskSchema = withDurationChecks(
   taskFieldsSchema.extend({
     taskId: z.string(),
@@ -163,11 +201,15 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     maxDurationDays,
     statusId,
     dependsOnId,
+    estimatedHalfDays,
     expectedVersion,
   } = parsed.data;
 
   if (dependsOnId === taskId) {
     return { error: "Une tâche ne peut pas dépendre d’elle-même." };
+  }
+  if (dependsOnId && (await wouldCreateDependencyCycle(taskId, dependsOnId))) {
+    return { error: "Cette dépendance créerait un cycle (les deux tâches finiraient par dépendre l’une de l’autre)." };
   }
 
   const before = await db.task.findUnique({ where: { id: taskId }, select: { assigneeId: true } });
@@ -185,6 +227,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
       maxDurationDays,
       statusId,
       dependsOnId: dependsOnId || null,
+      estimatedHalfDays,
       version: { increment: 1 },
     },
   });
@@ -199,6 +242,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
       action: `Tâche « ${title} » modifiée`,
+      taskId: task.id,
     },
   });
 
@@ -245,6 +289,7 @@ export async function updateTaskStatus(
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
       action: `Tâche « ${task.title} » déplacée vers « ${task.status.name} »`,
+      taskId: task.id,
     },
   });
 
@@ -287,6 +332,7 @@ export async function rescheduleTask(
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
       action: `Tâche « ${task.title} » replanifiée`,
+      taskId: task.id,
     },
   });
 
@@ -304,6 +350,7 @@ export async function trashTask(taskId: string): Promise<{ error?: string }> {
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
       action: `Tâche « ${task.title} » mise à la corbeille`,
+      taskId: task.id,
     },
   });
 
@@ -321,6 +368,7 @@ export async function restoreTask(taskId: string): Promise<{ error?: string }> {
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
       action: `Tâche « ${task.title} » restaurée`,
+      taskId: task.id,
     },
   });
 
@@ -334,14 +382,21 @@ export async function destroyTask(taskId: string): Promise<{ error?: string }> {
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
   if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
 
-  const task = await db.task.delete({ where: { id: taskId } });
+  const existing = await db.task.findUnique({ where: { id: taskId }, select: { title: true } });
+  if (!existing) return { error: "Cette tâche n’existe plus." };
+
+  // L'écriture du journal référence encore la tâche avant sa suppression :
+  // la contrainte `onDelete: SetNull` détachera ensuite `taskId` tout en
+  // gardant le texte de l'entrée — la trace survit à la tâche elle-même.
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
-      action: `Tâche « ${task.title} » supprimée définitivement`,
+      action: `Tâche « ${existing.title} » supprimée définitivement`,
+      taskId,
     },
   });
+  await db.task.delete({ where: { id: taskId } });
 
   revalidateTaskViews();
   revalidatePath("/reglages");

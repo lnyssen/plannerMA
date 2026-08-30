@@ -6,7 +6,13 @@ export function loadChargeData() {
     db.person.findMany({ orderBy: { name: "asc" }, include: { studios: { include: { studio: true } } } }),
     db.task.findMany({
       where: { trashedAt: null, assigneeId: { not: null } },
-      select: { assigneeId: true, startDate: true, endDate: true, status: { select: { isDone: true } } },
+      select: {
+        assigneeId: true,
+        startDate: true,
+        endDate: true,
+        estimatedHalfDays: true,
+        status: { select: { isDone: true } },
+      },
     }),
     db.absence.findMany({ select: { personId: true, startDate: true, endDate: true } }),
   ]);

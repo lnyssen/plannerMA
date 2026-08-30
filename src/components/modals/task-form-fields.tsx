@@ -18,6 +18,7 @@ export interface TaskFormValues {
   maxDurationDays: string; // chaîne vide = pas de borne, sinon un entier positif
   statusId: string;
   dependsOnId: string; // chaîne vide = aucune dépendance
+  estimatedHalfDays: string; // chaîne vide = pas d'estimation (calcul de charge en tout-ou-rien, voir availability.ts)
 }
 
 export function TaskFormFields({
@@ -156,17 +157,17 @@ export function TaskFormFields({
         </div>
       )}
 
-      <div>
-        <FieldLabel htmlFor="task-start">Du</FieldLabel>
-        <input
-          id="task-start"
-          type="date"
-          className={fieldInputClass}
-          value={values.startDate}
-          onChange={(e) => onChange({ startDate: e.target.value })}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:col-span-2 sm:grid-cols-4">
+        <div>
+          <FieldLabel htmlFor="task-start">Du</FieldLabel>
+          <input
+            id="task-start"
+            type="date"
+            className={fieldInputClass}
+            value={values.startDate}
+            onChange={(e) => onChange({ startDate: e.target.value })}
+          />
+        </div>
         <div>
           <FieldLabel htmlFor="task-end">Au</FieldLabel>
           <input
@@ -190,6 +191,20 @@ export function TaskFormFields({
             placeholder="—"
           />
         </div>
+        <div>
+          <FieldLabel htmlFor="task-effort">Estim. (demi-j)</FieldLabel>
+          <input
+            id="task-effort"
+            type="number"
+            min={0}
+            step={1}
+            className={fieldInputClass}
+            value={values.estimatedHalfDays}
+            onChange={(e) => onChange({ estimatedHalfDays: e.target.value })}
+            placeholder="—"
+            title="Effort réel estimé, distinct de la plage de dates — utilisé pour la vue Charge."
+          />
+        </div>
       </div>
     </div>
   );
@@ -206,4 +221,5 @@ export const EMPTY_TASK_FORM: TaskFormValues = {
   maxDurationDays: "",
   statusId: "",
   dependsOnId: "",
+  estimatedHalfDays: "",
 };

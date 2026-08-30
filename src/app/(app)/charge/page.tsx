@@ -18,6 +18,7 @@ export default async function ChargePage() {
         isDone: t.status.isDone,
         startDate: toIsoDate(t.startDate),
         endDate: toIsoDate(t.endDate),
+        estimatedHalfDays: t.estimatedHalfDays,
       }))}
       absences={absences.map((a) => ({
         personId: a.personId,

@@ -243,6 +243,12 @@ model Task {
   /// charge (voir le module `src/lib/planning` pour l'avancement/la charge,
   /// qui restent distincts de cette borne).
   maxDurationDays   Int?       @map("max_duration_days")
+  /// Estimation d'effort en demi-journées (1 = une demi-journée), distincte
+  /// de la plage de dates : une tâche peut s'étaler sur cinq jours
+  /// calendaires sans en occuper la personne à plein temps. Absente = ancien
+  /// comportement dans le calcul de charge (tout jour couvert compte comme
+  /// entièrement occupé) — voir src/lib/planning/availability.ts.
+  estimatedHalfDays Int?       @map("estimated_half_days")
   status            TaskStatus @relation(fields: [statusId], references: [id])
   statusId          String     @map("status_id")
   dependsOn         Task?      @relation("TaskDependency", fields: [dependsOnId], references: [id])
@@ -254,9 +260,10 @@ model Task {
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
 
-  subtasks    Subtask[]
-  comments    Comment[]
-  attachments Attachment[]
+  subtasks       Subtask[]
+  comments       Comment[]
+  attachments    Attachment[]
+  journalEntries JournalEntry[]
 
   @@index([studioId])
   @@index([projectId])
@@ -410,8 +417,16 @@ model JournalEntry {
   actorId   String?  @map("actor_id")
   actorName String   @map("actor_name")
   action    String
+  /// Tâche concernée, quand l'écriture en vient — permet d'afficher
+  /// l'historique d'une tâche précise plutôt que de ne lire que le journal
+  /// global (Réglages → Journal). `SetNull` plutôt que `Cascade` : une tâche
+  /// détruite définitivement ne doit pas effacer la trace de ce qui lui est
+  /// arrivé avant sa suppression.
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  taskId    String?  @map("task_id")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([createdAt])
+  @@index([taskId])
   @@map("journal_entries")
 }

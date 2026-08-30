@@ -1,12 +1,19 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Mail, Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Mail, Plus, RefreshCw, ScrollText, Settings, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { sendDailyDigestNow } from "@/lib/actions/account";
 import { createStudio, renameStudio } from "@/lib/actions/studios";
-import { createTaskStatus, moveTaskStatus, renameTaskStatus, setTaskStatusDone } from "@/lib/actions/task-statuses";
+import {
+  createTaskStatus,
+  deleteTaskStatus,
+  moveTaskStatus,
+  renameTaskStatus,
+  setTaskStatusDone,
+} from "@/lib/actions/task-statuses";
 import { destroyTask, restoreTask } from "@/lib/actions/tasks";
+import type { JournalEntrySummary } from "@/lib/data/journal";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { quandFr } from "@/lib/planning/dates";
@@ -29,21 +36,25 @@ export function ReglagesView({
   studios,
   statuses,
   trashedTasks,
+  journal,
 }: {
   studios: StudioSummary[];
   statuses: TaskStatusSummary[];
   trashedTasks: TrashedTask[];
+  journal: JournalEntrySummary[];
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"general" | "corbeille">("general");
+  const [tab, setTab] = useState<"general" | "corbeille" | "journal">("general");
   const [, startTransition] = useTransition();
   const [newStudioName, setNewStudioName] = useState("");
   const [newStatusName, setNewStatusName] = useState("");
   const [digestResult, setDigestResult] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const TABS = [
     { id: "general" as const, label: "Général", icon: Settings },
     { id: "corbeille" as const, label: `Corbeille${trashedTasks.length ? ` (${trashedTasks.length})` : ""}`, icon: Trash2 },
+    { id: "journal" as const, label: "Journal", icon: ScrollText },
   ];
 
   return (
@@ -217,9 +228,26 @@ export function ReglagesView({
                   />
                   Terminé
                 </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!confirm(`Supprimer le statut « ${s.name} » ?`)) return;
+                    setStatusError(null);
+                    startTransition(async () => {
+                      const result = await deleteTaskStatus(s.id);
+                      if (result.error) setStatusError(result.error);
+                      router.refresh();
+                    });
+                  }}
+                  aria-label={`Supprimer « ${s.name} »`}
+                  className={`flex-shrink-0 p-1 text-ink-muted hover:text-alert ${textButtonClass}`}
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             ))}
           </div>
+          {statusError && <p className="mb-3 text-xs font-semibold text-alert">{statusError}</p>}
           <div className="flex gap-2">
             <input
               value={newStatusName}
@@ -281,6 +309,35 @@ export function ReglagesView({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === "journal" && (
+        <div className="max-w-2xl">
+          <p className="mb-4 text-sm text-ink-muted">Les 100 dernières écritures, tous types confondus.</p>
+          {journal.length === 0 ? (
+            <p className="text-sm text-ink-muted">Aucune écriture pour l’instant.</p>
+          ) : (
+            <div className="flex flex-col">
+              {journal.map((entry) => (
+                <div key={entry.id} className="flex items-baseline gap-2 border-b border-line py-2 text-sm">
+                  {entry.task ? (
+                    <a
+                      href={`/taches?open=${entry.task.id}`}
+                      className="text-ink underline-offset-2 hover:underline"
+                    >
+                      {entry.action}
+                    </a>
+                  ) : (
+                    <span className="text-ink">{entry.action}</span>
+                  )}
+                  <span className="flex-shrink-0 text-xs text-ink-muted">
+                    {entry.actorName}, {quandFr(entry.createdAt)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

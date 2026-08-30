@@ -65,6 +65,7 @@ export function TaskDetailModal({
           maxDurationDays: t.maxDurationDays != null ? String(t.maxDurationDays) : "",
           statusId: t.statusId,
           dependsOnId: t.dependsOnId ?? "",
+          estimatedHalfDays: t.estimatedHalfDays != null ? String(t.estimatedHalfDays) : "",
         });
       }
       setLoading(false);
@@ -99,6 +100,7 @@ export function TaskDetailModal({
         maxDurationDays: values.maxDurationDays ? Number(values.maxDurationDays) : null,
         statusId: values.statusId,
         dependsOnId: values.dependsOnId || null,
+        estimatedHalfDays: values.estimatedHalfDays ? Number(values.estimatedHalfDays) : null,
         expectedVersion: task.version,
       });
       if (result.error) {
@@ -474,6 +476,20 @@ export function TaskDetailModal({
             </button>
           </div>
 
+          <details className="mb-4">
+            <summary className="cursor-pointer text-xs font-semibold text-ink-muted select-none">
+              Historique ({task.journalEntries.length})
+            </summary>
+            <div className="mt-2 flex flex-col gap-1 border-l-2 border-line pl-3">
+              {task.journalEntries.length === 0 && <p className="text-xs text-ink-muted">Aucune écriture.</p>}
+              {task.journalEntries.map((entry) => (
+                <p key={entry.id} className="text-xs text-ink">
+                  {entry.action}
+                  <span className="text-ink-muted"> — {entry.actorName}, {quandFr(entry.createdAt)}</span>
+                </p>
+              ))}
+            </div>
+          </details>
         </>
       )}
     </ModalShell>

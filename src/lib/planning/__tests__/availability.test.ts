@@ -57,4 +57,29 @@ describe("weeklyLoad", () => {
     expect(load.available).toBe(0);
     expect(load.ratio).toBe(0);
   });
+
+  it("répartit une estimation en demi-journées sur les jours ouvrables de la plage plutôt que de compter chaque jour comme plein", () => {
+    // 2 demi-journées (1 jour) sur une plage de deux jours ouvrables (lundi-mardi) : 0,5 par jour.
+    const tasks = [{ personId: PERSON, isDone: false, startDate: "2026-01-05", endDate: "2026-01-06", estimatedHalfDays: 2 }];
+    const load = weeklyLoad(PERSON, new Date("2026-01-05T00:00:00.000Z"), tasks, [], holidays);
+    expect(load.occupied).toBe(1); // 0,5 + 0,5
+  });
+
+  it("plafonne la contribution d'un jour à une journée pleine même si plusieurs tâches estimées s'additionnent au-delà", () => {
+    const tasks = [
+      { personId: PERSON, isDone: false, startDate: "2026-01-05", endDate: "2026-01-05", estimatedHalfDays: 2 },
+      { personId: PERSON, isDone: false, startDate: "2026-01-05", endDate: "2026-01-05", estimatedHalfDays: 2 },
+    ];
+    const load = weeklyLoad(PERSON, new Date("2026-01-05T00:00:00.000Z"), tasks, [], holidays);
+    expect(load.occupied).toBe(1);
+  });
+
+  it("une tâche sans estimation reste comptée comme un jour plein, même à côté d'une tâche estimée", () => {
+    const tasks = [
+      { personId: PERSON, isDone: false, startDate: "2026-01-05", endDate: "2026-01-05" }, // pas d'estimation
+      { personId: PERSON, isDone: false, startDate: "2026-01-06", endDate: "2026-01-06", estimatedHalfDays: 1 },
+    ];
+    const load = weeklyLoad(PERSON, new Date("2026-01-05T00:00:00.000Z"), tasks, [], holidays);
+    expect(load.occupied).toBe(1.5); // lundi plein (1) + mardi une demi-journée (0,5)
+  });
 });

@@ -62,6 +62,27 @@ export async function setTaskStatusDone(statusId: string, isDone: boolean): Prom
   return {};
 }
 
+/** Réservé aux statuts inutilisés — supprimer un statut assigné à des tâches romprait leur clé étrangère. */
+export async function deleteTaskStatus(statusId: string): Promise<{ error?: string }> {
+  const auth_ = await requireAdmin();
+  if ("error" in auth_) return auth_;
+
+  const total = await db.taskStatus.count();
+  if (total <= 1) {
+    return { error: "Impossible de supprimer le dernier statut — une tâche a toujours besoin d’un état." };
+  }
+  const inUse = await db.task.count({ where: { statusId } });
+  if (inUse > 0) {
+    return {
+      error: `${inUse} tâche${inUse === 1 ? "" : "s"} utilise${inUse === 1 ? "" : "nt"} encore ce statut — changez-les d’abord.`,
+    };
+  }
+
+  await db.taskStatus.delete({ where: { id: statusId } });
+  revalidateStatusViews();
+  return {};
+}
+
 /** Échange la position avec le statut immédiatement avant/après dans l'ordre — pas de glisser, juste haut/bas. */
 export async function moveTaskStatus(statusId: string, direction: "up" | "down"): Promise<{ error?: string }> {
   const auth_ = await requireAdmin();
