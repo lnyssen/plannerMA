@@ -60,29 +60,41 @@ fonctionne aujourd'hui, avec de vraies données en base :
   indépendamment des préférences de courriel ci-dessus.
 - **Commentaires et mentions** sur une tâche (fiche de détail) : taguer
   quelqu'un (`@Nom`) via les puces proposées notifie la personne.
-- **Demandes** : dépôt rapide d'une demande non planifiée (« + Nouvelle
-  demande »), qui notifie les administrateurs — pas encore d'écran de
-  gestion/conversion en tâche dédié (backlog).
+- **Demandes** (écran admin dédié) : dépôt rapide d'une demande non planifiée
+  (« + Nouvelle demande »), qui notifie les administrateurs ; depuis
+  l'écran Demandes, chacune se convertit en tâche (formulaire pré-rempli
+  avec l'objet, le studio et la date souhaitée) ou s'écarte sans suite.
+- **Mes tâches** : la liste des tâches, déjà filtrée sur la personne
+  connectée — mêmes filtres et même fiche de détail que la vue Tâches.
+- **Recherche globale** (loupe, barre latérale) : tâches, projets et clients,
+  résultats groupés, ouvre directement la fiche correspondante.
+- **Sous-tâches** et **dépendances** sur une tâche (fiche de détail) :
+  checklist avec échéance facultative pour les premières ; sélection d'une
+  tâche prédécesseure pour les secondes, visualisée dans le Gantt (déjà
+  affichée avant, mais jusqu'ici sans moyen de la définir depuis l'appli).
 - **Charge** (admin) : occupation par personne et par semaine (jours
   ouvrables couverts par une tâche non livrée, absences déduites), avec un
   repère de chevauchement quand une personne a deux tâches actives qui se
-  recoupent.
+  recoupent. Complétée par des statistiques d'ensemble (charge moyenne de
+  l'équipe, nombre de personnes en surcharge, chevauchements détectés,
+  répartition moyenne par studio) et une colonne « Moyenne » par personne.
 - Filtres par studio et par personne dans la liste des tâches et l'onglet
-  Kanban, en plus de la recherche ; le Gantt signale (contour rose,
-  double-clic pour le détail) les tâches d'une même personne qui se
-  chevauchent dans le temps, et le nombre de semaines choisi redimensionne
-  vraiment la zone défilable (les tâches hors plage ne l'élargissent plus).
-  Les colonnes du Kanban restent à largeur raisonnable (`minmax`) plutôt que
-  de s'étirer sur un grand écran.
+  Kanban, en plus de la recherche ; la liste des tâches affiche aussi le
+  client et le type (interne/externe) du projet. Le Gantt signale (contour
+  rose, double-clic pour le détail) les tâches d'une même personne qui se
+  chevauchent dans le temps, redimensionne vraiment sa zone défilable selon
+  le nombre de semaines choisi, et se pilote au clavier (une barre au focus :
+  Flèches pour la décaler, Maj+Flèches pour ajuster sa durée, Entrée pour
+  l'ouvrir) — pas seulement à la souris. Les colonnes du Kanban restent à
+  largeur raisonnable plutôt que de s'étirer sur un grand écran.
 - Fenêtres modales : celle d'une tâche est plus large (deux colonnes) et,
   comme toutes les autres, défile plutôt que de déborder de l'écran si le
   contenu est trop long. Le panneau de notifications ne se fait plus
   tronquer par la colonne latérale.
 
-Détail palier par palier et écarts assumés par rapport au plan initial (nav
-resserrée à 5+2 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning »,
-Charge et Réglages réservés aux administrateurs —, pas de « Mes tâches »
-ni d'écran de gestion des demandes pour l'instant) : voir
+Détail palier par palier et écarts assumés par rapport au plan initial (nav à
+6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/
+Demandes/Réglages réservés aux administrateurs) : voir
 `docs/plan-architecture.md`.
 
 ## Pile technique

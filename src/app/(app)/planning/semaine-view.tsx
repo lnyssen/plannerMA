@@ -9,6 +9,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
+import type { TaskOption } from "@/lib/data/tasks";
 import { addDays, formatShortFr, fromIsoDate, mondayOf, toIsoDate, today, type IsoDate } from "@/lib/planning/dates";
 
 const JOUR_LABEL = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
@@ -31,6 +32,7 @@ export function SemaineView({
   projects,
   allPeople,
   statuses,
+  dependencyOptions,
 }: {
   monday: IsoDate;
   people: { id: string; name: string }[];
@@ -39,6 +41,7 @@ export function SemaineView({
   projects: ProjectOption[];
   allPeople: PersonSummary[];
   statuses: TaskStatusSummary[];
+  dependencyOptions: TaskOption[];
 }) {
   const router = useRouter();
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
@@ -136,6 +139,7 @@ export function SemaineView({
           projects={projects}
           people={allPeople}
           statuses={statuses}
+          tasks={dependencyOptions}
           onClose={() => setOpenTaskId(null)}
         />
       )}

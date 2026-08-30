@@ -29,6 +29,7 @@ export default async function TachesPage({
         people={people}
         projects={projects}
         statuses={statuses}
+        dependencyOptions={tasks.map((t) => ({ id: t.id, title: t.title, project: t.project }))}
         initialOpenTaskId={open ?? null}
       />
     </div>

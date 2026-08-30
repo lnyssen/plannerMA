@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -18,10 +19,10 @@ const createRequestSchema = z.object({
 export type CreateRequestInput = z.input<typeof createRequestSchema>;
 
 /**
- * Demande non planifiée ("ce qu'on vous demande dans un couloir") — juste
- * assez pour recevoir la demande et alerter les administrateurs ; sa mise en
- * tâche reste manuelle pour l'instant (voir Notification de type REQUEST).
- * Pas encore d'écran de gestion/conversion dédié (backlog).
+ * Demande non planifiée ("ce qu'on vous demande dans un couloir") — reçue
+ * puis alerte les administrateurs (Notification de type REQUEST), qui la
+ * convertissent en tâche ou l'écartent depuis Réglages → Demandes (voir
+ * deleteRequest ci-dessous et src/app/(app)/demandes).
  */
 export async function createRequest(input: CreateRequestInput): Promise<{ error?: string }> {
   const session = await auth();
@@ -55,5 +56,16 @@ export async function createRequest(input: CreateRequestInput): Promise<{ error?
     });
   }
 
+  return {};
+}
+
+/** Écarte une demande — qu'elle ait été convertie en tâche ou jugée sans suite. Réservé aux administrateurs. */
+export async function deleteRequest(requestId: string): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
+
+  await db.request.delete({ where: { id: requestId } });
+  revalidatePath("/demandes");
   return {};
 }

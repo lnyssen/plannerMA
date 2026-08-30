@@ -96,14 +96,16 @@ export function ProjectsView({
   clients,
   statuses,
   showArchived,
+  initialOpenProjectId = null,
 }: {
   projects: ProjectWithCounts[];
   studios: StudioSummary[];
   clients: ClientSummary[];
   statuses: TaskStatusSummary[];
   showArchived: boolean;
+  initialOpenProjectId?: string | null;
 }) {
-  const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+  const [openProjectId, setOpenProjectId] = useState<string | null>(initialOpenProjectId);
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {

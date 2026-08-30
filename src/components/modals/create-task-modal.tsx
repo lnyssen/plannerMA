@@ -6,6 +6,7 @@ import { createTask } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskOption } from "@/lib/data/tasks";
 import { today } from "@/lib/planning/dates";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { ModalShell } from "./modal-shell";
@@ -15,12 +16,17 @@ export function CreateTaskModal({
   studios,
   projects,
   people,
+  tasks = [],
+  initialValues,
   onClose,
   onCreated,
 }: {
   studios: StudioSummary[];
   projects: ProjectOption[];
   people: PersonSummary[];
+  tasks?: TaskOption[];
+  /** Pré-remplissage (ex. conversion d'une demande en tâche) — fusionné sur les valeurs par défaut. */
+  initialValues?: Partial<TaskFormValues>;
   onClose: () => void;
   onCreated: () => void;
 }) {
@@ -32,6 +38,7 @@ export function CreateTaskModal({
     studioId: studios[0]?.id ?? "",
     startDate: auj,
     endDate: auj,
+    ...initialValues,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +58,7 @@ export function CreateTaskModal({
         startDate: values.startDate,
         endDate: values.endDate < values.startDate ? values.startDate : values.endDate,
         maxDurationDays: values.maxDurationDays ? Number(values.maxDurationDays) : null,
+        dependsOnId: values.dependsOnId || null,
       });
       if (result.error) {
         setError(result.error);
@@ -63,7 +71,7 @@ export function CreateTaskModal({
 
   return (
     <ModalShell title="Nouvelle tâche" onClose={onClose} size="lg">
-      <TaskFormFields values={values} onChange={patch} studios={studios} projects={projects} people={people} />
+      <TaskFormFields values={values} onChange={patch} studios={studios} projects={projects} people={people} tasks={tasks} />
 
       {error && (
         <p role="alert" className="mb-3 text-xs font-semibold text-alert">

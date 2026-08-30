@@ -1,7 +1,20 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import { Activity, Building2, Columns3, ListChecks, Menu, Plus, Settings, Table2, Users, X } from "lucide-react";
+import {
+  Activity,
+  Building2,
+  CheckSquare,
+  ClipboardList,
+  Columns3,
+  ListChecks,
+  Menu,
+  Plus,
+  Settings,
+  Table2,
+  Users,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -14,25 +27,28 @@ import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskOption } from "@/lib/data/tasks";
 import { signOutAction } from "./actions";
+import { GlobalSearch } from "./global-search";
 import { NotificationBell } from "./notification-bell";
 
 // Nav conforme à la maquette Claude Design (5 écrans conçus : Semaine,
 // Projets, Tâches, Équipe, Réglages) + Gantt, ajouté ici avec le même
 // système visuel : la maquette n'a pas couvert cet écran mais le brief
 // fonctionnel et la demande explicite de l'utilisateur le requièrent
-// (glisser-déposer des barres). « Mes tâches » et « Demandes », présents
-// dans le brief initial mais absents de la maquette livrée, ne sont plus
-// des entrées de navigation pour l'instant — à confirmer.
-// Projets et Tâches en tête, à la demande explicite de l'utilisateur.
-// Clients juste au-dessus d'Équipe, également à la demande explicite.
+// (glisser-déposer des barres). Projets et Tâches en tête, à la demande
+// explicite de l'utilisateur. Clients juste au-dessus d'Équipe, également à
+// la demande explicite. « Mes tâches » et « Demandes », présents dans le
+// brief initial mais absents de la maquette livrée, ont rejoint la nav.
 const NAV_ENTRIES = [
   { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false },
   { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false },
+  { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false },
   { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
   { href: "/charge", label: "Charge", icon: Activity, adminOnly: true },
+  { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true },
   { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true },
 ] as const;
 
@@ -47,6 +63,7 @@ interface AppShellProps {
   people: PersonSummary[];
   projects: ProjectOption[];
   clients: ClientSummary[];
+  tasks: TaskOption[];
   userName: string;
   role: Role;
   notifyOnAssignment: boolean;
@@ -59,6 +76,7 @@ export function AppShell({
   people,
   projects,
   clients,
+  tasks,
   userName,
   role,
   notifyOnAssignment,
@@ -104,6 +122,7 @@ export function AppShell({
           <div className="mt-1.5 text-sm text-white/70">Studio planner</div>
         </div>
         <div className="flex items-center gap-1">
+          <GlobalSearch />
           <NotificationBell />
           <button
             type="button"
@@ -193,6 +212,7 @@ export function AppShell({
         {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel */}
         <img src="/logo/media-animation-blanc.png" alt="Média Animation" className="h-6 w-auto" />
         <div className="flex items-center gap-1">
+          <GlobalSearch />
           <NotificationBell />
           <button
             type="button"
@@ -226,6 +246,7 @@ export function AppShell({
           studios={studios}
           projects={projects}
           people={people}
+          tasks={tasks}
           onClose={() => setModal(null)}
           onCreated={() => setModal(null)}
         />

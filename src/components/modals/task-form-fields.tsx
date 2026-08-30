@@ -4,6 +4,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
+import type { TaskOption } from "@/lib/data/tasks";
 import { FieldLabel, fieldInputClass } from "./modal-shell";
 
 export interface TaskFormValues {
@@ -16,6 +17,7 @@ export interface TaskFormValues {
   endDate: string;
   maxDurationDays: string; // chaîne vide = pas de borne, sinon un entier positif
   statusId: string;
+  dependsOnId: string; // chaîne vide = aucune dépendance
 }
 
 export function TaskFormFields({
@@ -25,6 +27,7 @@ export function TaskFormFields({
   projects,
   people,
   statuses = [],
+  tasks = [],
   showStatus,
 }: {
   values: TaskFormValues;
@@ -33,6 +36,8 @@ export function TaskFormFields({
   projects: ProjectOption[];
   people: PersonSummary[];
   statuses?: TaskStatusSummary[];
+  /** Candidates pour "Dépend de" — la tâche elle-même déjà exclue par l'appelant en édition. */
+  tasks?: TaskOption[];
   showStatus?: boolean;
 }) {
   const currentStatus = statuses.find((s) => s.id === values.statusId);
@@ -131,6 +136,26 @@ export function TaskFormFields({
         </select>
       </div>
 
+      {tasks.length > 0 && (
+        <div className="sm:col-span-2">
+          <FieldLabel htmlFor="task-depends-on">Dépend de</FieldLabel>
+          <select
+            id="task-depends-on"
+            className={fieldInputClass}
+            value={values.dependsOnId}
+            onChange={(e) => onChange({ dependsOnId: e.target.value })}
+          >
+            <option value="">Aucune dépendance</option>
+            {tasks.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+                {t.project ? ` — ${t.project.name}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div>
         <FieldLabel htmlFor="task-start">Du</FieldLabel>
         <input
@@ -180,4 +205,5 @@ export const EMPTY_TASK_FORM: TaskFormValues = {
   endDate: "",
   maxDurationDays: "",
   statusId: "",
+  dependsOnId: "",
 };

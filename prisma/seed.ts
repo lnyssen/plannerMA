@@ -41,7 +41,11 @@ async function main() {
   // par clé naturelle) puisqu'on veut pouvoir re-semer sans casser les liens
   // déjà créés en développement.
   console.log("Nettoyage des données de démonstration précédentes…");
-  await db.comment.deleteMany();
+  // Les notifications pointent vers des tâches (liens /taches?open=…) qui
+  // vont être recréées avec de nouveaux identifiants ci-dessous : les garder
+  // laisserait des liens morts pointant vers des tâches qui n'existent plus.
+  await db.notification.deleteMany();
+  await db.comment.deleteMany(); // cascade : supprime aussi les mentions liées
   await db.attachment.deleteMany();
   await db.subtask.deleteMany();
   await db.journalEntry.deleteMany();

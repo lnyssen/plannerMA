@@ -9,7 +9,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
-import type { TaskListItem } from "@/lib/data/tasks";
+import type { TaskListItem, TaskOption } from "@/lib/data/tasks";
 import type { IsoDate } from "@/lib/planning/dates";
 import { GanttView } from "./gantt-view";
 import { KanbanView } from "./kanban-view";
@@ -34,6 +34,7 @@ export function PlanningView({
   people,
   projects,
   statuses,
+  dependencyOptions,
 }: {
   initialTab: PlanningTab;
   monday: IsoDate;
@@ -45,6 +46,7 @@ export function PlanningView({
   people: PersonSummary[];
   projects: ProjectOption[];
   statuses: TaskStatusSummary[];
+  dependencyOptions: TaskOption[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<PlanningTab>(initialTab);
@@ -87,7 +89,14 @@ export function PlanningView({
       </div>
 
       {tab === "kanban" && (
-        <KanbanView tasks={boardTasks} studios={studios} people={people} projects={projects} statuses={statuses} />
+        <KanbanView
+          tasks={boardTasks}
+          studios={studios}
+          people={people}
+          projects={projects}
+          statuses={statuses}
+          dependencyOptions={dependencyOptions}
+        />
       )}
       {tab === "semaine" && (
         <SemaineView
@@ -98,10 +107,18 @@ export function PlanningView({
           projects={projects}
           allPeople={people}
           statuses={statuses}
+          dependencyOptions={dependencyOptions}
         />
       )}
       {tab === "gantt" && (
-        <GanttView initialTasks={ganttTasks} studios={studios} people={people} projects={projects} statuses={statuses} />
+        <GanttView
+          initialTasks={ganttTasks}
+          studios={studios}
+          people={people}
+          projects={projects}
+          statuses={statuses}
+          dependencyOptions={dependencyOptions}
+        />
       )}
     </div>
   );

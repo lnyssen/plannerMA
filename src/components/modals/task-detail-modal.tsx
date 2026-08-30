@@ -1,15 +1,17 @@
 "use client";
 
-import { AtSign, ExternalLink, Paperclip, RotateCcw, Trash2 } from "lucide-react";
+import { AtSign, ExternalLink, Paperclip, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { addLinkAttachment, deleteAttachment, uploadFileAttachment } from "@/lib/actions/attachments";
 import { addComment } from "@/lib/actions/comments";
+import { addSubtask, deleteSubtask, toggleSubtask } from "@/lib/actions/subtasks";
 import { getTaskDetail, restoreTask, trashTask, updateTask, type TaskDetail } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
+import type { TaskOption } from "@/lib/data/tasks";
 import { quandFr, toIsoDate } from "@/lib/planning/dates";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { fieldInputClass, ModalShell } from "./modal-shell";
@@ -21,6 +23,7 @@ export function TaskDetailModal({
   projects,
   people,
   statuses,
+  tasks = [],
   onClose,
 }: {
   taskId: string;
@@ -28,6 +31,7 @@ export function TaskDetailModal({
   projects: ProjectOption[];
   people: PersonSummary[];
   statuses: TaskStatusSummary[];
+  tasks?: TaskOption[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -40,6 +44,9 @@ export function TaskDetailModal({
   const [linkUrl, setLinkUrl] = useState("");
   const [commentBody, setCommentBody] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [newSubtaskDue, setNewSubtaskDue] = useState("");
+  const [subtaskError, setSubtaskError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +64,7 @@ export function TaskDetailModal({
           endDate: toIsoDate(t.endDate),
           maxDurationDays: t.maxDurationDays != null ? String(t.maxDurationDays) : "",
           statusId: t.statusId,
+          dependsOnId: t.dependsOnId ?? "",
         });
       }
       setLoading(false);
@@ -90,6 +98,7 @@ export function TaskDetailModal({
         endDate: values.endDate < values.startDate ? values.startDate : values.endDate,
         maxDurationDays: values.maxDurationDays ? Number(values.maxDurationDays) : null,
         statusId: values.statusId,
+        dependsOnId: values.dependsOnId || null,
         expectedVersion: task.version,
       });
       if (result.error) {
@@ -170,6 +179,42 @@ export function TaskDetailModal({
     });
   }
 
+  function submitSubtask() {
+    if (!task || !newSubtaskTitle.trim()) return;
+    setSubtaskError(null);
+    startTransition(async () => {
+      const result = await addSubtask({
+        taskId: task.id,
+        title: newSubtaskTitle.trim(),
+        dueDate: newSubtaskDue || null,
+      });
+      if (result.error) {
+        setSubtaskError(result.error);
+        return;
+      }
+      setNewSubtaskTitle("");
+      setNewSubtaskDue("");
+      await refreshTask();
+      router.refresh();
+    });
+  }
+
+  function toggleSub(id: string, done: boolean) {
+    startTransition(async () => {
+      await toggleSubtask(id, done);
+      await refreshTask();
+      router.refresh();
+    });
+  }
+
+  function removeSubtask(id: string) {
+    startTransition(async () => {
+      await deleteSubtask(id);
+      await refreshTask();
+      router.refresh();
+    });
+  }
+
   function mention(name: string) {
     const tag = `@${name} `;
     setCommentBody((b) => (b.includes(tag) ? b : `${b}${b && !b.endsWith(" ") ? " " : ""}${tag}`));
@@ -203,12 +248,71 @@ export function TaskDetailModal({
             projects={projects}
             people={people}
             statuses={statuses}
+            tasks={tasks.filter((t) => t.id !== task.id)}
             showStatus
           />
 
           {task.trashedAt && (
             <p className="mb-3 border border-line bg-wash px-3 py-2 text-xs text-ink-muted">
               À la corbeille depuis le {quandFr(task.trashedAt)}.
+            </p>
+          )}
+
+          <h3 className="mb-2 text-xs font-semibold text-ink">
+            Sous-tâches ({task.subtasks.filter((s) => s.done).length}/{task.subtasks.length})
+          </h3>
+          <div className="mb-3 flex flex-col gap-1.5">
+            {task.subtasks.length === 0 && <p className="text-xs text-ink-muted">Aucune sous-tâche.</p>}
+            {task.subtasks.map((s) => (
+              <div key={s.id} className="flex items-center gap-2 border border-line px-2.5 py-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={s.done}
+                  onChange={(e) => toggleSub(s.id, e.target.checked)}
+                  aria-label={`${s.title} — ${s.done ? "faite" : "à faire"}`}
+                />
+                <span className={`flex-1 ${s.done ? "text-ink-muted line-through" : "text-ink"}`}>{s.title}</span>
+                {s.dueDate && (
+                  <span className="text-2xs text-ink-muted tabular-nums">{quandFr(s.dueDate)}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeSubtask(s.id)}
+                  aria-label={`Retirer ${s.title}`}
+                  className={`flex-shrink-0 p-0.5 text-ink-muted hover:text-alert ${textButtonClass}`}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <input
+              type="text"
+              placeholder="Nouvelle sous-tâche"
+              value={newSubtaskTitle}
+              onChange={(e) => setNewSubtaskTitle(e.target.value)}
+              className={`${fieldInputClass} min-w-[160px] flex-1`}
+            />
+            <input
+              type="date"
+              value={newSubtaskDue}
+              onChange={(e) => setNewSubtaskDue(e.target.value)}
+              aria-label="Échéance (facultatif)"
+              className={fieldInputClass}
+            />
+            <button
+              type="button"
+              disabled={!newSubtaskTitle.trim()}
+              onClick={submitSubtask}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+            >
+              <Plus size={14} /> Ajouter
+            </button>
+          </div>
+          {subtaskError && (
+            <p role="alert" className="mb-3 text-xs font-semibold text-alert">
+              {subtaskError}
             </p>
           )}
 

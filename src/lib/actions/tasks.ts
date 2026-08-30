@@ -21,7 +21,9 @@ export async function getTaskDetail(taskId: string) {
       assignee: true,
       attachments: { orderBy: { createdAt: "desc" } },
       comments: { orderBy: { createdAt: "asc" }, include: { mentions: { include: { person: true } } } },
+      subtasks: { orderBy: { position: "asc" } },
       status: true,
+      dependsOn: { select: { id: true, title: true } },
     },
   });
 }
@@ -59,6 +61,7 @@ const taskFieldsSchema = z.object({
   startDate: isoDate,
   endDate: isoDate,
   maxDurationDays: z.number().int().positive().nullable(),
+  dependsOnId: z.string().nullable(),
 });
 
 const createTaskSchema = withDurationChecks(taskFieldsSchema);
@@ -71,7 +74,8 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
 
   const parsed = createTaskSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { title, description, studioId, projectId, assigneeId, startDate, endDate, maxDurationDays } = parsed.data;
+  const { title, description, studioId, projectId, assigneeId, startDate, endDate, maxDurationDays, dependsOnId } =
+    parsed.data;
 
   // Une tâche démarre toujours dans le premier statut (Réglages → Statuts,
   // ordre d'affichage) : pas de champ "état" à la création, comme avant la
@@ -90,6 +94,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
       endDate: new Date(endDate),
       maxDurationDays,
       statusId: defaultStatus.id,
+      dependsOnId: dependsOnId || null,
     },
     include: { project: true },
   });
@@ -157,8 +162,13 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     endDate,
     maxDurationDays,
     statusId,
+    dependsOnId,
     expectedVersion,
   } = parsed.data;
+
+  if (dependsOnId === taskId) {
+    return { error: "Une tâche ne peut pas dépendre d’elle-même." };
+  }
 
   const before = await db.task.findUnique({ where: { id: taskId }, select: { assigneeId: true } });
 
@@ -174,6 +184,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
       endDate: new Date(endDate),
       maxDurationDays,
       statusId,
+      dependsOnId: dependsOnId || null,
       version: { increment: 1 },
     },
   });

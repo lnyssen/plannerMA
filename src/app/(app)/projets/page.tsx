@@ -7,9 +7,9 @@ import { ProjectsView } from "./projects-view";
 export default async function ProjetsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ archives?: string }>;
+  searchParams: Promise<{ archives?: string; open?: string }>;
 }) {
-  const { archives } = await searchParams;
+  const { archives, open } = await searchParams;
   const showArchived = archives === "1";
   const [projects, studios, clients, statuses] = await Promise.all([
     listProjectsWithCounts(showArchived),
@@ -19,6 +19,13 @@ export default async function ProjetsPage({
   ]);
 
   return (
-    <ProjectsView projects={projects} studios={studios} clients={clients} statuses={statuses} showArchived={showArchived} />
+    <ProjectsView
+      projects={projects}
+      studios={studios}
+      clients={clients}
+      statuses={statuses}
+      showArchived={showArchived}
+      initialOpenProjectId={open ?? null}
+    />
   );
 }

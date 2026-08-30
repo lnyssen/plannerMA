@@ -62,12 +62,38 @@ export function ChargeView({
 
   const grid = useMemo(
     () =>
-      people.map((p) => ({
-        person: p,
-        weeks: weekStarts.map((w) => weeklyLoad(p.id, w, tasks, absences, holidays)),
-      })),
+      people.map((p) => {
+        const weeksLoad = weekStarts.map((w) => weeklyLoad(p.id, w, tasks, absences, holidays));
+        const withData = weeksLoad.filter((w) => w.available > 0);
+        const average = withData.length === 0 ? 0 : withData.reduce((s, w) => s + w.ratio, 0) / withData.length;
+        return { person: p, weeks: weeksLoad, average };
+      }),
     [people, weekStarts, tasks, absences, holidays],
   );
+
+  // Statistiques d'ensemble — surtout utiles pour repérer d'un coup d'œil qui
+  // est en surcharge et quel studio est le plus sollicité sur la période
+  // affichée, sans avoir à lire toute la grille ligne par ligne.
+  const OVERLOAD_THRESHOLD = 0.9;
+  const teamAverage = useMemo(() => {
+    const withData = grid.filter((g) => g.weeks.some((w) => w.available > 0));
+    if (withData.length === 0) return 0;
+    return withData.reduce((s, g) => s + g.average, 0) / withData.length;
+  }, [grid]);
+  const overloadedCount = useMemo(() => grid.filter((g) => g.average >= OVERLOAD_THRESHOLD).length, [grid]);
+
+  const studioAverages = useMemo(() => {
+    const byStudio = new Map<string, number[]>();
+    for (const g of grid) {
+      for (const studio of g.person.studios) {
+        if (!byStudio.has(studio)) byStudio.set(studio, []);
+        byStudio.get(studio)!.push(g.average);
+      }
+    }
+    return [...byStudio.entries()]
+      .map(([studio, values]) => ({ studio, average: values.reduce((s, v) => s + v, 0) / values.length }))
+      .sort((a, b) => b.average - a.average);
+  }, [grid]);
 
   return (
     <div className="px-8 py-8">
@@ -91,7 +117,58 @@ export function ChargeView({
       {people.length === 0 ? (
         <p className="text-sm text-ink-muted">Aucune personne dans l’équipe.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:max-w-xl">
+            <div className="border border-line p-3">
+              <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Charge moyenne équipe</p>
+              <p className="font-[family-name:var(--font-display)] text-2xl font-semibold text-heading">
+                {Math.round(teamAverage * 100)}%
+              </p>
+            </div>
+            <div className="border border-line p-3">
+              <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">
+                En surcharge (≥ {Math.round(OVERLOAD_THRESHOLD * 100)}%)
+              </p>
+              <p
+                className="font-[family-name:var(--font-display)] text-2xl font-semibold"
+                style={{ color: overloadedCount > 0 ? "var(--color-alert)" : "var(--color-heading)" }}
+              >
+                {overloadedCount}
+              </p>
+            </div>
+            <div className="border border-line p-3">
+              <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Chevauchements</p>
+              <p
+                className="font-[family-name:var(--font-display)] text-2xl font-semibold"
+                style={{ color: overlapping.size > 0 ? "var(--color-alert)" : "var(--color-heading)" }}
+              >
+                {overlapping.size}
+              </p>
+            </div>
+          </div>
+
+          {studioAverages.length > 0 && (
+            <div className="mb-6 max-w-md">
+              <p className="mb-2 text-2xs font-semibold tracking-wide text-ink-muted uppercase">
+                Charge moyenne par studio
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {studioAverages.map(({ studio, average }) => (
+                  <div key={studio} className="flex items-center gap-2">
+                    <span className="w-24 flex-shrink-0 truncate text-xs text-ink">{studio}</span>
+                    <div className="h-2 flex-1 bg-line">
+                      <div className="h-full bg-heading" style={{ width: `${Math.round(average * 100)}%` }} />
+                    </div>
+                    <span className="w-9 flex-shrink-0 text-right text-2xs tabular-nums text-ink-muted">
+                      {Math.round(average * 100)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
           <table className="border-collapse">
             <thead>
               <tr>
@@ -103,10 +180,13 @@ export function ChargeView({
                     {w.getUTCDate()}/{w.getUTCMonth() + 1}
                   </th>
                 ))}
+                <th className="min-w-[64px] border-l border-line px-1 py-2 text-center text-2xs font-semibold text-ink-muted uppercase">
+                  Moyenne
+                </th>
               </tr>
             </thead>
             <tbody>
-              {grid.map(({ person, weeks: cells }) => (
+              {grid.map(({ person, weeks: cells, average }) => (
                 <tr key={person.id}>
                   <td className="sticky left-0 z-10 flex items-center gap-1.5 whitespace-nowrap bg-paper px-3 py-2 text-sm text-rail">
                     {person.name}
@@ -133,11 +213,15 @@ export function ChargeView({
                       </div>
                     </td>
                   ))}
+                  <td className="border-l border-line px-1 py-2 text-center text-sm font-semibold text-rail tabular-nums">
+                    {Math.round(average * 100)}%
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       <p className="mt-4 max-w-2xl text-xs text-ink-muted">

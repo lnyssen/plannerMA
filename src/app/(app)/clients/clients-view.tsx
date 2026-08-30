@@ -48,8 +48,14 @@ function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id:
   );
 }
 
-export function ClientsView({ clients }: { clients: ClientWithCounts[] }) {
-  const [openClientId, setOpenClientId] = useState<string | null | "new">(null);
+export function ClientsView({
+  clients,
+  initialOpenClientId = null,
+}: {
+  clients: ClientWithCounts[];
+  initialOpenClientId?: string | null;
+}) {
+  const [openClientId, setOpenClientId] = useState<string | null | "new">(initialOpenClientId);
 
   return (
     <div className="px-8 py-8">

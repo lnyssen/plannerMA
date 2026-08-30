@@ -9,6 +9,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
+import type { TaskOption } from "@/lib/data/tasks";
 import { rescheduleTask } from "@/lib/actions/tasks";
 import {
   addDays,
@@ -24,14 +25,20 @@ import {
 } from "@/lib/planning/dates";
 import { hasDependencyConflict } from "@/lib/planning/tasks";
 
-const DAY_WIDTH = 30;
+// Largeur minimale d'une colonne-jour : en dessous, le texte du jour/numéro
+// devient illisible, donc la vue défile horizontalement plutôt que de
+// continuer à rétrécir (voir `dayWidth`, calculé pour remplir le cadre
+// disponible quand moins de semaines sont affichées).
+const MIN_DAY_WIDTH = 30;
 const ROW_HEIGHT = 44;
 const HEADER_HEIGHT = 50;
 const LABEL_WIDTH_DEFAULT = 230;
 const LABEL_WIDTH_MIN = 140;
 const LABEL_WIDTH_MAX = 480;
 const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-const JOURS1 = ["D", "L", "M", "M", "J", "V", "S"];
+// Deux lettres plutôt qu'une seule : "M" pour Mardi ET Mercredi ne se
+// distinguait pas à l'affichage (voir capture jointe par l'utilisateur).
+const JOURS1 = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
 
 type DragState = { taskId: string; mode: "move" | "resize"; startClientX: number; deltaDays: number };
 
@@ -47,12 +54,14 @@ export function GanttView({
   people,
   projects,
   statuses,
+  dependencyOptions,
 }: {
   initialTasks: GanttTask[];
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
   statuses: TaskStatusSummary[];
+  dependencyOptions: TaskOption[];
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
@@ -79,6 +88,20 @@ export function GanttView({
     tasksRef.current = tasks;
   }, [tasks]);
   const [, startTransition] = useTransition();
+
+  // Largeur du cadre défilable, mesurée en direct : moins de semaines
+  // choisies ne laisse plus de bande vide à droite, les colonnes s'étirent
+  // pour remplir le cadre (jusqu'à MIN_DAY_WIDTH, en dessous duquel la vue
+  // défile plutôt que de continuer à rétrécir).
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => setContainerWidth(entries[0].contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const commitReschedule = useCallback(async (task: GanttTask, newStart: Date, newEnd: Date) => {
     const previous = task;
@@ -134,6 +157,13 @@ export function GanttView({
   const startIsoOfView = toIsoDate(weekStart);
   const todayIso = today();
 
+  const dayWidth =
+    containerWidth > 0 ? Math.max(MIN_DAY_WIDTH, Math.floor(containerWidth / days.length)) : MIN_DAY_WIDTH;
+  const dayWidthRef = useRef(dayWidth);
+  useEffect(() => {
+    dayWidthRef.current = dayWidth;
+  }, [dayWidth]);
+
   const holidays = useMemo(() => {
     const years = days.map((d) => d.getUTCFullYear());
     return belgianHolidaysRange(Math.min(...years), Math.max(...years));
@@ -167,7 +197,7 @@ export function GanttView({
     // qui déclenchait à tort le refus de verrouillage optimiste.
     let committed = false;
     function onMove(e: MouseEvent) {
-      setDrag((d) => (d ? { ...d, deltaDays: Math.round((e.clientX - d.startClientX) / DAY_WIDTH) } : d));
+      setDrag((d) => (d ? { ...d, deltaDays: Math.round((e.clientX - d.startClientX) / dayWidthRef.current) } : d));
     }
     function onUp() {
       setDrag((current) => {
@@ -203,14 +233,14 @@ export function GanttView({
       const dragging = drag && drag.taskId === task.id ? drag : null;
       const dm = dragging?.mode === "move" ? dragging.deltaDays : 0;
       const dr = dragging?.mode === "resize" ? dragging.deltaDays : 0;
-      const x = (daysBetween(startIsoOfView, toIsoDate(task.startDate)) + dm) * DAY_WIDTH;
+      const x = (daysBetween(startIsoOfView, toIsoDate(task.startDate)) + dm) * dayWidth;
       const w = Math.max(
-        DAY_WIDTH,
-        (daysBetween(toIsoDate(task.startDate), toIsoDate(task.endDate)) + 1 + dr) * DAY_WIDTH,
+        dayWidth,
+        (daysBetween(toIsoDate(task.startDate), toIsoDate(task.endDate)) + 1 + dr) * dayWidth,
       );
       return { x, w };
     },
-    [drag, startIsoOfView],
+    [drag, startIsoOfView, dayWidth],
   );
 
   const rowIndexByTaskId = useMemo(() => {
@@ -246,7 +276,7 @@ export function GanttView({
     return out;
   }, [tasks, rowIndexByTaskId, positionOf]);
 
-  const width = days.length * DAY_WIDTH;
+  const width = days.length * dayWidth;
   const height = Math.max(rows.length * ROW_HEIGHT, 80);
 
   // Une personne ne peut pas être à deux endroits en même temps : signale
@@ -273,6 +303,27 @@ export function GanttView({
 
   const viewEndIso = toIsoDate(days[days.length - 1] ?? weekStart);
   const rangeLabel = formatRangeFr(startIsoOfView, viewEndIso);
+
+  // Équivalent clavier du glisser-déposer : Flèches pour décaler d'un jour,
+  // Maj+Flèches pour raccourcir/allonger, Entrée/Espace pour ouvrir le
+  // détail (équivalent du double-clic). Actif même quand `canDrag` est faux
+  // (souris désactivée sous 900 px) — le clavier n'a pas cette limite.
+  function onBarKeyDown(e: React.KeyboardEvent, task: GanttTask) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setOpenTaskId(task.id);
+      return;
+    }
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const delta = e.key === "ArrowLeft" ? -1 : 1;
+    if (e.shiftKey) {
+      const candidate = addDays(task.endDate, delta);
+      if (candidate >= task.startDate) void commitReschedule(task, task.startDate, candidate);
+    } else {
+      void commitReschedule(task, addDays(task.startDate, delta), addDays(task.endDate, delta));
+    }
+  }
 
   return (
     <div>
@@ -368,7 +419,7 @@ export function GanttView({
           className="w-1.5 flex-shrink-0 cursor-col-resize bg-line hover:bg-heading"
         />
 
-        <div className="flex-1 overflow-x-auto">
+        <div ref={scrollRef} className="flex-1 overflow-x-auto">
           <div style={{ width }}>
             <div style={{ height: HEADER_HEIGHT }} className="sticky top-0 z-10 border-b border-line bg-wash">
               {days.map((d, i) => {
@@ -381,7 +432,7 @@ export function GanttView({
                 return (
                   <div
                     key={i}
-                    style={{ position: "absolute", left: i * DAY_WIDTH, top: 0, width: 7 * DAY_WIDTH, height: 22 }}
+                    style={{ position: "absolute", left: i * dayWidth, top: 0, width: 7 * dayWidth, height: 22 }}
                     className="overflow-hidden border-l border-line pl-1.5 text-xs font-bold whitespace-nowrap text-ink"
                   >
                     {d.getUTCDate()} {MOIS[d.getUTCMonth()]}
@@ -397,9 +448,9 @@ export function GanttView({
                     title={h ?? ""}
                     style={{
                       position: "absolute",
-                      left: i * DAY_WIDTH,
+                      left: i * dayWidth,
                       top: 22,
-                      width: DAY_WIDTH,
+                      width: dayWidth,
                       height: 28,
                       background: h ? "var(--color-alert-wash)" : "transparent",
                       opacity: isWeekend(d) ? 0.5 : 1,
@@ -423,10 +474,10 @@ export function GanttView({
                   key={i}
                   style={{
                     position: "absolute",
-                    left: i * DAY_WIDTH,
+                    left: i * dayWidth,
                     top: 0,
                     bottom: 0,
-                    width: DAY_WIDTH,
+                    width: dayWidth,
                     borderLeft: "1px solid var(--color-line)",
                     background:
                       toIsoDate(d) === todayIso
@@ -464,6 +515,9 @@ export function GanttView({
                 return (
                   <div
                     key={t.id}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${t.title}, du ${toIsoDate(t.startDate)} au ${toIsoDate(t.endDate)}. Flèches pour décaler, Maj+Flèches pour ajuster la durée, Entrée pour ouvrir.`}
                     style={{
                       position: "absolute",
                       top: i * ROW_HEIGHT + 5,
@@ -475,9 +529,10 @@ export function GanttView({
                       cursor: canDrag ? (drag ? "grabbing" : "grab") : "default",
                       outlineColor: overlapping ? "var(--color-alert)" : undefined,
                     }}
-                    className={`flex items-center gap-1.5 overflow-hidden px-2 outline-2 -outline-offset-2 transition-[outline-color] duration-100 hover:outline-current ${
+                    className={`flex items-center gap-1.5 overflow-hidden px-2 outline-2 -outline-offset-2 transition-[outline-color] duration-100 hover:outline-current focus-visible:outline-heading ${
                       overlapping ? "" : "outline-transparent"
                     }`}
+                    onKeyDown={(e) => onBarKeyDown(e, t)}
                     onMouseDown={(e) => {
                       if (!canDrag) return;
                       e.preventDefault();
@@ -511,7 +566,8 @@ export function GanttView({
       <p className="mt-3 text-xs text-ink-muted">
         {canDrag
           ? "Glissez une barre pour décaler la tâche, sa poignée droite pour la durée, double-cliquez pour l’ouvrir. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance. Contour rose ⚠ : une même personne a deux tâches qui se chevauchent."
-          : "Le glisser n’est actif que sur ordinateur."}
+          : "Le glisser n’est actif que sur ordinateur."}{" "}
+        Au clavier : sélectionnez une barre puis Flèches pour la décaler, Maj+Flèches pour ajuster sa durée, Entrée pour l’ouvrir.
       </p>
 
       {openTaskId && (
@@ -521,6 +577,7 @@ export function GanttView({
           projects={projects}
           people={people}
           statuses={statuses}
+          tasks={dependencyOptions}
           onClose={() => setOpenTaskId(null)}
         />
       )}

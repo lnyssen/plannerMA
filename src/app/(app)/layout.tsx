@@ -6,16 +6,18 @@ import { listClients } from "@/lib/data/clients";
 import { listPeople } from "@/lib/data/people";
 import { listActiveProjectsForForms } from "@/lib/data/projects";
 import { listStudios } from "@/lib/data/studios";
+import { listActiveTasksForForms } from "@/lib/data/tasks";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/connexion"); // filet de sécurité, le middleware couvre déjà ce cas
 
-  const [studios, people, projects, clients, account] = await Promise.all([
+  const [studios, people, projects, clients, tasks, account] = await Promise.all([
     listStudios(),
     listPeople(),
     listActiveProjectsForForms(),
     listClients(),
+    listActiveTasksForForms(),
     db.user.findUnique({
       where: { id: session.user.id },
       select: { notifyOnAssignment: true, notifyDailyDigest: true },
@@ -28,6 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       people={people}
       projects={projects}
       clients={clients}
+      tasks={tasks}
       userName={session.user.name ?? session.user.email ?? "—"}
       role={session.user.role}
       notifyOnAssignment={account?.notifyOnAssignment ?? true}

@@ -8,7 +8,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
-import type { TaskListItem } from "@/lib/data/tasks";
+import type { TaskListItem, TaskOption } from "@/lib/data/tasks";
 import { formatShortFr, toIsoDate } from "@/lib/planning/dates";
 
 function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) => void }) {
@@ -41,12 +41,14 @@ export function KanbanView({
   people,
   projects,
   statuses,
+  dependencyOptions,
 }: {
   tasks: TaskListItem[];
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
   statuses: TaskStatusSummary[];
+  dependencyOptions: TaskOption[];
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [syncedInitial, setSyncedInitial] = useState(initialTasks);
@@ -187,6 +189,7 @@ export function KanbanView({
           projects={projects}
           people={people}
           statuses={statuses}
+          tasks={dependencyOptions}
           onClose={() => setOpenTaskId(null)}
         />
       )}
