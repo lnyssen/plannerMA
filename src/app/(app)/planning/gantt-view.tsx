@@ -31,7 +31,13 @@ import { hasDependencyConflict } from "@/lib/planning/tasks";
 // disponible quand moins de semaines sont affichées).
 const MIN_DAY_WIDTH = 30;
 const ROW_HEIGHT = 44;
-const HEADER_HEIGHT = 50;
+// Deux bandes empilées (mois, puis jour+numéro) : le numéro du jour est
+// l'élément le plus consulté de l'en-tête, il a besoin de sa propre bande
+// avec assez de hauteur pour respirer plutôt que d'être tassé contre le bord
+// bas de l'en-tête, comme avant ce correctif.
+const MONTH_ROW_HEIGHT = 24;
+const DAY_ROW_HEIGHT = 38;
+const HEADER_HEIGHT = MONTH_ROW_HEIGHT + DAY_ROW_HEIGHT;
 const LABEL_WIDTH_DEFAULT = 230;
 const LABEL_WIDTH_MIN = 140;
 const LABEL_WIDTH_MAX = 480;
@@ -439,8 +445,8 @@ export function GanttView({
                 return (
                   <div
                     key={i}
-                    style={{ position: "absolute", left: i * dayWidth, top: 0, width: 7 * dayWidth, height: 22 }}
-                    className="overflow-hidden border-l border-line pl-1.5 text-xs font-bold whitespace-nowrap text-ink"
+                    style={{ position: "absolute", left: i * dayWidth, top: 0, width: 7 * dayWidth, height: MONTH_ROW_HEIGHT }}
+                    className="flex items-center overflow-hidden border-l border-line pl-1.5 text-xs font-bold whitespace-nowrap text-ink"
                   >
                     {d.getUTCDate()} {MOIS[d.getUTCMonth()]}
                     {showYear && <span className="text-ink-muted"> {d.getUTCFullYear()}</span>}
@@ -449,6 +455,7 @@ export function GanttView({
               })}
               {days.map((d, i) => {
                 const h = holidayName(d, holidays);
+                const isToday = toIsoDate(d) === todayIso;
                 return (
                   <div
                     key={i}
@@ -456,16 +463,23 @@ export function GanttView({
                     style={{
                       position: "absolute",
                       left: i * dayWidth,
-                      top: 22,
+                      top: MONTH_ROW_HEIGHT,
                       width: dayWidth,
-                      height: 28,
+                      height: DAY_ROW_HEIGHT,
                       background: h ? "var(--color-alert-wash)" : "transparent",
                       opacity: isWeekend(d) ? 0.5 : 1,
                     }}
-                    className="text-center"
+                    className="flex flex-col items-center justify-center gap-0.5"
                   >
-                    <div className="text-[10.5px] font-bold text-ink-muted">{JOURS1[d.getUTCDay()]}</div>
-                    <div className="text-xs font-semibold tabular-nums text-ink">{d.getUTCDate()}</div>
+                    <span className="text-[10px] font-semibold tracking-wide text-ink-muted uppercase">
+                      {JOURS1[d.getUTCDay()]}
+                    </span>
+                    <span
+                      className="text-sm font-bold tabular-nums"
+                      style={{ color: isToday ? "var(--color-heading)" : "var(--color-ink)" }}
+                    >
+                      {d.getUTCDate()}
+                    </span>
                   </div>
                 );
               })}
