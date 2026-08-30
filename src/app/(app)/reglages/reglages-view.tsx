@@ -1,15 +1,18 @@
 "use client";
 
-import { Plus, RefreshCw, Settings, Trash2, Users2 } from "lucide-react";
+import { Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { createClient, deleteClient } from "@/lib/actions/clients";
 import { createStudio, renameStudio } from "@/lib/actions/studios";
 import { destroyTask, restoreTask } from "@/lib/actions/tasks";
-import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
 import { quandFr } from "@/lib/planning/dates";
 import { fieldInputClass } from "@/components/modals/modal-shell";
+import {
+  dangerOutlineButtonClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from "@/components/ui/buttons";
 
 interface TrashedTask {
   id: string;
@@ -20,23 +23,18 @@ interface TrashedTask {
 
 export function ReglagesView({
   studios,
-  clients,
   trashedTasks,
 }: {
   studios: StudioSummary[];
-  clients: ClientSummary[];
   trashedTasks: TrashedTask[];
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"general" | "clients" | "corbeille">("general");
+  const [tab, setTab] = useState<"general" | "corbeille">("general");
   const [, startTransition] = useTransition();
   const [newStudioName, setNewStudioName] = useState("");
-  const [newClientName, setNewClientName] = useState("");
-  const [clientError, setClientError] = useState<string | null>(null);
 
   const TABS = [
     { id: "general" as const, label: "Général", icon: Settings },
-    { id: "clients" as const, label: "Clients", icon: Users2 },
     { id: "corbeille" as const, label: `Corbeille${trashedTasks.length ? ` (${trashedTasks.length})` : ""}`, icon: Trash2 },
   ];
 
@@ -53,7 +51,7 @@ export function ReglagesView({
               type="button"
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${
-                tab === t.id ? "bg-heading text-paper" : "border-[1.5px] border-heading text-heading"
+                tab === t.id ? primaryButtonClass : secondaryButtonClass
               }`}
             >
               <t.icon size={14} /> {t.label}
@@ -112,60 +110,7 @@ export function ReglagesView({
                   router.refresh();
                 });
               }}
-              className="flex items-center gap-1.5 border-[1.5px] border-heading px-3 text-sm font-semibold text-heading"
-            >
-              <Plus size={14} /> Ajouter
-            </button>
-          </div>
-        </div>
-      )}
-
-      {tab === "clients" && (
-        <div className="max-w-lg">
-          <h2 className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Clients</h2>
-          {clients.length === 0 && <p className="mb-4 text-sm text-ink-muted">Aucun client enregistré.</p>}
-          <div className="mb-4 flex flex-col gap-2">
-            {clients.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-3 border border-line px-3 py-2">
-                <span className="text-sm text-ink">{c.name}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setClientError(null);
-                    startTransition(async () => {
-                      const result = await deleteClient(c.id);
-                      if (result.error) setClientError(result.error);
-                      router.refresh();
-                    });
-                  }}
-                  className="text-sm font-semibold text-alert"
-                >
-                  Retirer
-                </button>
-              </div>
-            ))}
-          </div>
-          {clientError && <p className="mb-3 text-xs font-semibold text-alert">{clientError}</p>}
-          <div className="flex gap-2">
-            <input
-              value={newClientName}
-              onChange={(e) => setNewClientName(e.target.value)}
-              placeholder="Nouveau client"
-              className={`${fieldInputClass} max-w-xs`}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (!newClientName.trim()) return;
-                setClientError(null);
-                startTransition(async () => {
-                  const result = await createClient(newClientName.trim());
-                  if (result.error) setClientError(result.error);
-                  else setNewClientName("");
-                  router.refresh();
-                });
-              }}
-              className="flex items-center gap-1.5 border-[1.5px] border-heading px-3 text-sm font-semibold text-heading"
+              className={`flex items-center gap-1.5 px-3 text-sm font-semibold ${secondaryButtonClass}`}
             >
               <Plus size={14} /> Ajouter
             </button>
@@ -189,7 +134,7 @@ export function ReglagesView({
                       router.refresh();
                     })
                   }
-                  className="flex items-center gap-1.5 border-[1.5px] border-heading px-3 py-1.5 text-sm font-semibold text-heading"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
                 >
                   <RefreshCw size={13} /> Restaurer
                 </button>
@@ -202,7 +147,7 @@ export function ReglagesView({
                       router.refresh();
                     });
                   }}
-                  className="flex items-center gap-1.5 border-[1.5px] border-alert px-3 py-1.5 text-sm font-semibold text-alert"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${dangerOutlineButtonClass}`}
                 >
                   <Trash2 size={13} /> Détruire
                 </button>

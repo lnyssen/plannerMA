@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { primaryButtonClass } from "@/components/ui/buttons";
 import { authenticate, type AuthActionState } from "./actions";
 
 function SubmitButton() {
@@ -10,7 +11,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="flex h-11 w-full items-center justify-center bg-heading text-sm font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+      className={`flex h-11 w-full items-center justify-center text-sm font-semibold ${primaryButtonClass}`}
     >
       {pending ? "Connexion…" : "Se connecter"}
     </button>

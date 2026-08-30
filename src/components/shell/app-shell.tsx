@@ -1,12 +1,13 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import { BarChart3, CalendarDays, ListChecks, Menu, Plus, Settings, Table2, Users, X } from "lucide-react";
+import { BarChart3, Building2, CalendarDays, ListChecks, Menu, Plus, Settings, Table2, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { CreateProjectModal } from "@/components/modals/create-project-modal";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
+import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass } from "@/components/ui/buttons";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -21,11 +22,13 @@ import { signOutAction } from "./actions";
 // dans le brief initial mais absents de la maquette livrée, ne sont plus
 // des entrées de navigation pour l'instant — à confirmer.
 // Projets et Tâches en tête, à la demande explicite de l'utilisateur.
+// Clients juste au-dessus d'Équipe, également à la demande explicite.
 const NAV_ENTRIES = [
   { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false },
   { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false },
   { href: "/semaine", label: "Semaine", icon: CalendarDays, adminOnly: false },
   { href: "/gantt", label: "Gantt", icon: BarChart3, adminOnly: false },
+  { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
   { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true },
 ] as const;
@@ -61,7 +64,7 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
             href={href}
             onClick={() => setDrawerOpen(false)}
             aria-current={active ? "page" : undefined}
-            className="flex items-center gap-2.5 border-l-[3px] px-5 py-2 font-[family-name:var(--font-body)] text-sm leading-5"
+            className="flex items-center gap-2.5 border-l-[3px] px-5 py-2 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20"
             style={{
               borderLeftColor: active ? "#FFFFFF" : "transparent",
               background: active ? "rgba(255,255,255,0.1)" : "transparent",
@@ -88,7 +91,7 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
         <button
           type="button"
           onClick={() => setDrawerOpen(false)}
-          className="text-white md:hidden"
+          className={`md:hidden ${iconButtonOnRailClass}`}
           aria-label="Fermer le menu"
         >
           <X size={22} />
@@ -106,7 +109,7 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
             setModal("task");
             setDrawerOpen(false);
           }}
-          className="flex h-10 items-center justify-center gap-1.5 bg-white text-[15px] font-bold text-rail"
+          className={`flex h-10 items-center justify-center gap-1.5 text-[15px] font-bold ${primaryOnRailButtonClass}`}
         >
           <Plus size={17} /> Nouvelle tâche
         </button>
@@ -116,7 +119,7 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
             setModal("project");
             setDrawerOpen(false);
           }}
-          className="flex h-10 items-center justify-center gap-1.5 border-[1.5px] border-white text-[15px] font-bold text-white"
+          className={`flex h-10 items-center justify-center gap-1.5 text-[15px] font-bold ${secondaryOnRailButtonClass}`}
         >
           <Plus size={17} /> Nouveau projet
         </button>
@@ -148,7 +151,7 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="Ouvrir le menu"
-          className="text-white"
+          className={iconButtonOnRailClass}
         >
           <Menu size={24} />
         </button>
@@ -158,7 +161,7 @@ export function AppShell({ studios, people, projects, clients, userName, role, c
           type="button"
           onClick={() => setModal("task")}
           aria-label="Nouvelle tâche"
-          className="flex h-9 w-9 items-center justify-center bg-white text-rail"
+          className={`flex h-9 w-9 items-center justify-center ${primaryOnRailButtonClass}`}
         >
           <Plus size={18} />
         </button>

@@ -23,12 +23,16 @@ fonctionne aujourd'hui, avec de vraies données en base :
   replanifier, colonne des libellés redimensionnable, navigation par
   calendrier, double-clic pour ouvrir le détail d'une tâche).
 - Vue Équipe (personnes, studios de rattachement, absences), vue Réglages
-  (studios, **clients**, corbeille).
-- Client comme entité propre (pas du texte libre) : sélection dans une liste
-  existante ou création à la volée, gérable aussi depuis Réglages.
+  (studios, corbeille).
+- **Clients** : écran dédié dans la navigation (au-dessus d'Équipe), avec
+  fiche détaillée (contact, courriel, téléphone, site web, notes) — entité
+  propre plutôt que du texte libre ; sélection dans une liste existante ou
+  création à la volée depuis un formulaire projet.
+- Effets hover/pressed cohérents sur les éléments interactifs
+  (`src/components/ui/buttons.ts` centralise les styles).
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav
-resserrée à 5+1 entrées, pas de « Mes tâches »/« Demandes » pour l'instant) :
+resserrée à 6+1 entrées, pas de « Mes tâches »/« Demandes » pour l'instant) :
 voir `docs/plan-architecture.md`.
 
 ## Pile technique

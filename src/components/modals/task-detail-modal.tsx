@@ -9,6 +9,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import { quandFr, toIsoDate } from "@/lib/planning/dates";
+import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { fieldInputClass, ModalShell } from "./modal-shell";
 import { EMPTY_TASK_FORM, TaskFormFields, type TaskFormValues } from "./task-form-fields";
 
@@ -207,7 +208,7 @@ export function TaskDetailModal({
                   type="button"
                   onClick={() => removeAttachment(a.id)}
                   aria-label={`Retirer ${a.name}`}
-                  className="flex-shrink-0 text-ink-muted hover:text-alert"
+                  className={`flex-shrink-0 p-1 text-ink-muted hover:text-alert ${textButtonClass}`}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -232,11 +233,13 @@ export function TaskDetailModal({
             <button
               type="button"
               onClick={addLink}
-              className="border-[1.5px] border-heading px-3 text-sm font-semibold text-heading"
+              className={`px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
             >
               Joindre le lien
             </button>
-            <label className="flex cursor-pointer items-center gap-1.5 border-[1.5px] border-heading px-3 text-sm font-semibold text-heading">
+            <label
+              className={`flex cursor-pointer items-center gap-1.5 px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+            >
               <Paperclip size={14} /> Déposer un fichier
               <input type="file" className="hidden" onChange={onFileChange} />
             </label>
@@ -253,12 +256,16 @@ export function TaskDetailModal({
               <button
                 type="button"
                 onClick={restore}
-                className="flex items-center gap-1.5 text-sm font-semibold text-heading"
+                className={`flex items-center gap-1.5 text-sm font-semibold text-heading ${textButtonClass}`}
               >
                 <RotateCcw size={14} /> Restaurer
               </button>
             ) : (
-              <button type="button" onClick={trash} className="flex items-center gap-1.5 text-sm font-semibold text-alert">
+              <button
+                type="button"
+                onClick={trash}
+                className={`flex items-center gap-1.5 px-2 py-1 text-sm font-semibold ${dangerButtonClass}`}
+              >
                 <Trash2 size={14} /> Corbeille
               </button>
             )}
@@ -266,7 +273,7 @@ export function TaskDetailModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="border-[1.5px] border-heading px-4 py-2 text-sm font-semibold text-heading"
+                className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
               >
                 Fermer
               </button>
@@ -274,7 +281,7 @@ export function TaskDetailModal({
                 type="button"
                 disabled={pending}
                 onClick={save}
-                className="bg-heading px-4 py-2 text-sm font-semibold text-paper disabled:opacity-60"
+                className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
               >
                 {pending ? "Enregistrement…" : "Enregistrer"}
               </button>

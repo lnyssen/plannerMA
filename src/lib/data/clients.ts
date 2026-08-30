@@ -5,3 +5,12 @@ export function listClients() {
 }
 
 export type ClientSummary = Awaited<ReturnType<typeof listClients>>[number];
+
+export function listClientsWithCounts() {
+  return db.client.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { projects: true } } },
+  });
+}
+
+export type ClientWithCounts = Awaited<ReturnType<typeof listClientsWithCounts>>[number];

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskDetailModal } from "@/components/modals/task-detail-modal";
+import { textButtonClass } from "@/components/ui/buttons";
 import type { GanttTask } from "@/lib/data/gantt";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -269,17 +270,27 @@ export function GanttChart({
           aria-label="Aller à une date"
           className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
         />
-        <button type="button" onClick={() => setWeekStart((w) => addDays(w, -14))} className="text-heading" aria-label="Reculer">
+        <button
+          type="button"
+          onClick={() => setWeekStart((w) => addDays(w, -14))}
+          className={`p-1 text-heading ${textButtonClass}`}
+          aria-label="Reculer"
+        >
           <ChevronLeft size={18} />
         </button>
         <button
           type="button"
           onClick={() => setWeekStart(mondayOf(addDays(fromIsoDate(today()), -7)))}
-          className="text-sm font-semibold text-heading underline-offset-2 hover:underline"
+          className={`text-sm font-semibold text-heading underline-offset-2 hover:underline ${textButtonClass}`}
         >
           Aujourd’hui
         </button>
-        <button type="button" onClick={() => setWeekStart((w) => addDays(w, 14))} className="text-heading" aria-label="Avancer">
+        <button
+          type="button"
+          onClick={() => setWeekStart((w) => addDays(w, 14))}
+          className={`p-1 text-heading ${textButtonClass}`}
+          aria-label="Avancer"
+        >
           <ChevronRight size={18} />
         </button>
       </div>
@@ -421,7 +432,7 @@ export function GanttChart({
                       color: t.studio.colorHex,
                       cursor: canDrag ? (drag ? "grabbing" : "grab") : "default",
                     }}
-                    className="flex items-center gap-1.5 overflow-hidden px-2"
+                    className="flex items-center gap-1.5 overflow-hidden px-2 outline-2 -outline-offset-2 outline-transparent transition-[outline-color] duration-100 hover:outline-current"
                     onMouseDown={(e) => {
                       if (!canDrag) return;
                       e.preventDefault();

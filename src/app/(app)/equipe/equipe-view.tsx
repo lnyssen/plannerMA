@@ -6,6 +6,7 @@ import { deleteAbsence } from "@/lib/actions/absences";
 import { useRouter } from "next/navigation";
 import { AbsenceModal } from "@/components/modals/absence-modal";
 import { PersonModal } from "@/components/modals/person-modal";
+import { dangerButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, toIsoDate } from "@/lib/planning/dates";
@@ -54,14 +55,14 @@ export function EquipeView({
           <button
             type="button"
             onClick={() => setTab("gens")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${tab === "gens" ? "bg-heading text-paper" : "border-[1.5px] border-heading text-heading"}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${tab === "gens" ? primaryButtonClass : secondaryButtonClass}`}
           >
             <Users size={14} /> Personnes
           </button>
           <button
             type="button"
             onClick={() => setTab("absences")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${tab === "absences" ? "bg-heading text-paper" : "border-[1.5px] border-heading text-heading"}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${tab === "absences" ? primaryButtonClass : secondaryButtonClass}`}
           >
             <Umbrella size={14} /> Absences
           </button>
@@ -71,7 +72,7 @@ export function EquipeView({
           <button
             type="button"
             onClick={() => setPersonModal("new")}
-            className="flex items-center gap-1.5 bg-heading px-3 py-1.5 text-sm font-semibold text-paper"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${primaryButtonClass}`}
           >
             <Plus size={14} /> Ajouter une personne
           </button>
@@ -79,7 +80,7 @@ export function EquipeView({
           <button
             type="button"
             onClick={() => setAbsenceModalOpen(true)}
-            className="flex items-center gap-1.5 bg-heading px-3 py-1.5 text-sm font-semibold text-paper"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${primaryButtonClass}`}
           >
             <Plus size={14} /> Déclarer une absence
           </button>
@@ -96,7 +97,10 @@ export function EquipeView({
                 {people
                   .filter((p) => (p.team || "Studios") === team)
                   .map((p) => (
-                    <div key={p.id} className="flex flex-wrap items-center gap-3 border border-line p-3">
+                    <div
+                      key={p.id}
+                      className="flex flex-wrap items-center gap-3 border border-line p-3 transition-colors duration-100 hover:border-heading"
+                    >
                       <div className="min-w-[130px]">
                         <span className="font-[family-name:var(--font-body)] text-base font-bold text-rail">{p.name}</span>
                         {p.external && <span className="ml-2 text-2xs font-bold text-alert">Invité</span>}
@@ -114,7 +118,7 @@ export function EquipeView({
                       <button
                         type="button"
                         onClick={() => setPersonModal(p.id)}
-                        className="flex items-center gap-1.5 border-[1.5px] border-heading px-3 py-1.5 text-sm font-semibold text-heading"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
                       >
                         <Pencil size={13} /> Modifier
                       </button>
@@ -129,7 +133,10 @@ export function EquipeView({
           {absences.length === 0 && <p className="text-sm text-ink-muted">Aucune absence enregistrée.</p>}
           <div className="flex flex-col gap-2">
             {absences.map((a) => (
-              <div key={a.id} className="flex flex-wrap items-center gap-3 border border-line p-3">
+              <div
+                key={a.id}
+                className="flex flex-wrap items-center gap-3 border border-line p-3 transition-colors duration-100 hover:border-heading"
+              >
                 <Umbrella size={16} className="flex-shrink-0 text-heading" aria-hidden="true" />
                 <span className="min-w-[130px] font-[family-name:var(--font-body)] text-base font-bold text-rail">
                   {a.personName}
@@ -140,10 +147,8 @@ export function EquipeView({
                 </span>
                 <button
                   type="button"
-                  onClick={() =>
-                    deleteAbsence(a.id).then(() => router.refresh())
-                  }
-                  className="text-sm font-semibold text-alert"
+                  onClick={() => deleteAbsence(a.id).then(() => router.refresh())}
+                  className={`px-2 py-1 text-sm font-semibold ${dangerButtonClass}`}
                 >
                   Retirer
                 </button>

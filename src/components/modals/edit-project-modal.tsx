@@ -7,6 +7,7 @@ import { getProjectDetail, setProjectArchived, updateProject, type ProjectDetail
 import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
 import { ClientPicker } from "./client-picker";
+import { primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 
 export function EditProjectModal({
@@ -117,7 +118,7 @@ export function EditProjectModal({
               return (
                 <label
                   key={s.id}
-                  className="flex cursor-pointer items-center gap-1.5 px-2 py-1 text-sm text-ink"
+                  className="flex cursor-pointer items-center gap-1.5 px-2 py-1 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-heading/10"
                   style={{ border: `1.5px solid ${checked ? "var(--color-heading)" : "var(--color-line)"}` }}
                 >
                   <input type="checkbox" checked={checked} onChange={() => toggleStudio(s.id)} />
@@ -141,7 +142,7 @@ export function EditProjectModal({
             <button
               type="button"
               onClick={toggleArchived}
-              className="flex items-center gap-1.5 text-sm font-semibold text-heading"
+              className={`flex items-center gap-1.5 text-sm font-semibold text-heading ${textButtonClass}`}
             >
               {project.archived ? (
                 <>
@@ -157,7 +158,7 @@ export function EditProjectModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="border-[1.5px] border-heading px-4 py-2 text-sm font-semibold text-heading"
+                className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
               >
                 Fermer
               </button>
@@ -165,7 +166,7 @@ export function EditProjectModal({
                 type="button"
                 disabled={pending}
                 onClick={save}
-                className="bg-heading px-4 py-2 text-sm font-semibold text-paper disabled:opacity-60"
+                className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
               >
                 {pending ? "Enregistrement…" : "Enregistrer"}
               </button>

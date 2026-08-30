@@ -7,6 +7,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import { today } from "@/lib/planning/dates";
+import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { ModalShell } from "./modal-shell";
 import { EMPTY_TASK_FORM, TaskFormFields, type TaskFormValues } from "./task-form-fields";
 
@@ -74,7 +75,7 @@ export function CreateTaskModal({
         <button
           type="button"
           onClick={onClose}
-          className="border-[1.5px] border-heading px-4 py-2 text-sm font-semibold text-heading"
+          className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
         >
           Annuler
         </button>
@@ -82,7 +83,7 @@ export function CreateTaskModal({
           type="button"
           disabled={pending}
           onClick={submit}
-          className="bg-heading px-4 py-2 text-sm font-semibold text-paper disabled:opacity-60"
+          className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
         >
           {pending ? "Création…" : "Créer"}
         </button>

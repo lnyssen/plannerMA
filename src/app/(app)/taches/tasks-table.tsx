@@ -122,7 +122,7 @@ export function TasksTable({
                   <th
                     key={col.key}
                     onClick={() => toggleSort(col.key)}
-                    className="cursor-pointer border-b-2 border-heading px-3 py-2.5 text-left font-[family-name:var(--font-display)] text-sm font-medium tracking-[-0.1px] whitespace-nowrap text-heading"
+                    className="cursor-pointer border-b-2 border-heading px-3 py-2.5 text-left font-[family-name:var(--font-display)] text-sm font-medium tracking-[-0.1px] whitespace-nowrap text-heading transition-colors duration-100 hover:bg-wash active:bg-tint"
                   >
                     {col.label} {sortKey === col.key ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
@@ -134,7 +134,7 @@ export function TasksTable({
                 <tr
                   key={t.id}
                   onClick={() => setOpenTaskId(t.id)}
-                  className="cursor-pointer hover:bg-wash"
+                  className="cursor-pointer transition-colors duration-100 hover:bg-wash active:bg-tint"
                   title="Ouvrir la fiche"
                 >
                   <td className="border-b border-line px-3 py-2.5 text-sm font-semibold text-rail">{t.title}</td>

@@ -142,10 +142,15 @@ enum ClientType {
 /// saisie ("Oxfam", "Oxfam Belgique", "OXFAM"…) et permet de gérer la liste
 /// des clients depuis Réglages plutôt qu'en texte libre à chaque création.
 model Client {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  name         String   @unique
+  contactName  String?  @map("contact_name")
+  contactEmail String?  @map("contact_email")
+  contactPhone String?  @map("contact_phone")
+  website      String?
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   projects Project[]
 

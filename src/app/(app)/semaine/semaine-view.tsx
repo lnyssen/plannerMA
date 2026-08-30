@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { TaskDetailModal } from "@/components/modals/task-detail-modal";
+import { textButtonClass } from "@/components/ui/buttons";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -61,13 +62,27 @@ export function SemaineView({
           aria-label="Aller à une date"
           className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
         />
-        <button type="button" onClick={() => goTo(toIsoDate(addDays(fromIsoDate(monday), -7)))} aria-label="Semaine précédente" className="text-heading">
+        <button
+          type="button"
+          onClick={() => goTo(toIsoDate(addDays(fromIsoDate(monday), -7)))}
+          aria-label="Semaine précédente"
+          className={`p-1 text-heading ${textButtonClass}`}
+        >
           <ChevronLeft size={18} />
         </button>
-        <button type="button" onClick={() => goTo(today())} className="text-sm font-semibold text-heading underline-offset-2 hover:underline">
+        <button
+          type="button"
+          onClick={() => goTo(today())}
+          className={`text-sm font-semibold text-heading underline-offset-2 hover:underline ${textButtonClass}`}
+        >
           Aujourd’hui
         </button>
-        <button type="button" onClick={() => goTo(toIsoDate(addDays(fromIsoDate(monday), 7)))} aria-label="Semaine suivante" className="text-heading">
+        <button
+          type="button"
+          onClick={() => goTo(toIsoDate(addDays(fromIsoDate(monday), 7)))}
+          aria-label="Semaine suivante"
+          className={`p-1 text-heading ${textButtonClass}`}
+        >
           <ChevronRight size={18} />
         </button>
       </div>
@@ -160,7 +175,7 @@ function PersonRow({
                 type="button"
                 onDoubleClick={() => onOpenTask(t.id)}
                 title={`${t.title} (double-clic pour les détails)`}
-                className="cursor-pointer px-1.5 py-1 text-left"
+                className="cursor-pointer px-1.5 py-1 text-left outline-2 -outline-offset-2 outline-transparent transition-[outline-color] duration-100 hover:outline-current"
                 style={{ background: t.studio.fillHex, color: t.studio.colorHex }}
               >
                 <div className="text-2xs font-semibold">{t.title}</div>

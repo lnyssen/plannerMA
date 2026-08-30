@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { createPerson, getPersonDetail, updatePerson } from "@/lib/actions/people";
 import type { StudioSummary } from "@/lib/data/studios";
+import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 
 export function PersonModal({
@@ -92,7 +93,7 @@ export function PersonModal({
               return (
                 <label
                   key={s.id}
-                  className="flex cursor-pointer items-center gap-1.5 px-2 py-1 text-sm text-ink"
+                  className="flex cursor-pointer items-center gap-1.5 px-2 py-1 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-heading/10"
                   style={{ border: `1.5px solid ${checked ? "var(--color-heading)" : "var(--color-line)"}` }}
                 >
                   <input type="checkbox" checked={checked} onChange={() => toggleStudio(s.id)} />
@@ -117,7 +118,7 @@ export function PersonModal({
             <button
               type="button"
               onClick={onClose}
-              className="border-[1.5px] border-heading px-4 py-2 text-sm font-semibold text-heading"
+              className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
             >
               Annuler
             </button>
@@ -125,7 +126,7 @@ export function PersonModal({
               type="button"
               disabled={pending}
               onClick={submit}
-              className="bg-heading px-4 py-2 text-sm font-semibold text-paper disabled:opacity-60"
+              className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
             >
               {pending ? "Enregistrement…" : personId ? "Enregistrer" : "Ajouter"}
             </button>

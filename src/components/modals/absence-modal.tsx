@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createAbsence } from "@/lib/actions/absences";
 import { today } from "@/lib/planning/dates";
+import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 
 export function AbsenceModal({
@@ -93,7 +94,7 @@ export function AbsenceModal({
         <button
           type="button"
           onClick={onClose}
-          className="border-[1.5px] border-heading px-4 py-2 text-sm font-semibold text-heading"
+          className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
         >
           Annuler
         </button>
@@ -101,7 +102,7 @@ export function AbsenceModal({
           type="button"
           disabled={pending || !personId}
           onClick={submit}
-          className="bg-heading px-4 py-2 text-sm font-semibold text-paper disabled:opacity-60"
+          className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
         >
           {pending ? "Enregistrement…" : "Enregistrer"}
         </button>
