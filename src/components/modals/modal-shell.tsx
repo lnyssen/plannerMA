@@ -2,13 +2,21 @@
 
 import { X } from "lucide-react";
 
+const SIZE_CLASS = {
+  md: "max-w-md",
+  lg: "max-w-2xl",
+} as const;
+
 export function ModalShell({
   title,
   onClose,
+  size = "md",
   children,
 }: {
   title: string;
   onClose: () => void;
+  /** "lg" pour les formulaires denses (fiche de tâche) — voir SIZE_CLASS. */
+  size?: keyof typeof SIZE_CLASS;
   children: React.ReactNode;
 }) {
   return (
@@ -21,9 +29,9 @@ export function ModalShell({
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md border border-heading bg-paper p-6"
+        className={`flex max-h-[90vh] w-full flex-col border border-heading bg-paper ${SIZE_CLASS[size]}`}
       >
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 border-b border-line px-6 py-4">
           <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px] text-heading">
             {title}
           </h2>
@@ -36,7 +44,8 @@ export function ModalShell({
             <X size={20} />
           </button>
         </div>
-        {children}
+        {/* Le contenu défile si trop long pour l'écran plutôt que de déborder la fenêtre (fenêtre tâche notamment). */}
+        <div className="overflow-y-auto px-6 py-4">{children}</div>
       </div>
     </div>
   );

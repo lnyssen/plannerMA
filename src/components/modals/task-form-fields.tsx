@@ -36,79 +36,83 @@ export function TaskFormFields({
   showStatus?: boolean;
 }) {
   return (
-    <>
-      <FieldLabel htmlFor="task-title">Intitulé</FieldLabel>
-      <input
-        id="task-title"
-        className={`${fieldInputClass} mb-3`}
-        value={values.title}
-        onChange={(e) => onChange({ title: e.target.value })}
-        placeholder="ASF — relecture BAT 1"
-        autoFocus
-      />
+    <div className="mb-4 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <FieldLabel htmlFor="task-title">Intitulé</FieldLabel>
+        <input
+          id="task-title"
+          className={fieldInputClass}
+          value={values.title}
+          onChange={(e) => onChange({ title: e.target.value })}
+          placeholder="ASF — relecture BAT 1"
+          autoFocus
+        />
+      </div>
 
-      <FieldLabel htmlFor="task-description">Description</FieldLabel>
-      <textarea
-        id="task-description"
-        rows={3}
-        className={`${fieldInputClass} mb-3 resize-y`}
-        value={values.description}
-        onChange={(e) => onChange({ description: e.target.value })}
-        placeholder="Précisions, contexte, consignes…"
-      />
+      <div className="sm:col-span-2">
+        <FieldLabel htmlFor="task-description">Description</FieldLabel>
+        <textarea
+          id="task-description"
+          rows={3}
+          className={`${fieldInputClass} resize-y`}
+          value={values.description}
+          onChange={(e) => onChange({ description: e.target.value })}
+          placeholder="Précisions, contexte, consignes…"
+        />
+      </div>
 
-      <div className="mb-3 flex gap-3">
-        <div className="flex-1">
-          <FieldLabel htmlFor="task-studio">Studio</FieldLabel>
+      <div>
+        <FieldLabel htmlFor="task-studio">Studio</FieldLabel>
+        <select
+          id="task-studio"
+          className={fieldInputClass}
+          value={values.studioId}
+          onChange={(e) => onChange({ studioId: e.target.value })}
+        >
+          {studios.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      {showStatus && (
+        <div>
+          <FieldLabel htmlFor="task-status">État</FieldLabel>
           <select
-            id="task-studio"
+            id="task-status"
             className={fieldInputClass}
-            value={values.studioId}
-            onChange={(e) => onChange({ studioId: e.target.value })}
+            value={values.status}
+            onChange={(e) => onChange({ status: e.target.value as TaskStatusValue })}
+            style={{ background: STATUS_COLORS[values.status].fill, color: STATUS_COLORS[values.status].text }}
           >
-            {studios.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
+            {STATUS_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
               </option>
             ))}
           </select>
         </div>
-        {showStatus && (
-          <div className="flex-1">
-            <FieldLabel htmlFor="task-status">État</FieldLabel>
-            <select
-              id="task-status"
-              className={fieldInputClass}
-              value={values.status}
-              onChange={(e) => onChange({ status: e.target.value as TaskStatusValue })}
-              style={{ background: STATUS_COLORS[values.status].fill, color: STATUS_COLORS[values.status].text }}
-            >
-              {STATUS_ORDER.map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+      )}
+
+      <div>
+        <FieldLabel htmlFor="task-project">Projet</FieldLabel>
+        <select
+          id="task-project"
+          className={fieldInputClass}
+          value={values.projectId}
+          onChange={(e) => onChange({ projectId: e.target.value })}
+        >
+          <option value="">Sans projet</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} — {p.client.name}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <FieldLabel htmlFor="task-project">Projet</FieldLabel>
-      <select
-        id="task-project"
-        className={`${fieldInputClass} mb-3`}
-        value={values.projectId}
-        onChange={(e) => onChange({ projectId: e.target.value })}
-      >
-        <option value="">Sans projet</option>
-        {projects.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name} — {p.client.name}
-          </option>
-        ))}
-      </select>
-
-      <div className="mb-3">
+      <div>
         <FieldLabel htmlFor="task-person">Attribuée à</FieldLabel>
         <select
           id="task-person"
@@ -126,18 +130,18 @@ export function TaskFormFields({
         </select>
       </div>
 
-      <div className="mb-4 flex gap-3">
-        <div className="flex-1">
-          <FieldLabel htmlFor="task-start">Du</FieldLabel>
-          <input
-            id="task-start"
-            type="date"
-            className={fieldInputClass}
-            value={values.startDate}
-            onChange={(e) => onChange({ startDate: e.target.value })}
-          />
-        </div>
-        <div className="flex-1">
+      <div>
+        <FieldLabel htmlFor="task-start">Du</FieldLabel>
+        <input
+          id="task-start"
+          type="date"
+          className={fieldInputClass}
+          value={values.startDate}
+          onChange={(e) => onChange({ startDate: e.target.value })}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
           <FieldLabel htmlFor="task-end">Au</FieldLabel>
           <input
             id="task-end"
@@ -147,7 +151,7 @@ export function TaskFormFields({
             onChange={(e) => onChange({ endDate: e.target.value })}
           />
         </div>
-        <div className="w-28">
+        <div>
           <FieldLabel htmlFor="task-max-duration">Max. (j)</FieldLabel>
           <input
             id="task-max-duration"
@@ -161,7 +165,7 @@ export function TaskFormFields({
           />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { belgianHolidays, easterSunday, isBusinessDay, mondayOf, toIsoDate } from "../dates";
+import { belgianHolidays, easterSunday, formatRangeFr, isBusinessDay, mondayOf, toIsoDate } from "../dates";
 
 describe("easterSunday", () => {
   // Dates de référence publiques du dimanche de Pâques (calendrier grégorien).
@@ -55,5 +55,19 @@ describe("mondayOf", () => {
     expect(toIsoDate(mondayOf(new Date("2026-08-29T00:00:00.000Z")))).toBe("2026-08-24");
     // Le lundi lui-même reste inchangé
     expect(toIsoDate(mondayOf(new Date("2026-08-24T00:00:00.000Z")))).toBe("2026-08-24");
+  });
+});
+
+describe("formatRangeFr", () => {
+  it("reste compact pour une plage dans le même mois", () => {
+    expect(formatRangeFr("2026-08-17", "2026-08-30")).toBe("Du 17 au 30 août 2026");
+  });
+
+  it("répète le mois de fin quand la plage change de mois", () => {
+    expect(formatRangeFr("2026-08-28", "2026-09-10")).toBe("Du 28 août au 10 septembre 2026");
+  });
+
+  it("précise les deux années quand la plage chevauche le nouvel an", () => {
+    expect(formatRangeFr("2026-12-28", "2027-01-10")).toBe("Du 28 décembre 2026 au 10 janvier 2027");
   });
 });

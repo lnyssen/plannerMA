@@ -13,6 +13,7 @@ import {
   addDays,
   belgianHolidaysRange,
   daysBetween,
+  formatRangeFr,
   fromIsoDate,
   holidayName,
   isWeekend,
@@ -267,9 +268,12 @@ export function GanttChart({
     return flagged;
   }, [tasks]);
 
+  const viewEndIso = toIsoDate(days[days.length - 1] ?? weekStart);
+  const rangeLabel = formatRangeFr(startIsoOfView, viewEndIso);
+
   return (
     <div className="px-8 py-8">
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      <div className="mb-1 flex flex-wrap items-center gap-3">
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Gantt
         </h1>
@@ -317,6 +321,8 @@ export function GanttChart({
         </button>
       </div>
 
+      <p className="mb-4 text-sm font-semibold text-rail">{rangeLabel}</p>
+
       {error && (
         <p role="alert" className="mb-3 border border-alert bg-alert-wash px-3 py-2 text-sm text-alert">
           {error}
@@ -325,7 +331,10 @@ export function GanttChart({
 
       <div className="flex border border-line">
         <div style={{ width: labelWidth, flexShrink: 0 }} className="border-r border-line">
-          <div style={{ height: HEADER_HEIGHT }} className="flex items-center border-b border-line bg-wash px-3">
+          <div
+            style={{ height: HEADER_HEIGHT }}
+            className="sticky top-0 z-10 flex items-center border-b border-line bg-wash px-3"
+          >
             <span className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Projets · tâches</span>
           </div>
           {rows.length === 0 ? (
@@ -361,19 +370,25 @@ export function GanttChart({
 
         <div className="flex-1 overflow-x-auto">
           <div style={{ width }}>
-            <div style={{ height: HEADER_HEIGHT }} className="relative border-b border-line bg-wash">
-              {days.map(
-                (d, i) =>
-                  i % 7 === 0 && (
-                    <div
-                      key={i}
-                      style={{ position: "absolute", left: i * DAY_WIDTH, top: 0, width: 7 * DAY_WIDTH, height: 22 }}
-                      className="overflow-hidden border-l border-line pl-1.5 text-xs font-bold whitespace-nowrap text-ink"
-                    >
-                      {d.getUTCDate()} {MOIS[d.getUTCMonth()]}
-                    </div>
-                  ),
-              )}
+            <div style={{ height: HEADER_HEIGHT }} className="sticky top-0 z-10 border-b border-line bg-wash">
+              {days.map((d, i) => {
+                if (i % 7 !== 0) return null;
+                // L'année n'apparaît que là où elle change dans la vue (premier
+                // groupe, ou bascule au 1er janvier) : évite de l'afficher sept
+                // fois de suite sans pour autant la cacher quand la plage
+                // affichée chevauche deux années.
+                const showYear = i === 0 || days[i - 1].getUTCFullYear() !== d.getUTCFullYear();
+                return (
+                  <div
+                    key={i}
+                    style={{ position: "absolute", left: i * DAY_WIDTH, top: 0, width: 7 * DAY_WIDTH, height: 22 }}
+                    className="overflow-hidden border-l border-line pl-1.5 text-xs font-bold whitespace-nowrap text-ink"
+                  >
+                    {d.getUTCDate()} {MOIS[d.getUTCMonth()]}
+                    {showYear && <span className="text-ink-muted"> {d.getUTCFullYear()}</span>}
+                  </div>
+                );
+              })}
               {days.map((d, i) => {
                 const h = holidayName(d, holidays);
                 return (
@@ -391,14 +406,18 @@ export function GanttChart({
                     }}
                     className="text-center"
                   >
-                    <div className="text-[9.5px] font-bold text-ink-muted">{JOURS1[d.getUTCDay()]}</div>
-                    <div className="text-[10.5px] tabular-nums text-ink">{d.getUTCDate()}</div>
+                    <div className="text-[10.5px] font-bold text-ink-muted">{JOURS1[d.getUTCDay()]}</div>
+                    <div className="text-xs font-semibold tabular-nums text-ink">{d.getUTCDate()}</div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="relative" style={{ height }}>
+            {/* overflow-hidden : une tâche hors de la plage affichée ne doit
+                pas élargir la zone défilable — sinon changer le nombre de
+                semaines ne "rétrécit" jamais vraiment le Gantt tant qu'une
+                tâche déborde de la fenêtre visible. */}
+            <div className="relative overflow-hidden" style={{ height }}>
               {days.map((d, i) => (
                 <div
                   key={i}

@@ -1,4 +1,4 @@
-# Planning des studios — Média Animation asbl
+# Studio planner — Média Animation asbl
 
 Application de planning et d'attribution de tâches pour les studios de Média
 Animation (Graphisme, Web, Vidéo, Son, Consultance). Remplace le prototype
@@ -55,9 +55,21 @@ fonctionne aujourd'hui, avec de vraies données en base :
 - Filtres par studio et par personne dans la liste des tâches, en plus de
   la recherche ; le Gantt signale (contour rose, double-clic pour le
   détail) les tâches d'une même personne qui se chevauchent dans le temps.
+- **Kanban** : les mêmes tâches en colonnes par statut, carte glissée d'une
+  colonne à l'autre pour la changer (ordinateur ; sur mobile, ouvrir la
+  tâche fait la même chose depuis sa fiche) — mêmes filtres que la liste.
+- Gantt : plage affichée lisible en toutes lettres ("Du 17 au 30 août
+  2026"), en-tête de colonnes fixe au défilement, et le nombre de semaines
+  choisi redimensionne vraiment la zone défilable (les tâches hors plage ne
+  l'élargissent plus).
+- Fenêtres modales : celle d'une tâche est plus large (deux colonnes) et,
+  comme toutes les autres, défile plutôt que de déborder de l'écran si le
+  contenu est trop long. Le panneau de notifications ne se fait plus
+  tronquer par la colonne latérale.
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav
-resserrée à 8+1 entrées, pas de « Mes tâches » ni d'écran de gestion des
+resserrée à 7+2 entrées (Charge et Réglages réservés aux administrateurs),
+pas de « Mes tâches » ni d'écran de gestion des
 demandes pour l'instant) : voir `docs/plan-architecture.md`.
 
 ## Pile technique

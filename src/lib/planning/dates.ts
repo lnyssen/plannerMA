@@ -60,6 +60,31 @@ export function formatShortFr(s: IsoDate): string {
   return `${d.getUTCDate()} ${MONTHS_FR[d.getUTCMonth()].slice(0, 4)}.`;
 }
 
+/** Formate une date longue à la française, ex. "5 avril 2026" — mois en toutes lettres, année incluse. */
+export function formatLongFr(s: IsoDate): string {
+  const d = fromIsoDate(s);
+  return `${d.getUTCDate()} ${MONTHS_FR[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+/**
+ * Plage de dates à la française, aussi compacte que possible : ex.
+ * "Du 24 au 30 août 2026" (même mois), "Du 28 août au 3 septembre 2026"
+ * (mois différents, même année), "Du 28 décembre 2026 au 3 janvier 2027"
+ * (années différentes) — utilisé par l'en-tête du Gantt pour situer la
+ * plage affichée sans avoir à déchiffrer les libellés de colonnes.
+ */
+export function formatRangeFr(a: IsoDate, b: IsoDate): string {
+  const da = fromIsoDate(a);
+  const db = fromIsoDate(b);
+  if (da.getUTCFullYear() !== db.getUTCFullYear()) {
+    return `Du ${formatLongFr(a)} au ${formatLongFr(b)}`;
+  }
+  if (da.getUTCMonth() !== db.getUTCMonth()) {
+    return `Du ${da.getUTCDate()} ${MONTHS_FR[da.getUTCMonth()]} au ${formatLongFr(b)}`;
+  }
+  return `Du ${da.getUTCDate()} au ${db.getUTCDate()} ${MONTHS_FR[db.getUTCMonth()]} ${db.getUTCFullYear()}`;
+}
+
 /** Formate une date-heure à la française, ex. "5 avril à 14:32". */
 export function quandFr(d: Date): string {
   return d.toLocaleDateString("fr-BE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });

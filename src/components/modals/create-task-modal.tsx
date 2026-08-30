@@ -62,7 +62,7 @@ export function CreateTaskModal({
   }
 
   return (
-    <ModalShell title="Nouvelle tâche" onClose={onClose}>
+    <ModalShell title="Nouvelle tâche" onClose={onClose} size="lg">
       <TaskFormFields values={values} onChange={patch} studios={studios} projects={projects} people={people} />
 
       {error && (

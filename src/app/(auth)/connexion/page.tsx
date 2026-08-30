@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ConnexionForm } from "./connexion-form";
 
-export const metadata: Metadata = { title: "Connexion — Planning des studios" };
+export const metadata: Metadata = { title: "Connexion — Studio planner" };
 
 export default async function ConnexionPage({
   searchParams,
@@ -16,7 +16,7 @@ export default async function ConnexionPage({
       {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel */}
       <img src="/logo/media-animation-couleur.png" alt="Média Animation" className="mb-4 h-9 w-auto" />
       <h1 className="mb-6 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px] text-heading">
-        Planning des studios
+        Studio planner
       </h1>
       <ConnexionForm redirectTo={redirectTo} />
     </div>

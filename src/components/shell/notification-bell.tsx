@@ -3,7 +3,7 @@
 import type { Notification, NotificationType } from "@prisma/client";
 import { Bell } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -17,6 +17,8 @@ import { iconButtonOnRailClass, textButtonClass } from "@/components/ui/buttons"
 // fond violet foncé --color-rail : une seule variante d'icône suffit.
 
 const POLL_MS = 30_000;
+const PANEL_WIDTH = 320;
+const VIEWPORT_MARGIN = 12;
 
 const TYPE_LABEL: Record<NotificationType, string> = {
   ASSIGNMENT: "Attribution",
@@ -25,10 +27,19 @@ const TYPE_LABEL: Record<NotificationType, string> = {
 };
 
 export function NotificationBell() {
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
   const [items, setItems] = useState<Notification[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Positionné en `fixed` avec des coordonnées calculées au clic plutôt qu'en
+  // `absolute right-0` : la barre latérale a `overflow-y-auto` (nécessaire
+  // pour un long menu sur un petit écran), ce qui force aussi `overflow-x`
+  // implicitement (règle CSS : un seul axe non-`visible` bascule l'autre en
+  // `auto`) — un panneau plus large que la colonne de 260 px se retrouvait
+  // tronqué au lieu de simplement déborder. `position: fixed` échappe à ce
+  // clip d'ancêtre (aucun des parents n'a de transform/filter).
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +54,23 @@ export function NotificationBell() {
       clearInterval(id);
     };
   }, []);
+
+  function computeCoords() {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const left = Math.min(
+      Math.max(rect.right - PANEL_WIDTH, VIEWPORT_MARGIN),
+      window.innerWidth - PANEL_WIDTH - VIEWPORT_MARGIN,
+    );
+    setCoords({ top: rect.bottom + 8, left });
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    computeCoords();
+    window.addEventListener("resize", computeCoords);
+    return () => window.removeEventListener("resize", computeCoords);
+  }, [open]);
 
   async function toggle() {
     const next = !open;
@@ -71,7 +99,13 @@ export function NotificationBell() {
 
   return (
     <div className="relative">
-      <button type="button" onClick={toggle} aria-label="Notifications" className={`relative p-1 ${iconButtonOnRailClass}`}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggle}
+        aria-label="Notifications"
+        className={`relative p-1 ${iconButtonOnRailClass}`}
+      >
         <Bell size={20} />
         {count > 0 && (
           <span
@@ -83,10 +117,13 @@ export function NotificationBell() {
         )}
       </button>
 
-      {open && (
+      {open && coords && (
         <>
           <button type="button" aria-label="Fermer" className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-40 mt-2 max-h-[70vh] w-80 overflow-y-auto border border-heading bg-paper shadow-none">
+          <div
+            style={{ top: coords.top, left: coords.left, width: PANEL_WIDTH }}
+            className="fixed z-40 flex max-h-[70vh] flex-col overflow-y-auto border border-heading bg-paper shadow-none"
+          >
             <div className="flex items-center justify-between border-b border-line px-3 py-2">
               <span className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Notifications</span>
               {items.some((n) => !n.read) && (

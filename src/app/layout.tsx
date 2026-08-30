@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Planning des studios — Média Animation",
+  title: "Studio planner — Média Animation",
   description: "Planning et attribution de tâches pour les studios de Média Animation asbl.",
 };
 

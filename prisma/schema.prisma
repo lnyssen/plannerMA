@@ -1,4 +1,4 @@
-// Schéma de la base de données — Planning des studios (Média Animation asbl)
+// Schéma de la base de données — Studio planner (Média Animation asbl)
 //
 // Conventions : modèles et champs en anglais (écosystème Prisma/TypeScript),
 // tables et colonnes SQL en snake_case (@@map/@map) pour rester lisible en

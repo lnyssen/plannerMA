@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { notifyAssignment } from "@/lib/mail/notify";
 import { daysBetween, toIsoDate } from "@/lib/planning/dates";
+import { STATUS_LABEL } from "@/lib/planning/status";
 import { createNotification } from "./notifications";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
@@ -192,6 +193,42 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
       endDate: toIsoDate(task.endDate),
     });
   }
+
+  revalidateTaskViews();
+  return { version: task.version };
+}
+
+const updateStatusSchema = z.object({
+  taskId: z.string(),
+  status: z.enum(["TODO", "IN_PROGRESS", "VALIDATION", "DELIVERED"]),
+  expectedVersion: z.number().int(),
+});
+
+/** Déplacement d'une carte entre colonnes depuis le Kanban — même principe que rescheduleTask, sur le statut seul. */
+export async function updateTaskStatus(
+  input: z.infer<typeof updateStatusSchema>,
+): Promise<{ error?: string; version?: number }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  const { taskId, status, expectedVersion } = updateStatusSchema.parse(input);
+
+  const result = await db.task.updateMany({
+    where: { id: taskId, version: expectedVersion },
+    data: { status, version: { increment: 1 } },
+  });
+
+  if (result.count === 0) {
+    return { error: "Cette tâche a été modifiée entre-temps par quelqu’un d’autre. Rechargez la page." };
+  }
+
+  const task = await db.task.findUniqueOrThrow({ where: { id: taskId } });
+  await db.journalEntry.create({
+    data: {
+      actorId: session.user.personId,
+      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      action: `Tâche « ${task.title} » déplacée vers « ${STATUS_LABEL[task.status]} »`,
+    },
+  });
 
   revalidateTaskViews();
   return { version: task.version };

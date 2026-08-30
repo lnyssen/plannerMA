@@ -1,7 +1,20 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import { Activity, BarChart3, Building2, CalendarDays, ListChecks, Menu, Plus, Settings, Table2, Users, X } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  Building2,
+  CalendarDays,
+  Columns3,
+  ListChecks,
+  Menu,
+  Plus,
+  Settings,
+  Table2,
+  Users,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -29,6 +42,7 @@ import { NotificationBell } from "./notification-bell";
 const NAV_ENTRIES = [
   { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false },
   { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false },
+  { href: "/kanban", label: "Kanban", icon: Columns3, adminOnly: false },
   { href: "/semaine", label: "Semaine", icon: CalendarDays, adminOnly: false },
   { href: "/gantt", label: "Gantt", icon: BarChart3, adminOnly: false },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
@@ -102,7 +116,7 @@ export function AppShell({
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel, pas d'optimisation next/image nécessaire pour cette taille */}
           <img src="/logo/media-animation-blanc.png" alt="Média Animation" className="h-8 w-auto" />
-          <div className="mt-1.5 text-sm text-white/70">Planning des studios</div>
+          <div className="mt-1.5 text-sm text-white/70">Studio planner</div>
         </div>
         <div className="flex items-center gap-1">
           <NotificationBell />

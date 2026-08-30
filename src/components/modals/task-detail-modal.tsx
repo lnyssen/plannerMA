@@ -187,7 +187,7 @@ export function TaskDetailModal({
   }
 
   return (
-    <ModalShell title={loading ? "Chargement…" : (task?.title ?? "Tâche introuvable")} onClose={onClose}>
+    <ModalShell title={loading ? "Chargement…" : (task?.title ?? "Tâche introuvable")} onClose={onClose} size="lg">
       {loading && <p className="text-sm text-ink-muted">Chargement…</p>}
       {!loading && !task && <p className="text-sm text-ink-muted">Cette tâche n’existe plus.</p>}
 
