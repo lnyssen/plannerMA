@@ -160,8 +160,9 @@ fonctionne aujourd'hui, avec de vraies données en base :
   minuteur (un seul actif à la fois par personne, en démarrer un nouveau
   arrête l'ancien) ou saisie manuelle (date + durée) contre une tâche.
   « Mon temps » : liste groupée par jour, ou vue **calendrier** (semaine,
-  glisser un bloc pour changer son heure, glisser son bord bas pour changer
-  sa durée — pas de 15 min). Seul un administrateur voit l'onglet « Équipe »
+  double-cliquer une case pour ajouter une écriture, glisser un bloc pour
+  changer son heure, glisser son bord bas pour changer sa durée — pas de
+  15 min). Seul un administrateur voit l'onglet « Équipe »
   (toutes les écritures, tous les comptes) ; chacun ne voit et ne modifie
   que les siennes. `Project.budgetHours` (facultatif, fiche projet) déclenche
   un avertissement quand le temps enregistré le dépasse, affiché sur la

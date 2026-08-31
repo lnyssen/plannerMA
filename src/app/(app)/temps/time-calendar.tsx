@@ -1,11 +1,15 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { updateTimeEntryTimes } from "@/lib/actions/time-entries";
+import { createTimeEntryAt, updateTimeEntryTimes } from "@/lib/actions/time-entries";
 import type { TimeEntryWithTask } from "@/lib/data/time-entries";
-import { addDays, mondayOf, today } from "@/lib/planning/dates";
+import type { TaskOption } from "@/lib/data/tasks";
+import { addDays, fromIsoDate, mondayOf, today } from "@/lib/planning/dates";
 import { formatDurationFr } from "@/lib/planning/time";
+import { fieldInputClass } from "@/components/modals/modal-shell";
+import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 
 const HOUR_HEIGHT = 48; // px par heure
 const GRID_START_HOUR = 6;
@@ -14,12 +18,17 @@ const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_HEIGHT;
 const SNAP_MINUTES = 15;
 const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+// UTC de bout en bout, comme le reste de src/lib/planning — voir dates.ts.
+// Les méthodes locales (getHours, getDate...) dépendraient du fuseau du
+// navigateur et décaleraient le jour/l'heure affichés d'un cran selon le
+// fuseau, alors que startedAt/endedAt sont écrits en UTC (voir
+// addManualEntry, createTimeEntryAt).
 function minutesSinceMidnight(d: Date): number {
-  return d.getHours() * 60 + d.getMinutes();
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
 
 function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
 }
 
 interface DragState {
@@ -31,6 +40,14 @@ interface DragState {
   dayStart: Date; // minuit du jour de l'écriture — sert de base pour reconstruire les horodatages
 }
 
+interface QuickAdd {
+  dayIndex: number;
+  dayStart: Date;
+  startMinutes: number; // minutes depuis minuit, calé sur SNAP_MINUTES
+  taskId: string;
+  durationMinutes: number;
+}
+
 /**
  * Vue calendrier de "Mon temps" — semaine en cours, une colonne par jour,
  * les écritures en blocs positionnés par leur heure. Glisser un bloc change
@@ -38,11 +55,13 @@ interface DragState {
  * Un minuteur en cours n'apparaît pas ici (pas d'heure de fin à positionner)
  * — voir le bandeau au-dessus de la liste.
  */
-export function TimeCalendar({ entries }: { entries: TimeEntryWithTask[] }) {
-  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date(`${today()}T00:00:00`)));
+export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[]; tasks: TaskOption[] }) {
+  const router = useRouter();
+  const [weekStart, setWeekStart] = useState(() => mondayOf(fromIsoDate(today())));
   const [localEntries, setLocalEntries] = useState(entries);
   const [drag, setDrag] = useState<DragState | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  const [quickAdd, setQuickAdd] = useState<QuickAdd | null>(null);
 
   // Resynchronise l'état local sur les données serveur fraîches (après un
   // glisser confirmé, ou une écriture ajoutée ailleurs) — ajustement pendant
@@ -113,7 +132,7 @@ export function TimeCalendar({ entries }: { entries: TimeEntryWithTask[] }) {
   function startDrag(entry: TimeEntryWithTask, mode: "move" | "resize", clientY: number) {
     if (!entry.endedAt) return;
     const dayStart = new Date(entry.startedAt);
-    dayStart.setHours(0, 0, 0, 0);
+    dayStart.setUTCHours(0, 0, 0, 0);
     const state: DragState = {
       entryId: entry.id,
       mode,
@@ -124,6 +143,30 @@ export function TimeCalendar({ entries }: { entries: TimeEntryWithTask[] }) {
     };
     dragRef.current = state;
     setDrag(state);
+  }
+
+  function openQuickAdd(day: Date, dayIndex: number, clientY: number, gridTop: number) {
+    if (tasks.length === 0) return;
+    const offsetY = clientY - gridTop;
+    const rawMinutes = (offsetY / HOUR_HEIGHT) * 60 + GRID_START_HOUR * 60;
+    const snapped = Math.max(
+      GRID_START_HOUR * 60,
+      Math.min(GRID_END_HOUR * 60 - SNAP_MINUTES, Math.round(rawMinutes / SNAP_MINUTES) * SNAP_MINUTES),
+    );
+    const dayStart = new Date(day);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    setQuickAdd({ dayIndex, dayStart, startMinutes: snapped, taskId: tasks[0].id, durationMinutes: 30 });
+  }
+
+  function confirmQuickAdd() {
+    if (!quickAdd) return;
+    const startedAt = new Date(quickAdd.dayStart.getTime() + quickAdd.startMinutes * 60_000);
+    const endedAt = new Date(startedAt.getTime() + quickAdd.durationMinutes * 60_000);
+    const taskId = quickAdd.taskId;
+    setQuickAdd(null);
+    void createTimeEntryAt({ taskId, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString() }).then(() =>
+      router.refresh(),
+    );
   }
 
   return (
@@ -147,7 +190,7 @@ export function TimeCalendar({ entries }: { entries: TimeEntryWithTask[] }) {
         </button>
         <button
           type="button"
-          onClick={() => setWeekStart(mondayOf(new Date(`${today()}T00:00:00`)))}
+          onClick={() => setWeekStart(mondayOf(fromIsoDate(today())))}
           className="text-xs font-semibold text-heading hover:underline"
         >
           Cette semaine
@@ -169,9 +212,13 @@ export function TimeCalendar({ entries }: { entries: TimeEntryWithTask[] }) {
             <div key={dayIndex} className="relative flex-1 border-l border-line" style={{ minWidth: 110 }}>
               <div className="flex h-8 flex-col items-center justify-center border-b border-line">
                 <span className="text-2xs font-semibold text-ink-muted uppercase">{JOURS[dayIndex]}</span>
-                <span className="text-2xs text-ink-muted tabular-nums">{day.getDate()}</span>
+                <span className="text-2xs text-ink-muted tabular-nums">{day.getUTCDate()}</span>
               </div>
-              <div className="relative" style={{ height: GRID_HEIGHT }}>
+              <div
+                className="relative cursor-cell"
+                style={{ height: GRID_HEIGHT }}
+                onDoubleClick={(ev) => openQuickAdd(day, dayIndex, ev.clientY, ev.currentTarget.getBoundingClientRect().top)}
+              >
                 {Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, i) => (
                   <div key={i} style={{ position: "absolute", top: i * HOUR_HEIGHT, width: "100%", height: HOUR_HEIGHT }} className="border-b border-line" />
                 ))}
@@ -188,6 +235,7 @@ export function TimeCalendar({ entries }: { entries: TimeEntryWithTask[] }) {
                         ev.preventDefault();
                         startDrag(e, "move", ev.clientY);
                       }}
+                      onDoubleClick={(ev) => ev.stopPropagation()}
                       title={`${e.task.title} — ${formatDurationFr(endMin - startMin)}`}
                       className="absolute left-0.5 right-0.5 cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-2xs font-semibold text-paper active:cursor-grabbing"
                       style={{ top, height, background: "var(--color-heading)" }}
@@ -205,13 +253,62 @@ export function TimeCalendar({ entries }: { entries: TimeEntryWithTask[] }) {
                     </div>
                   );
                 })}
+                {quickAdd && quickAdd.dayIndex === dayIndex && (
+                  <div
+                    onMouseDown={(ev) => ev.stopPropagation()}
+                    onDoubleClick={(ev) => ev.stopPropagation()}
+                    className="absolute left-0.5 right-0.5 z-10 flex flex-col gap-1.5 rounded-md border border-heading bg-paper p-1.5 shadow-none"
+                    style={{ top: ((quickAdd.startMinutes - GRID_START_HOUR * 60) / 60) * HOUR_HEIGHT }}
+                  >
+                    <select
+                      value={quickAdd.taskId}
+                      onChange={(ev) => setQuickAdd((q) => (q ? { ...q, taskId: ev.target.value } : q))}
+                      className={`${fieldInputClass} text-2xs`}
+                    >
+                      {tasks.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.title}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={SNAP_MINUTES}
+                        step={SNAP_MINUTES}
+                        value={quickAdd.durationMinutes}
+                        onChange={(ev) =>
+                          setQuickAdd((q) => (q ? { ...q, durationMinutes: Number(ev.target.value) || SNAP_MINUTES } : q))
+                        }
+                        className={`${fieldInputClass} w-14 text-2xs`}
+                      />
+                      <span className="text-2xs text-ink-muted">min</span>
+                      <span className="flex-1" />
+                      <button
+                        type="button"
+                        onClick={() => setQuickAdd(null)}
+                        className={`px-1.5 py-0.5 text-2xs font-semibold ${secondaryButtonClass}`}
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmQuickAdd}
+                        className={`px-1.5 py-0.5 text-2xs font-semibold ${primaryButtonClass}`}
+                      >
+                        Ajouter
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
       <p className="mt-2 text-2xs text-ink-muted">
-        Glisser un bloc pour changer son heure ; glisser son bord bas pour changer sa durée (pas de 15 min).
+        Double-cliquer une case pour ajouter une écriture ; glisser un bloc pour changer son heure ; glisser son bord
+        bas pour changer sa durée (pas de 15 min).
       </p>
     </div>
   );

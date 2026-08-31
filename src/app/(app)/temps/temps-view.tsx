@@ -315,7 +315,7 @@ export function TempsView({
           </div>
 
           {mineView === "calendar" ? (
-            <TimeCalendar entries={myEntries} />
+            <TimeCalendar entries={myEntries} tasks={tasks} />
           ) : groupedMine.length === 0 ? (
             <p className="text-sm text-ink-muted">Aucune écriture pour l’instant.</p>
           ) : (

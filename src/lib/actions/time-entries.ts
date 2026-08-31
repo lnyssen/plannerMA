@@ -96,6 +96,32 @@ export async function addManualEntry(input: z.infer<typeof manualEntrySchema>): 
   return {};
 }
 
+const createAtSchema = z
+  .object({
+    taskId: z.string(),
+    startedAt: z.string().datetime(),
+    endedAt: z.string().datetime(),
+  })
+  .refine((v) => v.endedAt > v.startedAt, { message: "La fin doit être après le début.", path: ["endedAt"] });
+
+/** Créée depuis un double-clic sur le calendrier : créneau précis plutôt qu'une date + durée (voir addManualEntry). */
+export async function createTimeEntryAt(input: z.infer<typeof createAtSchema>): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  if (!session.user.personId) return { error: "Votre compte n’est relié à aucune fiche personne." };
+
+  const parsed = createAtSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Créneau invalide." };
+  const { taskId, startedAt, endedAt } = parsed.data;
+
+  await db.timeEntry.create({
+    data: { taskId, personId: session.user.personId, startedAt: new Date(startedAt), endedAt: new Date(endedAt) },
+  });
+
+  revalidateTimeViews();
+  return {};
+}
+
 const moveEntrySchema = z
   .object({
     entryId: z.string(),
