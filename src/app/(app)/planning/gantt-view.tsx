@@ -44,6 +44,7 @@ const JOURS1 = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
 type DragState = { taskId: string; mode: "move" | "resize"; startClientX: number; deltaDays: number };
 
 interface Row {
+  /** "projet" sert aussi de type d'en-tête de groupe pour le regroupement par personne (voir `groupBy`) — nom conservé pour limiter le diff, c'est un style, pas un libellé affiché. */
   type: "projet" | "tache";
   label: string;
   task?: GanttTask;
@@ -68,6 +69,7 @@ export function GanttView({
 
   const [weekStart, setWeekStart] = useState(() => mondayOf(addDays(fromIsoDate(today()), -7)));
   const [weeks, setWeeks] = useState(8);
+  const [groupBy, setGroupBy] = useState<"project" | "person">("project");
   const [drag, setDrag] = useState<DragState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [canDrag, setCanDrag] = useState(true);
@@ -161,6 +163,32 @@ export function GanttView({
   }, [days]);
 
   const rows: Row[] = useMemo(() => {
+    const collator = new Intl.Collator("fr", { sensitivity: "base" });
+    if (groupBy === "person") {
+      const byPerson = new Map<string, GanttTask[]>();
+      for (const t of tasks) {
+        const key = t.assigneeId ?? "__none";
+        if (!byPerson.has(key)) byPerson.set(key, []);
+        byPerson.get(key)!.push(t);
+      }
+      const groups = [...byPerson.values()].sort((a, b) => {
+        const an = a[0].assignee?.name ?? null;
+        const bn = b[0].assignee?.name ?? null;
+        if (!an && !bn) return 0;
+        if (!an) return 1;
+        if (!bn) return -1;
+        return collator.compare(an, bn);
+      });
+      const out: Row[] = [];
+      for (const list of groups) {
+        out.push({ type: "projet", label: list[0].assignee?.name ?? "Non attribué" });
+        for (const t of [...list].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())) {
+          out.push({ type: "tache", label: t.title, task: t });
+        }
+      }
+      return out;
+    }
+
     const byProject = new Map<string, GanttTask[]>();
     for (const t of tasks) {
       const key = t.projectId ?? "__none";
@@ -176,7 +204,7 @@ export function GanttView({
       }
     }
     return out;
-  }, [tasks]);
+  }, [tasks, groupBy]);
 
   const isDragging = drag !== null;
 
@@ -335,6 +363,15 @@ export function GanttView({
                 {n} semaines
               </option>
             ))}
+          </select>
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as "project" | "person")}
+            aria-label="Grouper par"
+            className="rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+          >
+            <option value="project">Par projet</option>
+            <option value="person">Par personne</option>
           </select>
           <span className="text-sm font-semibold text-heading">{rangeLabel}</span>
         </div>
