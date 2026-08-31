@@ -95,7 +95,7 @@ export function GlobalSearch() {
                 {displayResults.tasks.map((t) => (
                   <Link
                     key={t.id}
-                    href={`/taches?open=${t.id}`}
+                    href={`/taches/${t.id}`}
                     onClick={close}
                     className="flex items-center gap-2 px-3 py-2 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-tint"
                   >
@@ -115,7 +115,7 @@ export function GlobalSearch() {
                 {displayResults.projects.map((p) => (
                   <Link
                     key={p.id}
-                    href={`/projets?open=${p.id}`}
+                    href={`/projets/${p.id}`}
                     onClick={close}
                     className="flex items-center gap-2 px-3 py-2 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-tint"
                   >

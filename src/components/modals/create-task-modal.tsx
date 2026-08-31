@@ -28,7 +28,7 @@ export function CreateTaskModal({
   /** Pré-remplissage (ex. conversion d'une demande en tâche) — fusionné sur les valeurs par défaut. */
   initialValues?: Partial<TaskFormValues>;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (id: string) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -69,7 +69,7 @@ export function CreateTaskModal({
         return;
       }
       router.refresh();
-      onCreated();
+      onCreated(result.id!);
     });
   }
 

@@ -65,7 +65,7 @@ export async function addComment(input: z.infer<typeof addCommentSchema>): Promi
       recipientId: personId,
       type: "MENTION",
       message: `${authorName} vous a mentionné·e dans un commentaire sur « ${task.title} »`,
-      link: `/taches?open=${taskId}`,
+      link: `/taches/${taskId}`,
     });
   }
 

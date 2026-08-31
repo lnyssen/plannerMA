@@ -20,7 +20,7 @@ export async function getTaskDetail(taskId: string) {
       project: true,
       studio: true,
       assignee: true,
-      attachments: { orderBy: { createdAt: "desc" } },
+      attachments: { orderBy: { createdAt: "desc" }, include: { uploadedBy: { select: { name: true } } } },
       comments: { orderBy: { createdAt: "asc" }, include: { mentions: { include: { person: true } } } },
       subtasks: { orderBy: { position: "asc" } },
       status: true,
@@ -189,7 +189,7 @@ async function notifyAssignee(
     recipientId: personId,
     type: "ASSIGNMENT",
     message: `Vous avez été attribué·e à la tâche « ${task.title} »`,
-    link: `/taches?open=${task.id}`,
+    link: `/taches/${task.id}`,
   });
 }
 

@@ -1,6 +1,5 @@
 import { listTasksForGantt } from "@/lib/data/gantt";
 import { listPeople } from "@/lib/data/people";
-import { listActiveProjectsForForms } from "@/lib/data/projects";
 import { listStudios } from "@/lib/data/studios";
 import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { listActiveTasksForListing } from "@/lib/data/tasks";
@@ -22,7 +21,7 @@ export default async function PlanningPage({
   const mondayIso = toIsoDate(monday);
   const rangeEnd = toIsoDate(addDays(monday, 6));
 
-  const [ganttTasks, boardTasks, weekPeople, weekTasks, studios, people, projects, statuses] = await Promise.all([
+  const [ganttTasks, boardTasks, weekPeople, weekTasks, studios, people, statuses] = await Promise.all([
     listTasksForGantt(),
     listActiveTasksForListing(),
     db.person.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -38,7 +37,6 @@ export default async function PlanningPage({
     }),
     listStudios(),
     listPeople(),
-    listActiveProjectsForForms(),
     listTaskStatuses(),
   ]);
 
@@ -52,9 +50,7 @@ export default async function PlanningPage({
       boardTasks={boardTasks}
       studios={studios}
       people={people}
-      projects={projects}
       statuses={statuses}
-      dependencyOptions={boardTasks.map((t) => ({ id: t.id, title: t.title, studioId: t.studioId, project: t.project }))}
     />
   );
 }

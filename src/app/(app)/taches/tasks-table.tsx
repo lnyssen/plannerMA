@@ -1,8 +1,8 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { TaskDetailModal } from "@/components/modals/task-detail-modal";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StudioBadge } from "@/components/ui/studio-badge";
@@ -10,7 +10,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
-import type { TaskListItem, TaskOption } from "@/lib/data/tasks";
+import type { TaskListItem } from "@/lib/data/tasks";
 import { toIsoDate, today } from "@/lib/planning/dates";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -49,29 +49,27 @@ export function TasksTable({
   people,
   projects,
   statuses,
-  dependencyOptions = [],
   hidePersonFilter = false,
   hidePersonColumn = false,
-  initialOpenTaskId = null,
 }: {
   tasks: TaskListItem[];
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
   statuses: TaskStatusSummary[];
-  dependencyOptions?: TaskOption[];
   /** Vue "Mes tâches" : filtrer/afficher par personne n'a pas de sens quand tout appartient déjà à la même personne. */
   hidePersonFilter?: boolean;
   hidePersonColumn?: boolean;
-  initialOpenTaskId?: string | null;
 }) {
+  const router = useRouter();
   const columns = hidePersonColumn ? ALL_COLUMNS.filter((c) => c.key !== "person") : ALL_COLUMNS;
   const [search, setSearch] = useState("");
   const [studioFilter, setStudioFilter] = useState("");
   const [personFilter, setPersonFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [projectFilter, setProjectFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("dates");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [openTaskId, setOpenTaskId] = useState<string | null>(initialOpenTaskId);
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -95,6 +93,8 @@ export function TasksTable({
     }
     if (studioFilter) filtered = filtered.filter((t) => t.studioId === studioFilter);
     if (personFilter) filtered = filtered.filter((t) => t.assigneeId === personFilter);
+    if (statusFilter) filtered = filtered.filter((t) => t.statusId === statusFilter);
+    if (projectFilter) filtered = filtered.filter((t) => t.projectId === projectFilter);
 
     const value = (t: TaskListItem): string | number => {
       switch (sortKey) {
@@ -123,7 +123,7 @@ export function TasksTable({
       return 0;
     });
     return sorted;
-  }, [tasks, search, studioFilter, personFilter, sortKey, sortDir]);
+  }, [tasks, search, studioFilter, personFilter, statusFilter, projectFilter, sortKey, sortDir]);
 
   return (
     <div>
@@ -145,6 +145,32 @@ export function TasksTable({
           {studios.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label="Filtrer par statut"
+          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+        >
+          <option value="">Tous les statuts</option>
+          {statuses.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={projectFilter}
+          onChange={(e) => setProjectFilter(e.target.value)}
+          aria-label="Filtrer par client/projet"
+          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+        >
+          <option value="">Tous les projets</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.client.name} — {p.name}
             </option>
           ))}
         </select>
@@ -178,7 +204,7 @@ export function TasksTable({
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setOpenTaskId(t.id)}
+                onClick={() => router.push(`/taches/${t.id}`)}
                 className="rounded-lg border border-line p-3 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
               >
                 <div className="mb-1.5 flex items-start justify-between gap-2">
@@ -235,7 +261,7 @@ export function TasksTable({
               {rows.map((t) => (
                 <tr
                   key={t.id}
-                  onClick={() => setOpenTaskId(t.id)}
+                  onClick={() => router.push(`/taches/${t.id}`)}
                   className="cursor-pointer transition-colors duration-100 hover:bg-wash active:bg-tint"
                   title="Ouvrir la fiche"
                 >
@@ -279,18 +305,6 @@ export function TasksTable({
           </table>
           </ScrollFade>
         </>
-      )}
-
-      {openTaskId && (
-        <TaskDetailModal
-          taskId={openTaskId}
-          studios={studios}
-          projects={projects}
-          people={people}
-          statuses={statuses}
-          tasks={dependencyOptions}
-          onClose={() => setOpenTaskId(null)}
-        />
       )}
     </div>
   );

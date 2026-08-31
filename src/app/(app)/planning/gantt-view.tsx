@@ -2,14 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { TaskDetailModal } from "@/components/modals/task-detail-modal";
+import { useRouter } from "next/navigation";
 import { textButtonClass } from "@/components/ui/buttons";
 import type { GanttTask } from "@/lib/data/gantt";
-import type { PersonSummary } from "@/lib/data/people";
-import type { ProjectOption } from "@/lib/data/projects";
-import type { StudioSummary } from "@/lib/data/studios";
-import type { TaskStatusSummary } from "@/lib/data/task-statuses";
-import type { TaskOption } from "@/lib/data/tasks";
 import { rescheduleTask } from "@/lib/actions/tasks";
 import {
   addDays,
@@ -56,21 +51,11 @@ interface Row {
 
 export function GanttView({
   initialTasks,
-  studios,
-  people,
-  projects,
-  statuses,
-  dependencyOptions,
 }: {
   initialTasks: GanttTask[];
-  studios: StudioSummary[];
-  people: PersonSummary[];
-  projects: ProjectOption[];
-  statuses: TaskStatusSummary[];
-  dependencyOptions: TaskOption[];
 }) {
+  const router = useRouter();
   const [tasks, setTasks] = useState(initialTasks);
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   // Resynchronise l'état local sur les données serveur fraîches (après
   // création d'une tâche ailleurs, ou après la revalidation qui suit un
   // glisser) — ajustement pendant le rendu plutôt que dans un effet, cf.
@@ -318,7 +303,7 @@ export function GanttView({
   function onBarKeyDown(e: React.KeyboardEvent, task: GanttTask) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      setOpenTaskId(task.id);
+      router.push(`/taches/${task.id}`);
       return;
     }
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -558,7 +543,7 @@ export function GanttView({
                       e.preventDefault();
                       setDrag({ taskId: t.id, mode: "move", startClientX: e.clientX, deltaDays: 0 });
                     }}
-                    onDoubleClick={() => setOpenTaskId(t.id)}
+                    onDoubleClick={() => router.push(`/taches/${t.id}`)}
                     title={`${t.title} · ${t.assignee?.name ?? "non attribué"}${
                       overlapping ? " · attention : chevauche une autre tâche de cette personne" : ""
                     } (double-clic pour les détails)`}
@@ -589,18 +574,6 @@ export function GanttView({
           : "Le glisser n’est actif que sur ordinateur."}{" "}
         Au clavier : sélectionnez une barre puis Flèches pour la décaler, Maj+Flèches pour ajuster sa durée, Entrée pour l’ouvrir.
       </p>
-
-      {openTaskId && (
-        <TaskDetailModal
-          taskId={openTaskId}
-          studios={studios}
-          projects={projects}
-          people={people}
-          statuses={statuses}
-          tasks={dependencyOptions}
-          onClose={() => setOpenTaskId(null)}
-        />
-      )}
     </div>
   );
 }

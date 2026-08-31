@@ -2,14 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { TaskDetailModal } from "@/components/modals/task-detail-modal";
 import { textButtonClass } from "@/components/ui/buttons";
-import type { PersonSummary } from "@/lib/data/people";
-import type { ProjectOption } from "@/lib/data/projects";
-import type { StudioSummary } from "@/lib/data/studios";
-import type { TaskStatusSummary } from "@/lib/data/task-statuses";
-import type { TaskOption } from "@/lib/data/tasks";
 import { addDays, formatShortFr, fromIsoDate, mondayOf, toIsoDate, today, type IsoDate } from "@/lib/planning/dates";
 
 const JOUR_LABEL = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
@@ -28,23 +21,12 @@ export function SemaineView({
   monday,
   people,
   tasks,
-  studios,
-  projects,
-  allPeople,
-  statuses,
-  dependencyOptions,
 }: {
   monday: IsoDate;
   people: { id: string; name: string }[];
   tasks: WeekTask[];
-  studios: StudioSummary[];
-  projects: ProjectOption[];
-  allPeople: PersonSummary[];
-  statuses: TaskStatusSummary[];
-  dependencyOptions: TaskOption[];
 }) {
   const router = useRouter();
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const days = Array.from({ length: 5 }, (_, i) => addDays(fromIsoDate(monday), i));
   const covers = (t: WeekTask, dayIso: string) => toIsoDate(t.startDate) <= dayIso && dayIso <= toIsoDate(t.endDate);
 
@@ -117,7 +99,7 @@ export function SemaineView({
               days={days}
               tasks={tasks.filter((t) => t.assigneeId === p.id)}
               covers={covers}
-              onOpenTask={setOpenTaskId}
+              onOpenTask={(id) => router.push(`/taches/${id}`)}
             />
           ))}
           <PersonRow
@@ -125,24 +107,12 @@ export function SemaineView({
             days={days}
             tasks={tasks.filter((t) => !t.assigneeId)}
             covers={covers}
-            onOpenTask={setOpenTaskId}
+            onOpenTask={(id) => router.push(`/taches/${id}`)}
           />
         </div>
       </div>
 
       <p className="mt-3 text-xs text-ink-muted">Double-cliquez une tâche pour l’ouvrir.</p>
-
-      {openTaskId && (
-        <TaskDetailModal
-          taskId={openTaskId}
-          studios={studios}
-          projects={projects}
-          people={allPeople}
-          statuses={statuses}
-          tasks={dependencyOptions}
-          onClose={() => setOpenTaskId(null)}
-        />
-      )}
     </div>
   );
 }

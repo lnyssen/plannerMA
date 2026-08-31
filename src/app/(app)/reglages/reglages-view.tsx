@@ -374,7 +374,7 @@ export function ReglagesView({
                 <div key={entry.id} className="flex items-baseline gap-2 border-b border-line py-2 text-sm">
                   {entry.task ? (
                     <a
-                      href={`/taches?open=${entry.task.id}`}
+                      href={`/taches/${entry.task.id}`}
                       className="text-ink underline-offset-2 hover:underline"
                     >
                       {entry.action}

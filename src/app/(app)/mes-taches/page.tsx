@@ -7,15 +7,10 @@ import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { listActiveTasksForListing } from "@/lib/data/tasks";
 import { TasksTable } from "../taches/tasks-table";
 
-export default async function MesTachesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ open?: string }>;
-}) {
+export default async function MesTachesPage() {
   const session = await auth();
   if (!session?.user) redirect("/connexion"); // filet de sécurité, le middleware couvre déjà ce cas
 
-  const { open } = await searchParams;
   const [allTasks, studios, people, projects, statuses] = await Promise.all([
     listActiveTasksForListing(),
     listStudios(),
@@ -42,10 +37,8 @@ export default async function MesTachesPage({
           people={people}
           projects={projects}
           statuses={statuses}
-          dependencyOptions={allTasks.map((t) => ({ id: t.id, title: t.title, studioId: t.studioId, project: t.project }))}
           hidePersonFilter
           hidePersonColumn
-          initialOpenTaskId={open ?? null}
         />
       )}
     </div>

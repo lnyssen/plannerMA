@@ -1,15 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { TaskDetailModal } from "@/components/modals/task-detail-modal";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import { updateTaskStatus } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
-import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
-import type { TaskListItem, TaskOption } from "@/lib/data/tasks";
+import type { TaskListItem } from "@/lib/data/tasks";
 import { formatShortFr, toIsoDate } from "@/lib/planning/dates";
 
 function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) => void }) {
@@ -44,17 +43,14 @@ export function KanbanView({
   tasks: initialTasks,
   studios,
   people,
-  projects,
   statuses,
-  dependencyOptions,
 }: {
   tasks: TaskListItem[];
   studios: StudioSummary[];
   people: PersonSummary[];
-  projects: ProjectOption[];
   statuses: TaskStatusSummary[];
-  dependencyOptions: TaskOption[];
 }) {
+  const router = useRouter();
   const [tasks, setTasks] = useState(initialTasks);
   const [syncedInitial, setSyncedInitial] = useState(initialTasks);
   if (initialTasks !== syncedInitial) {
@@ -66,7 +62,6 @@ export function KanbanView({
   const [studioFilter, setStudioFilter] = useState("");
   const [personFilter, setPersonFilter] = useState("");
   const [dragOverStatusId, setDragOverStatusId] = useState<string | null>(null);
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
@@ -176,7 +171,7 @@ export function KanbanView({
               <span className="tabular-nums">{colTasks.length}</span>
             </div>
             {colTasks.map((t) => (
-              <TaskCard key={t.id} task={t} onOpen={setOpenTaskId} />
+              <TaskCard key={t.id} task={t} onOpen={(id) => router.push(`/taches/${id}`)} />
             ))}
           </div>
         ))}
@@ -186,18 +181,6 @@ export function KanbanView({
         Glissez une carte vers une autre colonne pour changer son statut (ordinateur uniquement) — sur mobile, ouvrez
         la tâche pour changer son statut depuis la fiche.
       </p>
-
-      {openTaskId && (
-        <TaskDetailModal
-          taskId={openTaskId}
-          studios={studios}
-          projects={projects}
-          people={people}
-          statuses={statuses}
-          tasks={dependencyOptions}
-          onClose={() => setOpenTaskId(null)}
-        />
-      )}
     </div>
   );
 }

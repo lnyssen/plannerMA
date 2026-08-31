@@ -29,7 +29,7 @@ export function assignmentEmail(personName: string, task: AssignmentTaskInfo, ha
   const lines = [
     `Bonjour ${personName},`,
     `Vous avez été attribué·e à la tâche « ${task.title} »${task.projectName ? ` (projet ${task.projectName})` : ""}, ${range}.`,
-    ...(hasAccount ? [`Voir la tâche : ${APP_URL}/taches?open=${task.id}`] : []),
+    ...(hasAccount ? [`Voir la tâche : ${APP_URL}/taches/${task.id}`] : []),
     hasAccount
       ? `Vous recevez ce courriel car les alertes d'attribution sont activées pour votre compte (Réglages → Mes notifications).`
       : `Vous recevez ce courriel à l'adresse renseignée sur votre fiche équipe.`,
@@ -59,7 +59,7 @@ export function mentionEmail(personName: string, info: MentionInfo) {
     `Bonjour ${personName},`,
     `${info.authorName} vous a mentionné·e dans un commentaire sur la tâche « ${info.taskTitle} » :`,
     `« ${truncate(info.commentBody, 300)} »`,
-    `Voir la tâche : ${APP_URL}/taches?open=${info.taskId}`,
+    `Voir la tâche : ${APP_URL}/taches/${info.taskId}`,
     `Vous recevez ce courriel car les alertes de mention sont activées pour votre compte (Réglages → Mes notifications).`,
   ];
   return {

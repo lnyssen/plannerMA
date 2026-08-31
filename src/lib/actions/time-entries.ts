@@ -81,7 +81,7 @@ async function checkAndNotifyBudget(projectId: string | null): Promise<void> {
   const budgetMinutes = project.budgetHours * 60;
   if (totalMinutes <= budgetMinutes) return;
 
-  const link = `/projets?open=${project.id}`;
+  const link = `/projets/${project.id}`;
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const recent = await db.notification.findFirst({ where: { type: "BUDGET_EXCEEDED", link, createdAt: { gte: since } } });
   if (recent) return;

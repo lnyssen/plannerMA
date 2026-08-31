@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { updateThemePreference } from "@/lib/actions/account";
 import { ChangePasswordModal } from "@/components/modals/change-password-modal";
@@ -86,6 +86,7 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | "navOrder" | "password" | null>(null);
   const [collapsed, setCollapsedState] = useState(false);
@@ -357,7 +358,10 @@ export function AppShell({
           people={people}
           tasks={tasks}
           onClose={() => setModal(null)}
-          onCreated={() => setModal(null)}
+          onCreated={(id) => {
+            setModal(null);
+            router.push(`/taches/${id}`);
+          }}
         />
       )}
       {modal === "project" && (
@@ -365,7 +369,10 @@ export function AppShell({
           studios={studios}
           clients={clients}
           onClose={() => setModal(null)}
-          onCreated={() => setModal(null)}
+          onCreated={(id) => {
+            setModal(null);
+            router.push(`/projets/${id}`);
+          }}
         />
       )}
       {modal === "request" && <RequestModal studios={studios} onClose={() => setModal(null)} />}

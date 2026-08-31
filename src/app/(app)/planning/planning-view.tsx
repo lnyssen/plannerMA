@@ -6,10 +6,9 @@ import { useState } from "react";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import type { GanttTask } from "@/lib/data/gantt";
 import type { PersonSummary } from "@/lib/data/people";
-import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
-import type { TaskListItem, TaskOption } from "@/lib/data/tasks";
+import type { TaskListItem } from "@/lib/data/tasks";
 import type { IsoDate } from "@/lib/planning/dates";
 import { GanttView } from "./gantt-view";
 import { KanbanView } from "./kanban-view";
@@ -32,9 +31,7 @@ export function PlanningView({
   boardTasks,
   studios,
   people,
-  projects,
   statuses,
-  dependencyOptions,
 }: {
   initialTab: PlanningTab;
   monday: IsoDate;
@@ -44,9 +41,7 @@ export function PlanningView({
   boardTasks: TaskListItem[];
   studios: StudioSummary[];
   people: PersonSummary[];
-  projects: ProjectOption[];
   statuses: TaskStatusSummary[];
-  dependencyOptions: TaskOption[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<PlanningTab>(initialTab);
@@ -88,38 +83,9 @@ export function PlanningView({
         </div>
       </div>
 
-      {tab === "kanban" && (
-        <KanbanView
-          tasks={boardTasks}
-          studios={studios}
-          people={people}
-          projects={projects}
-          statuses={statuses}
-          dependencyOptions={dependencyOptions}
-        />
-      )}
-      {tab === "semaine" && (
-        <SemaineView
-          monday={monday}
-          people={weekPeople}
-          tasks={weekTasks}
-          studios={studios}
-          projects={projects}
-          allPeople={people}
-          statuses={statuses}
-          dependencyOptions={dependencyOptions}
-        />
-      )}
-      {tab === "gantt" && (
-        <GanttView
-          initialTasks={ganttTasks}
-          studios={studios}
-          people={people}
-          projects={projects}
-          statuses={statuses}
-          dependencyOptions={dependencyOptions}
-        />
-      )}
+      {tab === "kanban" && <KanbanView tasks={boardTasks} studios={studios} people={people} statuses={statuses} />}
+      {tab === "semaine" && <SemaineView monday={monday} people={weekPeople} tasks={weekTasks} />}
+      {tab === "gantt" && <GanttView initialTasks={ganttTasks} />}
     </div>
   );
 }

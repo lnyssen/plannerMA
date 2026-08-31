@@ -20,7 +20,7 @@ export function CreateProjectModal({
   studios: StudioSummary[];
   clients: ClientSummary[];
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (id: string) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -46,7 +46,7 @@ export function CreateProjectModal({
         return;
       }
       router.refresh();
-      onCreated();
+      onCreated(result.id!);
     });
   }
 

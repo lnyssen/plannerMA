@@ -2,15 +2,13 @@
 
 import { AlertTriangle, Archive, Flag, LayoutGrid, Table2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { EditProjectModal } from "@/components/modals/edit-project-modal";
 import { secondaryButtonClass } from "@/components/ui/buttons";
 import { CreateButton } from "@/components/shell/create-button";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { StudioBadge } from "@/components/ui/studio-badge";
-import type { ClientSummary } from "@/lib/data/clients";
-import type { PersonSummary } from "@/lib/data/people";
-import type { ProjectOption, ProjectWithCounts } from "@/lib/data/projects";
+import type { ProjectWithCounts } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
@@ -138,25 +136,15 @@ function ProjectGroup({
 export function ProjectsView({
   projects,
   studios,
-  clients,
   statuses,
-  people,
-  activeProjects,
   showArchived,
-  isAdmin,
-  initialOpenProjectId = null,
 }: {
   projects: ProjectWithCounts[];
   studios: StudioSummary[];
-  clients: ClientSummary[];
   statuses: TaskStatusSummary[];
-  people: PersonSummary[];
-  activeProjects: ProjectOption[];
   showArchived: boolean;
-  isAdmin: boolean;
-  initialOpenProjectId?: string | null;
 }) {
-  const [openProjectId, setOpenProjectId] = useState<string | null>(initialOpenProjectId);
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [studioFilter, setStudioFilter] = useState<string | null>(null);
   // "Cartes" par défaut au premier rendu (identique serveur/client, évite un
@@ -329,8 +317,8 @@ export function ProjectsView({
         </div>
       ) : view === "cards" ? (
         <>
-          <ProjectGroup title="Clients internes" projects={internal} statuses={statuses} onOpen={setOpenProjectId} />
-          <ProjectGroup title="Clients externes" projects={external} statuses={statuses} onOpen={setOpenProjectId} />
+          <ProjectGroup title="Clients internes" projects={internal} statuses={statuses} onOpen={(id) => router.push(`/projets/${id}`)} />
+          <ProjectGroup title="Clients externes" projects={external} statuses={statuses} onOpen={(id) => router.push(`/projets/${id}`)} />
         </>
       ) : (
         <ScrollFade>
@@ -364,13 +352,12 @@ export function ProjectsView({
               {rows.map(({ project, progress, next, overdueCount, overBudget }) => (
                 <tr key={project.id} className="border-t border-line">
                   <td className="sticky left-0 z-10 bg-paper px-3 py-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setOpenProjectId(project.id)}
+                    <Link
+                      href={`/projets/${project.id}`}
                       className="text-left text-sm font-bold text-heading underline-offset-2 hover:underline"
                     >
                       {project.name}
-                    </button>
+                    </Link>
                     <div className="text-xs text-ink-muted">{project.client.name}</div>
                   </td>
                   <td className="px-3 py-2.5">
@@ -431,18 +418,6 @@ export function ProjectsView({
             </tbody>
           </table>
         </ScrollFade>
-      )}
-
-      {openProjectId && (
-        <EditProjectModal
-          projectId={openProjectId}
-          studios={studios}
-          clients={clients}
-          people={people}
-          activeProjects={activeProjects}
-          isAdmin={isAdmin}
-          onClose={() => setOpenProjectId(null)}
-        />
       )}
     </div>
   );

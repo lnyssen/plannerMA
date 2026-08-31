@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { CreateButton } from "@/components/shell/create-button";
 import { listPeople } from "@/lib/data/people";
 import { listActiveProjectsForForms } from "@/lib/data/projects";
@@ -11,13 +12,19 @@ export default async function TachesPage({
 }: {
   searchParams: Promise<{ open?: string }>;
 }) {
-  const [tasks, studios, people, projects, statuses, { open }] = await Promise.all([
+  const { open } = await searchParams;
+  // Anciens liens profonds (notifications déjà en base, courriels déjà
+  // envoyés) — voir src/lib/actions/tasks.ts, comments.ts, time-entries.ts,
+  // src/lib/mail/templates.ts. Les nouveaux liens pointent directement sur
+  // /taches/[id] ; ce redirect garde les anciens fonctionnels indéfiniment.
+  if (open) redirect(`/taches/${open}`);
+
+  const [tasks, studios, people, projects, statuses] = await Promise.all([
     listActiveTasksForListing(),
     listStudios(),
     listPeople(),
     listActiveProjectsForForms(),
     listTaskStatuses(),
-    searchParams,
   ]);
   return (
     <div className="px-8 py-8">
@@ -28,15 +35,7 @@ export default async function TachesPage({
         <span className="flex-1" />
         <CreateButton kind="task" />
       </div>
-      <TasksTable
-        tasks={tasks}
-        studios={studios}
-        people={people}
-        projects={projects}
-        statuses={statuses}
-        dependencyOptions={tasks.map((t) => ({ id: t.id, title: t.title, studioId: t.studioId, project: t.project }))}
-        initialOpenTaskId={open ?? null}
-      />
+      <TasksTable tasks={tasks} studios={studios} people={people} projects={projects} statuses={statuses} />
     </div>
   );
 }
