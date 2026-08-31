@@ -185,7 +185,10 @@ const inviteSchema = z.object({
  * question ouverte de l'audit ("aucun moyen d'inviter"), symétrique de
  * removeUserAccess.
  */
-export async function invitePerson(personId: string, input: z.infer<typeof inviteSchema>): Promise<{ error?: string }> {
+export async function invitePerson(
+  personId: string,
+  input: z.infer<typeof inviteSchema>,
+): Promise<{ error?: string; temporaryPassword?: string; emailSent?: boolean }> {
   const auth_ = await requireAdmin();
   if ("error" in auth_) return auth_;
   const { session } = auth_;
@@ -220,13 +223,21 @@ export async function invitePerson(personId: string, input: z.infer<typeof invit
     const { subject, text, html } = inviteEmail(person.name, email, temporaryPassword);
     await sendMail({ to: email, subject, text, html });
   } catch (err) {
+    // Le compte est créé même si le courriel échoue (SMTP_HOST absent ou
+    // mal configuré, notamment en production) — le mot de passe généré est
+    // donc toujours renvoyé pour que l'admin puisse le communiquer lui-même,
+    // sinon il serait perdu (jamais stocké en clair, jamais réaffiché).
     console.error("[mail] échec de l'envoi de l'invitation :", err);
     revalidatePeopleViews();
-    return { error: "Compte créé, mais l'envoi du courriel a échoué — communiquez le mot de passe autrement." };
+    return {
+      error: "Compte créé, mais l'envoi du courriel a échoué — communiquez le mot de passe ci-dessous vous-même.",
+      temporaryPassword,
+      emailSent: false,
+    };
   }
 
   revalidatePeopleViews();
-  return {};
+  return { temporaryPassword, emailSent: true };
 }
 
 /**

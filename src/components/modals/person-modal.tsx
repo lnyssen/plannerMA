@@ -1,7 +1,7 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import { Mail, Trash2, UserX } from "lucide-react";
+import { AlertTriangle, Mail, Trash2, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { createPerson, deletePerson, getPersonDetail, invitePerson, removeUserAccess, updatePerson } from "@/lib/actions/people";
@@ -38,6 +38,8 @@ export function PersonModal({
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("COLLABORATOR");
   const [inviteSent, setInviteSent] = useState(false);
+  const [inviteEmailOk, setInviteEmailOk] = useState(true);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,14 +82,22 @@ export function PersonModal({
     setError(null);
     startTransition(async () => {
       const result = await invitePerson(personId, { email: inviteEmail.trim(), role: inviteRole });
-      if (result.error) {
-        setError(result.error);
+      // Le compte est créé dès que `temporaryPassword` revient, même si
+      // `error` est aussi présent (échec de l'envoi du courriel — SMTP non
+      // configuré, notamment) : dans ce cas le mot de passe est réaffiché
+      // ci-dessous plutôt que perdu, l'admin le communique lui-même.
+      if (result.temporaryPassword) {
+        setLinkedUser({ email: inviteEmail.trim() });
+        setShowInvite(false);
+        setInviteSent(true);
+        setInviteEmailOk(result.emailSent ?? false);
+        setGeneratedPassword(result.temporaryPassword);
+        router.refresh();
         return;
       }
-      setLinkedUser({ email: inviteEmail.trim() });
-      setShowInvite(false);
-      setInviteSent(true);
-      router.refresh();
+      if (result.error) {
+        setError(result.error);
+      }
     });
   }
 
@@ -185,28 +195,39 @@ export function PersonModal({
           </label>
 
           {personId && linkedUser && (
-            <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-line p-3">
-              <span className="text-sm text-ink">
-                Compte de connexion : <span className="font-semibold">{linkedUser.email}</span>
-              </span>
-              <button
-                type="button"
-                onClick={removeAccess}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${dangerOutlineButtonClass}`}
-              >
-                <UserX size={13} /> Retirer l’accès
-              </button>
+            <div className="mb-4 rounded-lg border border-line p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-ink">
+                  Compte de connexion : <span className="font-semibold">{linkedUser.email}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={removeAccess}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${dangerOutlineButtonClass}`}
+                >
+                  <UserX size={13} /> Retirer l’accès
+                </button>
+              </div>
+              {inviteSent && inviteEmailOk && (
+                <p className="mt-2 text-xs text-ink-muted">Invitation envoyée avec un mot de passe généré automatiquement.</p>
+              )}
+              {generatedPassword && !inviteEmailOk && (
+                <div className="mt-3 border-t border-line pt-3">
+                  <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-alert">
+                    <AlertTriangle size={14} className="flex-shrink-0" />
+                    Le courriel n’a pas pu être envoyé — communiquez ce mot de passe vous-même.
+                  </p>
+                  <p className="select-all rounded-md border border-line bg-wash px-2.5 py-2 font-mono text-sm text-ink">
+                    {generatedPassword}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
           {personId && !linkedUser && (
             <div className="mb-4 rounded-lg border border-line p-3">
-              {inviteSent ? (
-                <p className="text-sm text-ink">
-                  Invitation envoyée à <span className="font-semibold">{inviteEmail}</span> avec un mot de passe généré
-                  automatiquement.
-                </p>
-              ) : !showInvite ? (
+              {!showInvite ? (
                 <button
                   type="button"
                   onClick={() => setShowInvite(true)}
