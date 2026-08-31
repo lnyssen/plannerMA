@@ -1,6 +1,5 @@
 import {
   Activity,
-  Briefcase,
   Building2,
   CheckSquare,
   ClipboardList,
@@ -29,7 +28,6 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false },
   { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false },
   { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false },
-  { href: "/portefeuille", label: "Portefeuille", icon: Briefcase, adminOnly: false },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
   { href: "/charge", label: "Charge", icon: Activity, adminOnly: true },

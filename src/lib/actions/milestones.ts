@@ -9,7 +9,6 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
 
 function revalidateMilestoneViews() {
   revalidatePath("/projets");
-  revalidatePath("/portefeuille");
 }
 
 const createMilestoneSchema = z.object({

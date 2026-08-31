@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Flag, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, Flag, ListChecks, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
@@ -174,6 +174,32 @@ export function EditProjectModal({
                 </label>
               );
             })}
+          </div>
+
+          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
+            <ListChecks size={13} /> Tâches ({project.tasks.length})
+          </h3>
+          <div className="mb-4 flex flex-col gap-1.5">
+            {project.tasks.length === 0 && <p className="text-xs text-ink-muted">Aucune tâche.</p>}
+            {project.tasks.map((t) => (
+              <a
+                key={t.id}
+                href={`/taches?open=${t.id}`}
+                className="flex items-center gap-2 border border-line px-2.5 py-1.5 text-sm transition-colors duration-100 hover:border-heading"
+              >
+                <span
+                  className="flex-shrink-0 px-1.5 py-0.5 text-2xs font-semibold"
+                  style={{ background: t.status.fillHex, color: t.status.colorHex }}
+                >
+                  {t.status.name}
+                </span>
+                <span className="flex-1 truncate text-ink">{t.title}</span>
+                {t.assignee && <span className="flex-shrink-0 text-2xs text-ink-muted">{t.assignee.name}</span>}
+                <span className="flex-shrink-0 text-2xs text-ink-muted tabular-nums">
+                  {formatShortFr(toIsoDate(t.startDate))}
+                </span>
+              </a>
+            ))}
           </div>
 
           <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">

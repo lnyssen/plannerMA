@@ -75,6 +75,18 @@ export async function getProjectDetail(projectId: string) {
       client: true,
       studios: { include: { studio: true } },
       milestones: { orderBy: { dueDate: "asc" } },
+      tasks: {
+        where: { trashedAt: null },
+        orderBy: { startDate: "asc" },
+        select: {
+          id: true,
+          title: true,
+          startDate: true,
+          endDate: true,
+          status: { select: { name: true, colorHex: true, fillHex: true } },
+          assignee: { select: { name: true } },
+        },
+      },
       _count: { select: { tasks: { where: { trashedAt: null } } } },
     },
   });

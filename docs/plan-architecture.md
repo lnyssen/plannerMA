@@ -55,7 +55,8 @@ import Outlook des absences, sélecteur SharePoint/Drive.
 Déjà livrés depuis, hors plan initial : estimation de charge en
 demi-journées, historique par tâche (+ journal global admin), suppression
 d'un statut personnalisé, détection de dépendance circulaire, jalons + vue
-Portefeuille, tâches récurrentes.
+Portefeuille (fusionnée depuis dans Projets, voir README), tâches
+récurrentes, menu de gauche réorganisable par compte.
 
 Portail client et import Outlook restent en attente : le premier nécessite
 une décision d'authentification (lien secret par projet ? lien magique par
