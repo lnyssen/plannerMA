@@ -115,6 +115,7 @@ export function ProjectsView({
   clients,
   statuses,
   showArchived,
+  isAdmin,
   initialOpenProjectId = null,
 }: {
   projects: ProjectWithCounts[];
@@ -122,6 +123,7 @@ export function ProjectsView({
   clients: ClientSummary[];
   statuses: TaskStatusSummary[];
   showArchived: boolean;
+  isAdmin: boolean;
   initialOpenProjectId?: string | null;
 }) {
   const [openProjectId, setOpenProjectId] = useState<string | null>(initialOpenProjectId);
@@ -389,6 +391,7 @@ export function ProjectsView({
           projectId={openProjectId}
           studios={studios}
           clients={clients}
+          isAdmin={isAdmin}
           onClose={() => setOpenProjectId(null)}
         />
       )}

@@ -72,10 +72,20 @@ export async function createProject(input: CreateProjectInput): Promise<{ error?
   return { id: project.id };
 }
 
+/** Sélection des écritures avec qui les a passées — voir le filtrage anti-fuite plus bas dans getProjectDetail. */
+const PROJECT_TIME_ENTRY_SELECT = {
+  startedAt: true,
+  endedAt: true,
+  personId: true,
+  person: { select: { name: true } },
+} as const;
+
 export async function getProjectDetail(projectId: string) {
   const session = await auth();
   if (!session?.user) return null;
-  return db.project.findUnique({
+  const isAdmin = session.user.role === "ADMIN";
+
+  const project = await db.project.findUnique({
     where: { id: projectId },
     include: {
       client: true,
@@ -84,7 +94,7 @@ export async function getProjectDetail(projectId: string) {
       // Écritures rattachées directement au projet ("AGENCE"/hors-tâche
       // n'existe pas ici puisque c'est justement un vrai projet) — voir
       // src/lib/data/time-entries.ts pour la même logique côté budget global.
-      timeEntries: { select: { startedAt: true, endedAt: true } },
+      timeEntries: { select: PROJECT_TIME_ENTRY_SELECT },
       tasks: {
         where: { trashedAt: null },
         orderBy: { startDate: "asc" },
@@ -95,12 +105,35 @@ export async function getProjectDetail(projectId: string) {
           endDate: true,
           status: { select: { name: true, colorHex: true, fillHex: true } },
           assignee: { select: { name: true } },
-          timeEntries: { select: { startedAt: true, endedAt: true } },
+          timeEntries: { select: PROJECT_TIME_ENTRY_SELECT },
         },
       },
       _count: { select: { tasks: { where: { trashedAt: null } } } },
     },
   });
+  if (!project) return null;
+
+  // Qui a passé combien de temps est réservé aux administrateurs — même
+  // règle que Temps → Équipe. Un collaborateur voit le total du projet
+  // (déjà utilisé pour l'avertissement de budget) mais pas la répartition
+  // par personne : personId/person sont mis à nul avant que la réponse ne
+  // quitte le serveur, pas seulement cachés côté UI. Les deux branches
+  // gardent la même forme (person nul plutôt qu'absent) pour rester un
+  // type simple à discriminer côté client (voir edit-project-modal.tsx).
+  if (!isAdmin) {
+    const redactPerson = (e: { startedAt: Date; endedAt: Date | null }) => ({
+      startedAt: e.startedAt,
+      endedAt: e.endedAt,
+      personId: null as string | null,
+      person: null as { name: string } | null,
+    });
+    return {
+      ...project,
+      timeEntries: project.timeEntries.map(redactPerson),
+      tasks: project.tasks.map((t) => ({ ...t, timeEntries: t.timeEntries.map(redactPerson) })),
+    };
+  }
+  return project;
 }
 
 export type ProjectDetail = NonNullable<Awaited<ReturnType<typeof getProjectDetail>>>;

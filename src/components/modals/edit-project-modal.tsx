@@ -1,7 +1,7 @@
 "use client";
 
 import type { ProjectType } from "@prisma/client";
-import { AlertTriangle, Archive, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2 } from "lucide-react";
+import { AlertTriangle, Archive, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
@@ -10,7 +10,7 @@ import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
 import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
-import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
+import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { ClientPicker } from "./client-picker";
 import { primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
@@ -19,11 +19,14 @@ export function EditProjectModal({
   projectId,
   studios,
   clients,
+  isAdmin,
   onClose,
 }: {
   projectId: string;
   studios: StudioSummary[];
   clients: ClientSummary[];
+  /** La répartition du temps par personne n'est montrée qu'aux administrateurs (voir getProjectDetail) — le total reste visible à tous. */
+  isAdmin: boolean;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -79,10 +82,25 @@ export function EditProjectModal({
     };
   }, [projectId]);
 
-  const loggedMinutes = useMemo(
-    () => (project ? sumDurationMinutes([...project.timeEntries, ...project.tasks.flatMap((t) => t.timeEntries)]) : 0),
+  const allTimeEntries = useMemo(
+    () => (project ? [...project.timeEntries, ...project.tasks.flatMap((t) => t.timeEntries)] : []),
     [project],
   );
+  const loggedMinutes = useMemo(() => sumDurationMinutes(allTimeEntries), [allTimeEntries]);
+  // La répartition par personne n'existe dans les données que pour un
+  // administrateur — getProjectDetail met personId/person à nul sinon
+  // (toujours présents, jamais absents, pour que ce test suffise à
+  // discriminer proprement les deux formes possibles du type).
+  const byPerson = useMemo(() => {
+    const totals = new Map<string, { name: string; minutes: number }>();
+    for (const e of allTimeEntries) {
+      if (!e.person || !e.personId) continue;
+      const current = totals.get(e.personId) ?? { name: e.person.name, minutes: 0 };
+      current.minutes += entryDurationMinutes(e);
+      totals.set(e.personId, current);
+    }
+    return [...totals.values()].sort((a, b) => b.minutes - a.minutes);
+  }, [allTimeEntries]);
   const budgetMinutes = project?.budgetHours != null ? project.budgetHours * 60 : null;
   const overBudget = budgetMinutes != null && loggedMinutes > budgetMinutes;
 
@@ -239,14 +257,24 @@ export function EditProjectModal({
             onChange={(e) => setBudgetHours(e.target.value)}
             placeholder="—"
           />
-          <p className="mb-4 flex items-center gap-1.5 text-xs" style={{ color: overBudget ? "var(--color-alert)" : "var(--color-ink-muted)" }}>
+          <p className="flex items-center gap-1.5 text-xs" style={{ color: overBudget ? "var(--color-alert)" : "var(--color-ink-muted)" }}>
             {overBudget && <AlertTriangle size={13} className="flex-shrink-0" />}
             <Timer size={13} className="flex-shrink-0" aria-hidden="true" />
             {formatDurationFr(loggedMinutes)} enregistrées
             {budgetMinutes != null && ` sur ${formatDurationFr(budgetMinutes)} prévues`}
           </p>
+          {isAdmin && byPerson.length > 0 && (
+            <div className="mt-1 flex flex-col gap-1">
+              {byPerson.map((p) => (
+                <p key={p.name} className="flex items-center gap-1.5 pl-[19px] text-2xs text-ink-muted">
+                  <Users size={11} className="flex-shrink-0" aria-hidden="true" />
+                  {p.name} — {formatDurationFr(p.minutes)}
+                </p>
+              ))}
+            </div>
+          )}
 
-          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
+          <h3 className="mt-4 mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
             <ListChecks size={13} /> Tâches ({project.tasks.length})
           </h3>
           <div className="mb-4 flex flex-col gap-1.5">
