@@ -40,6 +40,19 @@ export async function updateNavOrder(order: string[] | null): Promise<{ error?: 
   return {};
 }
 
+const themeSchema = z.enum(["LIGHT", "DARK"]);
+
+/** Thème d'affichage — propre à chaque compte, comme l'ordre du menu. */
+export async function updateThemePreference(theme: "LIGHT" | "DARK"): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+
+  const parsed = themeSchema.parse(theme);
+  await db.user.update({ where: { id: session.user.id }, data: { theme: parsed } });
+  revalidatePath("/", "layout");
+  return {};
+}
+
 /** Test manuel du récap quotidien depuis Réglages — réservé aux administrateurs. */
 export async function sendDailyDigestNow(): Promise<{ error?: string; sent?: number; skipped?: number }> {
   const session = await auth();

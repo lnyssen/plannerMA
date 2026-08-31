@@ -1,6 +1,7 @@
 "use client";
 
 import type { Role } from "@prisma/client";
+import type { ThemePreference } from "@prisma/client";
 import {
   ArrowUpDown,
   Bell,
@@ -9,13 +10,16 @@ import {
   ListPlus,
   LogOut,
   Menu,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Sun,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { updateThemePreference } from "@/lib/actions/account";
 import { CreateProjectModal } from "@/components/modals/create-project-modal";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
 import { NavOrderModal } from "@/components/modals/nav-order-modal";
@@ -54,6 +58,7 @@ interface AppShellProps {
   notifyOnAssignment: boolean;
   notifyDailyDigest: boolean;
   navOrder: string[] | null;
+  theme: ThemePreference;
   counts: NavCounts;
   children: React.ReactNode;
 }
@@ -69,6 +74,7 @@ export function AppShell({
   notifyOnAssignment,
   notifyDailyDigest,
   navOrder,
+  theme,
   counts,
   children,
 }: AppShellProps) {
@@ -76,6 +82,18 @@ export function AppShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | "navOrder" | null>(null);
   const [collapsed, setCollapsedState] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<ThemePreference>(theme);
+
+  function toggleTheme() {
+    const next: ThemePreference = currentTheme === "DARK" ? "LIGHT" : "DARK";
+    // Application immédiate côté client (pas d'attente du round-trip
+    // serveur) — la valeur en base suit derrière et sera relue au prochain
+    // chargement complet de page (voir app/layout.tsx, qui pose data-theme
+    // avant le premier rendu pour éviter un flash).
+    document.documentElement.dataset.theme = next.toLowerCase();
+    setCurrentTheme(next);
+    void updateThemePreference(next);
+  }
 
   useEffect(() => {
     try {
@@ -231,6 +249,19 @@ export function AppShell({
             className={`flex items-center gap-1.5 text-xs font-medium text-white/80 ${isCollapsed ? "justify-center rounded-md p-1.5 hover:bg-white/10" : "mb-2 text-left underline-offset-2 hover:underline"} ${textButtonClass}`}
           >
             <Bell size={13} aria-hidden="true" /> {!isCollapsed && "Mes notifications"}
+          </button>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={currentTheme === "DARK" ? "Passer au thème clair" : "Passer au thème sombre"}
+            className={`flex items-center gap-1.5 text-xs font-medium text-white/80 ${isCollapsed ? "justify-center rounded-md p-1.5 hover:bg-white/10" : "mb-2 text-left underline-offset-2 hover:underline"} ${textButtonClass}`}
+          >
+            {currentTheme === "DARK" ? (
+              <Sun size={13} aria-hidden="true" />
+            ) : (
+              <Moon size={13} aria-hidden="true" />
+            )}{" "}
+            {!isCollapsed && (currentTheme === "DARK" ? "Thème clair" : "Thème sombre")}
           </button>
           <button
             type="button"

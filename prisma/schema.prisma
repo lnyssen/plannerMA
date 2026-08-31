@@ -36,6 +36,13 @@ enum Role {
   COLLABORATOR
 }
 
+/// Thème d'affichage — choix explicite propre au compte, pas de détection
+/// système : voir la palette sombre dans src/app/globals.css.
+enum ThemePreference {
+  LIGHT
+  DARK
+}
+
 /// Compte de connexion nominatif. Remplace le mot de passe commun du
 /// prototype (lignes 996-1043 du fichier source) : une vraie identité, liée
 /// à une fiche Person pour retrouver "mes tâches" sans sélecteur déclaratif.
@@ -66,6 +73,10 @@ model User {
   /// s'applique. Une entrée absente de ce tableau (nouvel écran ajouté
   /// depuis) retombe en fin de liste dans son ordre par défaut.
   navOrder String? @map("nav_order")
+  /// Clair par défaut ; bascule manuelle dans la barre latérale, propre au
+  /// compte (suit d'un appareil à l'autre, comme navOrder) plutôt qu'une
+  /// préférence de navigateur.
+  theme ThemePreference @default(LIGHT)
 
   @@map("users")
 }

@@ -150,6 +150,12 @@ fonctionne aujourd'hui, avec de vraies données en base :
   d'origine. Le fond de la barre latérale utilise désormais la même teinte
   violette que les titres/bordures actives (`#612DFA`, contraste AA conservé
   avec le texte blanc).
+- **Thème sombre** : bascule « Thème sombre »/« Thème clair » dans la barre
+  latérale (sous « Mes notifications »), propre à chaque compte
+  (`User.theme`, choix explicite — pas de détection système). Palette dédiée
+  (pas une simple inversion), contrastes vérifiés AA sur le fond sombre. Posé
+  sur `<html>` par le layout racine avant le premier rendu pour éviter un
+  flash du thème clair à l'arrivée.
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav à
 6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/

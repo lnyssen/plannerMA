@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     listActiveTasksForForms(),
     db.user.findUnique({
       where: { id: session.user.id },
-      select: { notifyOnAssignment: true, notifyDailyDigest: true, navOrder: true },
+      select: { notifyOnAssignment: true, notifyDailyDigest: true, navOrder: true, theme: true },
     }),
     // "Mes tâches" en attente : hors corbeille, statut pas encore "Terminé" —
     // même repli à 0 si le compte n'est relié à aucune Person (ex. admin
@@ -49,6 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       notifyOnAssignment={account?.notifyOnAssignment ?? true}
       notifyDailyDigest={account?.notifyDailyDigest ?? true}
       navOrder={parseNavOrder(account?.navOrder ?? null)}
+      theme={account?.theme ?? "LIGHT"}
       counts={{ mesTaches: mesTachesCount, demandes: demandesCount }}
     >
       {children}

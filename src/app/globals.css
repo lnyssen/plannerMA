@@ -52,6 +52,28 @@
   --text-tracking-display: -0.1px;
 }
 
+/*
+ * Thème sombre — bascule manuelle (Mes notifications ▸ Thème dans la barre
+ * latérale), pas de détection système : préférence propre au compte
+ * (User.theme), pas au navigateur. Palette distincte plutôt qu'une simple
+ * inversion : fonds proches du noir teintés violet (cohérents avec la
+ * marque) plutôt qu'un gris neutre générique. Contrastes vérifiés AA sur
+ * fond --color-paper : --color-heading ≈ 8.5:1, --color-ink ≈ 14.8:1,
+ * --color-alert ≈ 6.2:1. La barre latérale (--color-rail) ne change pas :
+ * déjà sombre dans les deux thèmes.
+ */
+:root[data-theme="dark"] {
+  --color-paper: #17131f;
+  --color-ink: #e8e6ee;
+  --color-ink-muted: rgba(232, 230, 238, 0.62);
+  --color-heading: #b9a3ff;
+  --color-line: #322b45;
+  --color-wash: #1f1a2b;
+  --color-alert: #ff5c86;
+  --color-alert-wash: #3a1626;
+  --color-tint: #4c4a80;
+}
+
 @theme inline {
   --color-paper: var(--color-paper);
   --color-ink: var(--color-ink);
@@ -84,9 +106,6 @@
   --text-lg--line-height: 1.28;
   --text-xl: 2.25rem; /* 36px — titres de vue */
   --text-xl--line-height: 1.25;
-
-  /* Angles vifs assumés : pas de rayon par défaut (registre plat et éditorial) */
-  --radius-none: 0;
 
   /* Basculement responsive à 900px (brief), pas le 768px par défaut de Tailwind */
   --breakpoint-md: 56.25rem;
