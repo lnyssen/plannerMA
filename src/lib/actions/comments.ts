@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { notifyMention } from "@/lib/mail/notify";
 import { createNotification } from "./notifications";
 
 const addCommentSchema = z.object({
@@ -59,6 +60,7 @@ export async function addComment(input: z.infer<typeof addCommentSchema>): Promi
 
   const authorName = session.user.name ?? session.user.email ?? "Quelqu’un";
   for (const personId of mentionedIds) {
+    void notifyMention(personId, { taskId, taskTitle: task.title, authorName, commentBody: body });
     await createNotification({
       recipientId: personId,
       type: "MENTION",

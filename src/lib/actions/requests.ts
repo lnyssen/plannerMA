@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { notifyRequest } from "@/lib/mail/notify";
 import { createNotification } from "./notifications";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
@@ -49,6 +50,7 @@ export async function createRequest(input: CreateRequestInput): Promise<{ error?
   const admins = await db.user.findMany({ where: { role: "ADMIN", personId: { not: null } } });
   for (const admin of admins) {
     if (!admin.personId) continue;
+    void notifyRequest(admin.personId, { subject, studioName: studio.name, requester });
     await createNotification({
       recipientId: admin.personId,
       type: "REQUEST",

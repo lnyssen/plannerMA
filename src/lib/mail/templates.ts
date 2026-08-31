@@ -38,6 +38,57 @@ export function assignmentEmail(personName: string, task: AssignmentTaskInfo) {
   };
 }
 
+export interface MentionInfo {
+  taskId: string;
+  taskTitle: string;
+  authorName: string;
+  commentBody: string;
+}
+
+/** Tronque un commentaire pour le courriel — le texte complet reste consultable sur la tâche. */
+function truncate(s: string, max: number): string {
+  return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
+}
+
+export function mentionEmail(personName: string, info: MentionInfo) {
+  const subject = `${info.authorName} vous a mentionné·e dans « ${info.taskTitle} »`;
+  const lines = [
+    `Bonjour ${personName},`,
+    `${info.authorName} vous a mentionné·e dans un commentaire sur la tâche « ${info.taskTitle} » :`,
+    `« ${truncate(info.commentBody, 300)} »`,
+    `Voir la tâche : ${APP_URL}/taches?open=${info.taskId}`,
+    `Vous recevez ce courriel car les alertes de mention sont activées pour votre compte (Réglages → Mes notifications).`,
+  ];
+  return {
+    subject,
+    text: lines.join("\n\n"),
+    html: wrapHtml(subject, lines),
+  };
+}
+
+export interface RequestInfo {
+  subject: string;
+  studioName: string;
+  requester: string | null;
+}
+
+export function requestEmail(personName: string, info: RequestInfo) {
+  const subject = `Nouvelle demande (${info.studioName}) : ${info.subject}`;
+  const lines = [
+    `Bonjour ${personName},`,
+    `Une nouvelle demande a été déposée pour le studio ${info.studioName} : « ${info.subject} »${
+      info.requester ? ` (demandée par ${info.requester})` : ""
+    }.`,
+    `Voir les demandes : ${APP_URL}/demandes`,
+    `Vous recevez ce courriel car les alertes de nouvelle demande sont activées pour votre compte (Réglages → Mes notifications).`,
+  ];
+  return {
+    subject,
+    text: lines.join("\n\n"),
+    html: wrapHtml(subject, lines),
+  };
+}
+
 export interface DigestTaskInfo {
   title: string;
   projectName: string | null;

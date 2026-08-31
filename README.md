@@ -46,9 +46,11 @@ fonctionne aujourd'hui, avec de vraies données en base :
 - Effets hover/pressed cohérents sur les éléments interactifs
   (`src/components/ui/buttons.ts` centralise les styles).
 - **Notifications par courriel** : alerte à l'attribution d'une tâche, récap
-  quotidien des tâches en cours/à venir sous sept jours — chacune activable
-  ou non par compte (« Mes notifications », en bas de la barre latérale).
-  Sans SMTP configuré (développement), les courriels sont écrits dans
+  quotidien des tâches en cours/à venir sous sept jours, alerte de mention en
+  commentaire, alerte de nouvelle demande (réservée aux administrateurs,
+  seuls destinataires) — chacune activable ou non par compte (« Mes
+  notifications », en bas de la barre latérale). Sans SMTP configuré
+  (développement), les courriels sont écrits dans
   `.data/mail/` plutôt qu'envoyés — voir `src/lib/mail/`. Le récap quotidien
   se déclenche via `GET /api/cron/daily-digest` (en-tête `x-cron-secret`),
   à programmer une fois par jour ouvré en production (planificateur

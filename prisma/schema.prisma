@@ -67,6 +67,10 @@ model User {
   notifyOnAssignment Boolean @default(true) @map("notify_on_assignment")
   /// Récapitulatif quotidien par courriel des tâches en cours/à venir.
   notifyDailyDigest  Boolean @default(true) @map("notify_daily_digest")
+  /// Alerte par courriel quand on est mentionné·e ("@Nom") dans un commentaire.
+  notifyOnMention    Boolean @default(true) @map("notify_on_mention")
+  /// Alerte par courriel à une nouvelle demande — n'a d'effet que pour un compte ADMIN (seuls destinataires des demandes).
+  notifyOnRequest    Boolean @default(true) @map("notify_on_request")
   /// Ordre personnalisé des entrées du menu de gauche (tableau JSON de
   /// `href`, ex. `["/taches","/projets",…]`) — null tant que l'utilisateur
   /// n'a rien réordonné, auquel cas l'ordre par défaut de NAV_ENTRIES
@@ -454,9 +458,10 @@ enum NotificationType {
 /// Notifications dans l'application (cloche de la barre latérale) — distinctes
 /// des courriels envoyés par src/lib/mail : mêmes déclencheurs (attribution,
 /// mention, nouvelle demande), mais toujours créées, sans préférence
-/// d'activation (contrairement aux courriels, volontairement plus rares).
-/// Pas de temps réel (WebSocket) par choix du brief : la cloche interroge par
-/// sondage court côté client (voir notification-bell.tsx).
+/// d'activation (contrairement aux courriels, chacun activable séparément
+/// par compte — voir User.notifyOn*). Pas de temps réel (WebSocket) par
+/// choix du brief : la cloche interroge par sondage court côté client (voir
+/// notification-bell.tsx).
 model Notification {
   id          String           @id @default(cuid())
   recipient   Person           @relation(fields: [recipientId], references: [id], onDelete: Cascade)

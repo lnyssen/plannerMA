@@ -57,6 +57,8 @@ interface AppShellProps {
   role: Role;
   notifyOnAssignment: boolean;
   notifyDailyDigest: boolean;
+  notifyOnMention: boolean;
+  notifyOnRequest: boolean;
   navOrder: string[] | null;
   theme: ThemePreference;
   counts: NavCounts;
@@ -73,6 +75,8 @@ export function AppShell({
   role,
   notifyOnAssignment,
   notifyDailyDigest,
+  notifyOnMention,
+  notifyOnRequest,
   navOrder,
   theme,
   counts,
@@ -357,6 +361,9 @@ export function AppShell({
         <NotificationPrefsModal
           initialNotifyOnAssignment={notifyOnAssignment}
           initialNotifyDailyDigest={notifyDailyDigest}
+          initialNotifyOnMention={notifyOnMention}
+          initialNotifyOnRequest={notifyOnRequest}
+          role={role}
           onClose={() => setModal(null)}
         />
       )}

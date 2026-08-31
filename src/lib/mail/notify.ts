@@ -1,12 +1,21 @@
-// Point d'entrée unique pour les deux notifications par courriel prévues :
-// alerte d'attribution (déclenchée par les actions serveur de tasks.ts) et
-// récap quotidien (déclenché par la route /api/cron/daily-digest). Les deux
-// respectent les préférences par compte (User.notifyOnAssignment /
-// notifyDailyDigest, réglables depuis « Mes notifications »).
+// Point d'entrée unique pour les notifications par courriel : alerte
+// d'attribution et mention (tasks.ts / comments.ts), alerte de nouvelle
+// demande (requests.ts, admins seulement) et récap quotidien (déclenché par
+// la route /api/cron/daily-digest). Toutes respectent une préférence par
+// compte (User.notifyOn*, réglables depuis « Mes notifications ») — voir le
+// garde `if (!user.notifyOnX) return` au début de chaque fonction.
 
 import { db } from "@/lib/db";
 import { addDaysIso, today } from "@/lib/planning/dates";
-import { assignmentEmail, dailyDigestEmail, type AssignmentTaskInfo } from "./templates";
+import {
+  assignmentEmail,
+  dailyDigestEmail,
+  mentionEmail,
+  requestEmail,
+  type AssignmentTaskInfo,
+  type MentionInfo,
+  type RequestInfo,
+} from "./templates";
 import { sendMail } from "./transport";
 
 /** Alerte d'attribution — appelée après la création/modification d'une tâche si l'attributaire a changé. */
@@ -21,6 +30,32 @@ export async function notifyAssignment(personId: string, task: AssignmentTaskInf
     // Une notification en échec ne doit jamais faire échouer l'action métier
     // (création/modification de la tâche) qui l'a déclenchée.
     console.error("[mail] échec de l'alerte d'attribution :", err);
+  }
+}
+
+/** Alerte de mention — appelée pour chaque personne taguée ("@Nom") dans un commentaire. */
+export async function notifyMention(personId: string, info: MentionInfo): Promise<void> {
+  const user = await db.user.findUnique({ where: { personId }, include: { person: true } });
+  if (!user || !user.notifyOnMention || !user.person) return;
+
+  const { subject, text, html } = mentionEmail(user.person.name, info);
+  try {
+    await sendMail({ to: user.email, subject, text, html });
+  } catch (err) {
+    console.error("[mail] échec de l'alerte de mention :", err);
+  }
+}
+
+/** Alerte de nouvelle demande — appelée pour chaque administrateur à la création d'une demande. */
+export async function notifyRequest(personId: string, info: RequestInfo): Promise<void> {
+  const user = await db.user.findUnique({ where: { personId }, include: { person: true } });
+  if (!user || !user.notifyOnRequest || !user.person) return;
+
+  const { subject, text, html } = requestEmail(user.person.name, info);
+  try {
+    await sendMail({ to: user.email, subject, text, html });
+  } catch (err) {
+    console.error("[mail] échec de l'alerte de demande :", err);
   }
 }
 
