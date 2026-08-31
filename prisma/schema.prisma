@@ -60,6 +60,12 @@ model User {
   notifyOnAssignment Boolean @default(true) @map("notify_on_assignment")
   /// Récapitulatif quotidien par courriel des tâches en cours/à venir.
   notifyDailyDigest  Boolean @default(true) @map("notify_daily_digest")
+  /// Ordre personnalisé des entrées du menu de gauche (tableau JSON de
+  /// `href`, ex. `["/taches","/projets",…]`) — null tant que l'utilisateur
+  /// n'a rien réordonné, auquel cas l'ordre par défaut de NAV_ENTRIES
+  /// s'applique. Une entrée absente de ce tableau (nouvel écran ajouté
+  /// depuis) retombe en fin de liste dans son ordre par défaut.
+  navOrder String? @map("nav_order")
 
   @@map("users")
 }

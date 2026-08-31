@@ -1,26 +1,13 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import {
-  Activity,
-  Briefcase,
-  Building2,
-  CheckSquare,
-  ClipboardList,
-  Columns3,
-  ListChecks,
-  Menu,
-  Plus,
-  Settings,
-  Table2,
-  Users,
-  X,
-} from "lucide-react";
+import { Menu, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { CreateProjectModal } from "@/components/modals/create-project-modal";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
+import { NavOrderModal } from "@/components/modals/nav-order-modal";
 import { NotificationPrefsModal } from "@/components/modals/notification-prefs-modal";
 import { RequestModal } from "@/components/modals/request-modal";
 import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass, textButtonClass } from "@/components/ui/buttons";
@@ -31,28 +18,8 @@ import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskOption } from "@/lib/data/tasks";
 import { signOutAction } from "./actions";
 import { GlobalSearch } from "./global-search";
+import { applyNavOrder, NAV_ENTRIES } from "./nav-entries";
 import { NotificationBell } from "./notification-bell";
-
-// Nav conforme à la maquette Claude Design (5 écrans conçus : Semaine,
-// Projets, Tâches, Équipe, Réglages) + Gantt, ajouté ici avec le même
-// système visuel : la maquette n'a pas couvert cet écran mais le brief
-// fonctionnel et la demande explicite de l'utilisateur le requièrent
-// (glisser-déposer des barres). Projets et Tâches en tête, à la demande
-// explicite de l'utilisateur. Clients juste au-dessus d'Équipe, également à
-// la demande explicite. « Mes tâches » et « Demandes », présents dans le
-// brief initial mais absents de la maquette livrée, ont rejoint la nav.
-const NAV_ENTRIES = [
-  { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false },
-  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false },
-  { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false },
-  { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false },
-  { href: "/portefeuille", label: "Portefeuille", icon: Briefcase, adminOnly: false },
-  { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
-  { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
-  { href: "/charge", label: "Charge", icon: Activity, adminOnly: true },
-  { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true },
-  { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true },
-] as const;
 
 const ROLE_LABEL: Record<Role, string> = {
   ADMIN: "Administrateur",
@@ -70,6 +37,7 @@ interface AppShellProps {
   role: Role;
   notifyOnAssignment: boolean;
   notifyDailyDigest: boolean;
+  navOrder: string[] | null;
   children: React.ReactNode;
 }
 
@@ -83,15 +51,21 @@ export function AppShell({
   role,
   notifyOnAssignment,
   notifyDailyDigest,
+  navOrder,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | null>(null);
+  const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | "navOrder" | null>(null);
+
+  const orderedEntries = applyNavOrder(
+    NAV_ENTRIES.filter((e) => !e.adminOnly || role === "ADMIN"),
+    navOrder,
+  );
 
   const nav = (
     <nav aria-label="Navigation principale" className="flex flex-col border-b border-white/15 pb-3">
-      {NAV_ENTRIES.filter((e) => !e.adminOnly || role === "ADMIN").map(({ href, label, icon: Icon }) => {
+      {orderedEntries.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
@@ -184,6 +158,13 @@ export function AppShell({
         >
           Mes notifications
         </button>
+        <button
+          type="button"
+          onClick={() => setModal("navOrder")}
+          className={`mb-2 block text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline ${textButtonClass}`}
+        >
+          Réorganiser le menu
+        </button>
         <form action={signOutAction}>
           <button
             type="submit"
@@ -269,6 +250,7 @@ export function AppShell({
           onClose={() => setModal(null)}
         />
       )}
+      {modal === "navOrder" && <NavOrderModal role={role} initialOrder={navOrder} onClose={() => setModal(null)} />}
     </div>
   );
 }

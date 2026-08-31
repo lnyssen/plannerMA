@@ -24,6 +24,22 @@ export async function updateNotificationPrefs(input: z.infer<typeof prefsSchema>
   return {};
 }
 
+const navOrderSchema = z.array(z.string()).nullable();
+
+/** Ordre personnalisé du menu de gauche — propre à chaque compte, pas un réglage admin. `null` réinitialise à l'ordre par défaut. */
+export async function updateNavOrder(order: string[] | null): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+
+  const parsed = navOrderSchema.parse(order);
+  await db.user.update({
+    where: { id: session.user.id },
+    data: { navOrder: parsed ? JSON.stringify(parsed) : null },
+  });
+  revalidatePath("/", "layout");
+  return {};
+}
+
 /** Test manuel du récap quotidien depuis Réglages — réservé aux administrateurs. */
 export async function sendDailyDigestNow(): Promise<{ error?: string; sent?: number; skipped?: number }> {
   const session = await auth();

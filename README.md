@@ -126,6 +126,14 @@ fonctionne aujourd'hui, avec de vraies données en base :
   job planifié ni file d'attente — déclenché directement par le changement de
   statut. Un garde-fou (`Task.recurrenceParentId`) empêche de générer deux
   fois la même suite si le statut repasse par « Terminé ».
+- **Menu de gauche réorganisable** : « Réorganiser le menu », en bas de la
+  barre latérale (sous « Mes notifications »), ouvre une modale avec des
+  flèches haut/bas par entrée — propre à chaque compte (`User.navOrder`),
+  sans effet sur les autres utilisateurs. « Ordre par défaut » réinitialise.
+- **Champ « Équipe ou service »** (fiche personne, Équipe → Ajouter/Modifier) :
+  texte libre, séparé des cases à cocher « Studios de rattachement » —
+  permet un intitulé comme « Projets Européens » ou « EP » sans que ce soit
+  traité comme un studio. Regroupe aussi les personnes sur la page Équipe.
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav à
 6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/

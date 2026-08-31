@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/shell/app-shell";
+import { parseNavOrder } from "@/components/shell/nav-entries";
 import { db } from "@/lib/db";
 import { listClients } from "@/lib/data/clients";
 import { listPeople } from "@/lib/data/people";
@@ -20,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     listActiveTasksForForms(),
     db.user.findUnique({
       where: { id: session.user.id },
-      select: { notifyOnAssignment: true, notifyDailyDigest: true },
+      select: { notifyOnAssignment: true, notifyDailyDigest: true, navOrder: true },
     }),
   ]);
 
@@ -35,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       role={session.user.role}
       notifyOnAssignment={account?.notifyOnAssignment ?? true}
       notifyDailyDigest={account?.notifyDailyDigest ?? true}
+      navOrder={parseNavOrder(account?.navOrder ?? null)}
     >
       {children}
     </AppShell>
