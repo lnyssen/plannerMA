@@ -32,7 +32,7 @@ export default async function PlanningPage({
         startDate: { lte: fromIsoDate(rangeEnd) },
         endDate: { gte: fromIsoDate(mondayIso) },
       },
-      include: { studio: true, project: true },
+      include: { studio: true, project: { include: { client: true } } },
     }),
     listStudios(),
     listPeople(),

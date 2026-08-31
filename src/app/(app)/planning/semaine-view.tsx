@@ -19,7 +19,7 @@ export interface WeekTask {
   title: string;
   assigneeId: string | null;
   studio: { name: string; fillHex: string; colorHex: string };
-  project: { name: string } | null;
+  project: { name: string; client: { name: string } } | null;
   startDate: Date;
   endDate: Date;
 }
@@ -184,7 +184,11 @@ function PersonRow({
                 style={{ background: t.studio.fillHex, color: t.studio.colorHex }}
               >
                 <div className="text-2xs font-semibold">{t.title}</div>
-                {t.project && <div className="text-2xs opacity-85">{t.project.name}</div>}
+                {t.project && (
+                  <div className="text-2xs opacity-85">
+                    {t.project.client.name} — {t.project.name}
+                  </div>
+                )}
               </button>
             ))}
           </div>

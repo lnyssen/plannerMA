@@ -184,7 +184,8 @@ export function GanttView({
     }
     const out: Row[] = [];
     for (const list of byProject.values()) {
-      out.push({ type: "projet", label: list[0].project?.name ?? "Sans projet" });
+      const project = list[0].project;
+      out.push({ type: "projet", label: project ? `${project.client.name} — ${project.name}` : "Sans projet" });
       for (const t of [...list].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())) {
         out.push({ type: "tache", label: t.title, task: t });
       }

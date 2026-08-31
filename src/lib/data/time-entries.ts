@@ -7,7 +7,9 @@ export function listTimeEntriesForPerson(personId: string) {
   return db.timeEntry.findMany({
     where: { personId },
     orderBy: { startedAt: "desc" },
-    include: { task: { select: { id: true, title: true, project: { select: { name: true } } } } },
+    include: {
+      task: { select: { id: true, title: true, project: { select: { name: true, client: { select: { name: true } } } } } },
+    },
   });
 }
 
@@ -18,7 +20,7 @@ export function listAllTimeEntries() {
   return db.timeEntry.findMany({
     orderBy: { startedAt: "desc" },
     include: {
-      task: { select: { id: true, title: true, project: { select: { name: true } } } },
+      task: { select: { id: true, title: true, project: { select: { name: true, client: { select: { name: true } } } } } },
       person: { select: { id: true, name: true } },
     },
   });

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 export function listTasksForGantt() {
   return db.task.findMany({
     where: { trashedAt: null },
-    include: { project: true, studio: true, assignee: true },
+    include: { project: { include: { client: true } }, studio: true, assignee: true },
     orderBy: { startDate: "asc" },
   });
 }

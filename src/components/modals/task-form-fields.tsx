@@ -5,6 +5,7 @@ import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskOption } from "@/lib/data/tasks";
+import { taskContextLabel } from "@/lib/planning/labels";
 import { FieldLabel, fieldInputClass } from "./modal-shell";
 
 export interface TaskFormValues {
@@ -116,7 +117,7 @@ export function TaskFormFields({
           <option value="">Sans projet</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name} — {p.client.name}
+              {p.client.name} — {p.name}
             </option>
           ))}
         </select>
@@ -152,8 +153,7 @@ export function TaskFormFields({
             <option value="">Aucune dépendance</option>
             {tasks.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.title}
-                {t.project ? ` — ${t.project.name}` : ""}
+                {taskContextLabel(t)}
               </option>
             ))}
           </select>

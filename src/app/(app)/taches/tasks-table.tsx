@@ -14,10 +14,12 @@ import { toIsoDate } from "@/lib/planning/dates";
 
 type SortKey = "title" | "project" | "client" | "studio" | "person" | "dates" | "status";
 
+// Ordre des colonnes : nomenclature Client — Projet — Tâche partout dans
+// l'appli, du plus général au plus précis.
 const ALL_COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "title", label: "Intitulé" },
-  { key: "project", label: "Projet" },
   { key: "client", label: "Client" },
+  { key: "project", label: "Projet" },
+  { key: "title", label: "Tâche" },
   { key: "studio", label: "Studio" },
   { key: "person", label: "Personne" },
   { key: "dates", label: "Dates" },
@@ -184,7 +186,7 @@ export function TasksTable({
                 <div className="mb-2 text-xs text-ink-muted">
                   {t.project ? (
                     <>
-                      {t.project.name} — {t.project.client.name}
+                      {t.project.client.name} — {t.project.name}
                     </>
                   ) : (
                     "Sans projet"
@@ -229,8 +231,6 @@ export function TasksTable({
                   className="cursor-pointer transition-colors duration-100 hover:bg-wash active:bg-tint"
                   title="Ouvrir la fiche"
                 >
-                  <td className="border-b border-line px-3 py-2.5 text-sm font-semibold text-heading">{t.title}</td>
-                  <td className="border-b border-line px-3 py-2.5 text-sm text-ink">{t.project?.name ?? "—"}</td>
                   <td className="border-b border-line px-3 py-2.5 text-sm text-ink">
                     {t.project ? (
                       <div className="flex items-center gap-1.5">
@@ -243,6 +243,8 @@ export function TasksTable({
                       "—"
                     )}
                   </td>
+                  <td className="border-b border-line px-3 py-2.5 text-sm text-ink">{t.project?.name ?? "—"}</td>
+                  <td className="border-b border-line px-3 py-2.5 text-sm font-semibold text-heading">{t.title}</td>
                   <td className="border-b border-line px-3 py-2.5">
                     <StudioBadge name={t.studio.name} fillHex={t.studio.fillHex} colorHex={t.studio.colorHex} />
                   </td>

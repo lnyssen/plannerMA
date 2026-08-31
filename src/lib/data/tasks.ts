@@ -15,7 +15,7 @@ export function listActiveTasksForForms() {
   return db.task.findMany({
     where: { trashedAt: null },
     orderBy: { title: "asc" },
-    select: { id: true, title: true, project: { select: { name: true } } },
+    select: { id: true, title: true, project: { select: { name: true, client: { select: { name: true } } } } },
   });
 }
 

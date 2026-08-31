@@ -19,7 +19,9 @@ export async function getRunningTimer() {
   if (!session?.user?.personId) return null;
   return db.timeEntry.findFirst({
     where: { personId: session.user.personId, endedAt: null },
-    include: { task: { select: { id: true, title: true, project: { select: { name: true } } } } },
+    include: {
+      task: { select: { id: true, title: true, project: { select: { name: true, client: { select: { name: true } } } } } },
+    },
   });
 }
 
@@ -127,17 +129,21 @@ const moveEntrySchema = z
     entryId: z.string(),
     startedAt: z.string().datetime(),
     endedAt: z.string().datetime(),
+    // Facultatif — présent quand l'édition vient du popover "Modifier le
+    // créneau" (qui permet aussi de changer la tâche), absent quand elle
+    // vient d'un simple glisser/redimensionner de bloc.
+    taskId: z.string().optional(),
   })
   .refine((v) => v.endedAt > v.startedAt, { message: "La fin doit être après le début.", path: ["endedAt"] });
 
-/** Déplacement/redimensionnement depuis le calendrier (glisser une écriture, ou son bord) — jamais sur un minuteur en cours. */
+/** Déplacement/redimensionnement/édition depuis le calendrier — jamais sur un minuteur en cours. */
 export async function updateTimeEntryTimes(input: z.infer<typeof moveEntrySchema>): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
 
   const parsed = moveEntrySchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Créneau invalide." };
-  const { entryId, startedAt, endedAt } = parsed.data;
+  const { entryId, startedAt, endedAt, taskId } = parsed.data;
 
   const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true, endedAt: true } });
   if (!entry) return { error: "Cette écriture n’existe plus." };
@@ -146,7 +152,10 @@ export async function updateTimeEntryTimes(input: z.infer<typeof moveEntrySchema
   }
   if (entry.endedAt === null) return { error: "Un minuteur en cours ne se déplace pas — arrêtez-le d’abord." };
 
-  await db.timeEntry.update({ where: { id: entryId }, data: { startedAt: new Date(startedAt), endedAt: new Date(endedAt) } });
+  await db.timeEntry.update({
+    where: { id: entryId },
+    data: { startedAt: new Date(startedAt), endedAt: new Date(endedAt), ...(taskId ? { taskId } : {}) },
+  });
   revalidateTimeViews();
   return {};
 }

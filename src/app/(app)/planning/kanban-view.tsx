@@ -24,7 +24,11 @@ function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) =
       className="cursor-grab rounded-lg border border-line bg-paper p-2.5 text-left transition-colors duration-100 hover:border-heading active:cursor-grabbing"
     >
       <p className="mb-1.5 text-sm font-bold text-heading">{task.title}</p>
-      {task.project && <p className="mb-1.5 truncate text-2xs text-ink-muted">{task.project.name}</p>}
+      {task.project && (
+        <p className="mb-1.5 truncate text-2xs text-ink-muted">
+          {task.project.client.name} — {task.project.name}
+        </p>
+      )}
       <div className="mb-1.5">
         <StudioBadge name={task.studio.name} fillHex={task.studio.fillHex} colorHex={task.studio.colorHex} />
       </div>

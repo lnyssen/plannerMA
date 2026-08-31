@@ -7,6 +7,7 @@ import { addManualEntry, deleteTimeEntry, startTimer, stopTimer, type RunningTim
 import type { TimeEntryWithPerson, TimeEntryWithTask } from "@/lib/data/time-entries";
 import type { TaskOption } from "@/lib/data/tasks";
 import { formatLongFr, quandFr, toIsoDate, today } from "@/lib/planning/dates";
+import { formatHourMinute, taskContextLabel } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { fieldInputClass, FieldLabel } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
@@ -176,8 +177,8 @@ export function TempsView({
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-heading bg-wash px-4 py-3">
               <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-alert" aria-hidden="true" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-heading">{runningTimer.task.title}</p>
-                {runningTimer.task.project && <p className="text-xs text-ink-muted">{runningTimer.task.project.name}</p>}
+                <p className="text-sm font-semibold text-heading">{taskContextLabel(runningTimer.task)}</p>
+                <p className="text-xs text-ink-muted tabular-nums">Démarré à {formatHourMinute(runningTimer.startedAt)}</p>
               </div>
               <span className="font-[family-name:var(--font-display)] text-lg font-semibold text-heading tabular-nums">
                 {formatDurationFr(entryDurationMinutes(runningTimer, referenceNow))}
@@ -202,8 +203,7 @@ export function TempsView({
                 >
                   {tasks.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.title}
-                      {t.project ? ` — ${t.project.name}` : ""}
+                      {taskContextLabel(t)}
                     </option>
                   ))}
                 </select>
@@ -332,10 +332,12 @@ export function TempsView({
                     {entries.map((e) => (
                       <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
                         <div className="flex-1">
-                          <span className="text-ink">{e.task.title}</span>
-                          {e.task.project && <span className="text-ink-muted"> — {e.task.project.name}</span>}
+                          <span className="text-ink">{taskContextLabel(e.task)}</span>
                           {e.note && <p className="text-xs text-ink-muted">{e.note}</p>}
                         </div>
+                        <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">
+                          {formatHourMinute(e.startedAt)}–{e.endedAt ? formatHourMinute(e.endedAt) : "…"}
+                        </span>
                         <span className="flex-shrink-0 text-xs font-semibold text-ink tabular-nums">
                           {formatDurationFr(entryDurationMinutes(e, referenceNow))}
                           {!e.endedAt && " (en cours)"}
@@ -387,10 +389,12 @@ export function TempsView({
                 <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
                   <span className="w-32 flex-shrink-0 truncate font-semibold text-heading">{e.person.name}</span>
                   <div className="flex-1">
-                    <span className="text-ink">{e.task.title}</span>
-                    {e.task.project && <span className="text-ink-muted"> — {e.task.project.name}</span>}
+                    <span className="text-ink">{taskContextLabel(e.task)}</span>
                   </div>
                   <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">{quandFr(e.startedAt)}</span>
+                  <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">
+                    {formatHourMinute(e.startedAt)}–{e.endedAt ? formatHourMinute(e.endedAt) : "…"}
+                  </span>
                   <span className="flex-shrink-0 text-xs font-semibold text-ink tabular-nums">
                     {formatDurationFr(entryDurationMinutes(e, referenceNow))}
                     {!e.endedAt && " (en cours)"}
