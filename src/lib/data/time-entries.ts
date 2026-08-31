@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { sumDurationMinutes } from "@/lib/planning/time";
 
 // Pas de fenêtre de dates pour l'instant (petite équipe, volume faible) —
 // à revoir si la table grossit significativement.
@@ -57,4 +58,20 @@ export function listProjectsWithBudget() {
       tasks: { select: { timeEntries: { select: { startedAt: true, endedAt: true } } } },
     },
   });
+}
+
+/**
+ * Nombre de projets actifs qui dépassent leur budget d'heures — pour la
+ * puce de nav sur "Projets". Ne contient que des totaux (pas de détail par
+ * personne), donc contrairement à `listProjectsWithBudget` ci-dessus, pas
+ * besoin de réserver ça aux administrateurs — voir la règle de
+ * confidentialité dans getProjectDetail (src/lib/actions/projects.ts).
+ */
+export async function countProjectsOverBudget(): Promise<number> {
+  const projects = await listProjectsWithBudget();
+  const now = new Date();
+  return projects.filter((p) => {
+    const totalMinutes = sumDurationMinutes([...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)], now);
+    return totalMinutes > (p.budgetHours ?? 0) * 60;
+  }).length;
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
 import type { TaskFormValues } from "@/components/modals/task-form-fields";
 import { CreateButton } from "@/components/shell/create-button";
 import { dangerOutlineButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import { deleteRequest } from "@/lib/actions/requests";
 import type { PersonSummary } from "@/lib/data/people";
@@ -77,7 +78,7 @@ export function DemandesView({
       <p className="mb-6 text-sm text-ink-muted">À convertir en tâche ou à écarter.</p>
 
       {requests.length === 0 ? (
-        <p className="text-sm text-ink-muted">Aucune demande en attente.</p>
+        <EmptyState icon={ClipboardCheck} title="Aucune demande en attente" description="Tout est traité — rien à convertir en tâche pour l’instant." />
       ) : (
         <div className="flex max-w-2xl flex-col gap-3">
           {requests.map((r) => (

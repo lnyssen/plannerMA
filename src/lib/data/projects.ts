@@ -22,8 +22,15 @@ export function listProjectsWithCounts(archived = false) {
       // Statuts seuls (pas les sous-tâches) : suffisant pour la jauge
       // d'avancement moyenne de la vue Projets, qui reste au niveau tâche —
       // voir taskProgress dans src/lib/planning/tasks.ts.
-      tasks: { where: { trashedAt: null }, select: { status: { select: { position: true, isDone: true } } } },
+      tasks: {
+        where: { trashedAt: null },
+        select: {
+          status: { select: { position: true, isDone: true } },
+          timeEntries: { select: { startedAt: true, endedAt: true } },
+        },
+      },
       milestones: { orderBy: { dueDate: "asc" } },
+      timeEntries: { select: { startedAt: true, endedAt: true } },
       _count: { select: { tasks: { where: { trashedAt: null } } } },
     },
   });

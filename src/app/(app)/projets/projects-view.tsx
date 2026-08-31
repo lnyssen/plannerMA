@@ -14,6 +14,7 @@ import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
 import { taskProgress } from "@/lib/planning/tasks";
+import { sumDurationMinutes } from "@/lib/planning/time";
 
 const VIEW_STORAGE_KEY = "planning-studios:projets-view";
 
@@ -37,6 +38,18 @@ function milestoneHealth(project: ProjectWithCounts, referenceDate: string) {
   return { overdueCount: overdue.length, next };
 }
 
+/**
+ * Dépassement de budget de temps — même règle que checkAndNotifyBudget
+ * (src/lib/actions/time-entries.ts) : total des écritures liées directement
+ * au projet + celles de ses tâches, comparé au budget en heures. `null` si
+ * aucun budget n'est défini (rien à comparer).
+ */
+function projectOverBudget(project: ProjectWithCounts): boolean {
+  if (project.budgetHours == null) return false;
+  const loggedMinutes = sumDurationMinutes([...project.timeEntries, ...project.tasks.flatMap((t) => t.timeEntries)]);
+  return loggedMinutes > project.budgetHours * 60;
+}
+
 function ProjectCard({
   project,
   statuses,
@@ -48,6 +61,7 @@ function ProjectCard({
 }) {
   const count = project._count.tasks;
   const progress = averageProgress(project, statuses);
+  const overBudget = projectOverBudget(project);
 
   return (
     <button
@@ -58,9 +72,20 @@ function ProjectCard({
     >
       <div className="mb-1 flex items-start justify-between gap-2">
         <div className="font-[family-name:var(--font-body)] text-base font-bold text-heading">{project.name}</div>
-        <span className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
-          {project.type === "INTERNAL" ? "Interne" : "Externe"}
-        </span>
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          {overBudget && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-bold uppercase"
+              style={{ background: "var(--color-alert-wash)", color: "var(--color-alert)" }}
+              title="Temps dépassé"
+            >
+              <AlertTriangle size={11} /> Budget
+            </span>
+          )}
+          <span className="rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
+            {project.type === "INTERNAL" ? "Interne" : "Externe"}
+          </span>
+        </div>
       </div>
       <div className="mb-3 text-sm text-ink">{project.client.name}</div>
       {project.studios.length > 0 && (
@@ -174,6 +199,7 @@ export function ProjectsView({
         .map((project) => ({
           project,
           progress: averageProgress(project, statuses),
+          overBudget: projectOverBudget(project),
           ...milestoneHealth(project, referenceDate),
         }))
         // Les projets avec des jalons en retard remontent en premier, puis
@@ -324,10 +350,13 @@ export function ProjectsView({
                 <th className="min-w-[90px] px-3 py-2 text-center text-xs font-semibold text-ink-muted uppercase">
                   En retard
                 </th>
+                <th className="min-w-[90px] px-3 py-2 text-center text-xs font-semibold text-ink-muted uppercase">
+                  Budget
+                </th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ project, progress, next, overdueCount }) => (
+              {rows.map(({ project, progress, next, overdueCount, overBudget }) => (
                 <tr key={project.id} className="border-t border-line">
                   <td className="sticky left-0 z-10 bg-paper px-3 py-2.5">
                     <button
@@ -374,6 +403,19 @@ export function ProjectsView({
                         title={`${overdueCount} jalon${overdueCount === 1 ? "" : "s"} en retard`}
                       >
                         <AlertTriangle size={13} /> {overdueCount}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-ink-muted">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    {overBudget ? (
+                      <span
+                        className="inline-flex items-center gap-1 text-sm font-semibold"
+                        style={{ color: "var(--color-alert)" }}
+                        title="Temps dépassé"
+                      >
+                        <AlertTriangle size={13} />
                       </span>
                     ) : (
                       <span className="text-sm text-ink-muted">—</span>

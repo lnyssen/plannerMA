@@ -7,6 +7,7 @@ import { useEffect, useState, useTransition } from "react";
 import { createPerson, deletePerson, getPersonDetail, invitePerson, removeUserAccess, updatePerson } from "@/lib/actions/people";
 import type { StudioSummary } from "@/lib/data/studios";
 import { dangerButtonClass, dangerOutlineButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { DetailSkeleton } from "@/components/ui/skeleton";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -127,7 +128,7 @@ export function PersonModal({
   return (
     <ModalShell title={personId ? "Modifier la personne" : "Ajouter une personne"} onClose={onClose}>
       {loading ? (
-        <p className="text-sm text-ink-muted">Chargement…</p>
+        <DetailSkeleton />
       ) : (
         <>
           <FieldLabel htmlFor="person-name">Prénom ou nom affiché</FieldLabel>

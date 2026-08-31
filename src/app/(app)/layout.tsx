@@ -8,12 +8,14 @@ import { listPeople } from "@/lib/data/people";
 import { listActiveProjectsForForms } from "@/lib/data/projects";
 import { listStudios } from "@/lib/data/studios";
 import { listActiveTasksForForms } from "@/lib/data/tasks";
+import { countProjectsOverBudget } from "@/lib/data/time-entries";
+import { fromIsoDate, today } from "@/lib/planning/dates";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/connexion"); // filet de sécurité, le middleware couvre déjà ce cas
 
-  const [studios, people, projects, clients, tasks, account, mesTachesCount, demandesCount] = await Promise.all([
+  const [studios, people, projects, clients, tasks, account, mesTachesCount, demandesCount, tasksLateCount, projectsOverBudgetCount] = await Promise.all([
     listStudios(),
     listPeople(),
     listActiveProjectsForForms(),
@@ -42,6 +44,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // été converti en tâche (voir src/lib/actions/requests.ts) — son compte
     // total est donc déjà "en attente", pas besoin d'un filtre de statut.
     session.user.role === "ADMIN" ? db.request.count() : Promise.resolve(0),
+    // Tâches en retard : échéance dépassée, pas encore terminées, hors corbeille.
+    db.task.count({
+      where: { trashedAt: null, status: { isDone: false }, endDate: { lt: fromIsoDate(today()) } },
+    }),
+    countProjectsOverBudget(),
   ]);
 
   return (
@@ -59,7 +66,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       notifyOnRequest={account?.notifyOnRequest ?? true}
       navOrder={parseNavOrder(account?.navOrder ?? null)}
       theme={account?.theme ?? "LIGHT"}
-      counts={{ mesTaches: mesTachesCount, demandes: demandesCount }}
+      counts={{ mesTaches: mesTachesCount, demandes: demandesCount, tasksLate: tasksLateCount, projectsOverBudget: projectsOverBudgetCount }}
     >
       {children}
     </AppShell>

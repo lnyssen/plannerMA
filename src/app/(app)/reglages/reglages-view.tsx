@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp, Mail, Plus, RefreshCw, ScrollText, Settings, Tags, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { sendDailyDigestNow } from "@/lib/actions/account";
@@ -366,7 +367,7 @@ export function ReglagesView({
         <div className="max-w-2xl">
           <p className="mb-4 text-sm text-ink-muted">Les 100 dernières écritures, tous types confondus.</p>
           {journal.length === 0 ? (
-            <p className="text-sm text-ink-muted">Aucune écriture pour l’instant.</p>
+            <EmptyState icon={ScrollText} title="Aucune écriture pour l’instant" description="L’historique des actions de l’équipe apparaîtra ici." />
           ) : (
             <div className="flex flex-col">
               {journal.map((entry) => (

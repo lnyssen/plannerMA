@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { createClient, deleteClient, getClientDetail, updateClientDetail } from "@/lib/actions/clients";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { DetailSkeleton } from "@/components/ui/skeleton";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 
 export function ClientDetailModal({
@@ -88,7 +89,7 @@ export function ClientDetailModal({
   return (
     <ModalShell title={loading ? "Chargement…" : clientId ? name : "Nouveau client"} onClose={onClose}>
       {loading ? (
-        <p className="text-sm text-ink-muted">Chargement…</p>
+        <DetailSkeleton />
       ) : (
         <>
           <FieldLabel htmlFor="client-name">Nom</FieldLabel>

@@ -124,7 +124,7 @@ export function AppShell({
   }
 
   const orderedEntries = applyNavOrder(
-    NAV_ENTRIES.filter((e) => !e.adminOnly || role === "ADMIN"),
+    NAV_ENTRIES.filter((e) => !e.adminOnly || role === "ADMIN" || (e.studioLeadOk && role === "STUDIO_LEAD")),
     navOrder,
   );
 

@@ -38,6 +38,7 @@ export default async function EquipePage() {
       }))}
       studios={studios}
       isAdmin={session?.user.role === "ADMIN"}
+      isStudioLead={session?.user.role === "STUDIO_LEAD"}
       currentPersonId={session?.user.personId ?? null}
     />
   );

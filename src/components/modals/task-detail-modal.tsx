@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, ExternalLink, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
+import { AlertTriangle, AtSign, ExternalLink, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { addLinkAttachment, deleteAttachment, uploadFileAttachment } from "@/lib/actions/attachments";
@@ -16,6 +16,7 @@ import type { TaskOption } from "@/lib/data/tasks";
 import { quandFr, toIsoDate, today } from "@/lib/planning/dates";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
+import { DetailSkeleton } from "@/components/ui/skeleton";
 import { fieldInputClass, ModalShell } from "./modal-shell";
 import { EMPTY_TASK_FORM, TaskFormFields, type TaskFormValues } from "./task-form-fields";
 
@@ -376,11 +377,21 @@ export function TaskDetailModal({
       size="lg"
       footer={footer}
     >
-      {loading && <p className="text-sm text-ink-muted">Chargement…</p>}
+      {loading && <DetailSkeleton />}
       {!loading && !task && <p className="text-sm text-ink-muted">Cette tâche n’existe plus.</p>}
 
       {task && (
         <>
+          {!task.status.isDone && toIsoDate(task.endDate) < today() && (
+            <div
+              className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold"
+              style={{ background: "var(--color-alert-wash)", color: "var(--color-alert)" }}
+            >
+              <AlertTriangle size={16} className="flex-shrink-0" />
+              En retard — échéance dépassée.
+            </div>
+          )}
+
           <TaskFormFields
             values={values}
             onChange={patch}

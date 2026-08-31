@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, Download, List, Play, Plus, Square, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Clock, Download, List, PieChart, Play, Plus, Square, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { addManualEntry, deleteTimeEntry, startTimer, stopTimer, type RunningTimer } from "@/lib/actions/time-entries";
@@ -14,6 +14,7 @@ import { formatHourMinute } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { fieldInputClass, FieldLabel } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { EntryContextLabelParts } from "@/components/ui/task-context-label";
 import { EntryContextFields, type EntryContextValue } from "@/components/temps/entry-context-fields";
 import { TimeCalendar } from "./time-calendar";
@@ -52,7 +53,7 @@ export function TempsView({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [tab, setTab] = useState<"mine" | "team">("mine");
-  const [mineView, setMineView] = useState<"list" | "calendar">("list");
+  const [mineView, setMineView] = useState<"list" | "calendar" | "summary">("list");
   const [context, setContext] = useState<EntryContextValue>({
     taskId: tasks[0]?.id ?? null,
     studioId: tasks[0]?.studioId ?? studios[0]?.id ?? "",
@@ -139,6 +140,21 @@ export function TempsView({
     }
     return [...groups.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [myEntries]);
+
+  const myProjectBreakdown = useMemo(() => {
+    const groups = new Map<string, { label: string; minutes: number }>();
+    for (const e of myEntries) {
+      const key = e.project ? e.project.id : "agence";
+      const label = e.project ? `${e.project.client.name} — ${e.project.name}` : "AGENCE";
+      const minutes = entryDurationMinutes(e, referenceNow);
+      const existing = groups.get(key);
+      if (existing) existing.minutes += minutes;
+      else groups.set(key, { label, minutes });
+    }
+    const rows = [...groups.values()].sort((a, b) => b.minutes - a.minutes);
+    const total = rows.reduce((sum, r) => sum + r.minutes, 0);
+    return { rows, total };
+  }, [myEntries, referenceNow]);
 
   const overBudget = useMemo(
     () =>
@@ -322,7 +338,7 @@ export function TempsView({
               type="button"
               onClick={() => setMineView("calendar")}
               aria-pressed={mineView === "calendar"}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
+              className="flex items-center gap-1.5 border-r-[1.5px] border-heading px-2.5 py-1 text-xs font-semibold"
               style={{
                 background: mineView === "calendar" ? "var(--color-heading)" : "transparent",
                 color: mineView === "calendar" ? "var(--color-paper)" : "var(--color-ink-muted)",
@@ -330,12 +346,64 @@ export function TempsView({
             >
               <CalendarDays size={13} /> Calendrier
             </button>
+            <button
+              type="button"
+              onClick={() => setMineView("summary")}
+              aria-pressed={mineView === "summary"}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
+              style={{
+                background: mineView === "summary" ? "var(--color-heading)" : "transparent",
+                color: mineView === "summary" ? "var(--color-paper)" : "var(--color-ink-muted)",
+              }}
+            >
+              <PieChart size={13} /> Par projet
+            </button>
           </div>
 
           {mineView === "calendar" ? (
             <TimeCalendar entries={myEntries} tasks={tasks} studios={studios} projects={projects} categories={categories} />
+          ) : mineView === "summary" ? (
+            myProjectBreakdown.rows.length === 0 ? (
+              <EmptyState
+                icon={PieChart}
+                title="Aucune écriture pour l’instant"
+                description="La répartition de votre temps par projet apparaîtra ici."
+              />
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between border-b border-line pb-2">
+                  <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Total</p>
+                  <p className="font-[family-name:var(--font-display)] text-lg font-semibold text-heading tabular-nums">
+                    {formatDurationFr(myProjectBreakdown.total)}
+                  </p>
+                </div>
+                {myProjectBreakdown.rows.map((r) => (
+                  <div key={r.label} className="rounded-lg border border-line px-3 py-2.5">
+                    <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                      <span className="truncate text-sm font-semibold text-heading">{r.label}</span>
+                      <span className="flex-shrink-0 text-sm font-semibold text-ink tabular-nums">
+                        {formatDurationFr(r.minutes)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-wash">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${myProjectBreakdown.total > 0 ? (r.minutes / myProjectBreakdown.total) * 100 : 0}%`,
+                          background: "var(--color-heading)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : groupedMine.length === 0 ? (
-            <p className="text-sm text-ink-muted">Aucune écriture pour l’instant.</p>
+            <EmptyState
+              icon={Clock}
+              title="Aucune écriture pour l’instant"
+              description="Démarrez un minuteur ou faites une saisie manuelle ci-dessus."
+            />
           ) : (
             <div className="flex flex-col gap-6">
               {groupedMine.map(([day, entries]) => (
@@ -409,7 +477,7 @@ export function TempsView({
           )}
 
           {allEntries.length === 0 ? (
-            <p className="text-sm text-ink-muted">Aucune écriture pour l’instant.</p>
+            <EmptyState icon={Clock} title="Aucune écriture pour l’instant" description="Le temps enregistré par l’équipe apparaîtra ici." />
           ) : (
             <div className="flex flex-col gap-1.5">
               {allEntries.map((e) => (

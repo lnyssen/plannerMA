@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TaskDetailModal } from "@/components/modals/task-detail-modal";
 import { ScrollFade } from "@/components/ui/scroll-fade";
@@ -10,7 +11,13 @@ import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskListItem, TaskOption } from "@/lib/data/tasks";
-import { toIsoDate } from "@/lib/planning/dates";
+import { toIsoDate, today } from "@/lib/planning/dates";
+import { EmptyState } from "@/components/ui/empty-state";
+
+/** En retard : échéance dépassée, pas encore terminée — même règle que la puce de nav "Tâches" (voir (app)/layout.tsx). */
+function isTaskLate(t: TaskListItem): boolean {
+  return !t.status.isDone && toIsoDate(t.endDate) < today();
+}
 
 type SortKey = "title" | "project" | "client" | "studio" | "person" | "dates" | "status";
 
@@ -159,12 +166,7 @@ export function TasksTable({
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-lg border border-line p-16 text-center">
-          <p className="mb-2 font-[family-name:var(--font-display)] text-lg font-semibold text-heading">
-            Aucune tâche ne correspond
-          </p>
-          <p className="text-sm text-ink">Essayez une autre recherche.</p>
-        </div>
+        <EmptyState title="Aucune tâche ne correspond" description="Essayez une autre recherche." />
       ) : (
         <>
           {/* Sous sm : cartes empilées plutôt qu'un tableau qui déborde —
@@ -202,7 +204,13 @@ export function TasksTable({
                 </div>
                 <div className="flex items-center justify-between text-xs text-ink-muted">
                   {!hidePersonColumn && <span>{t.assignee?.name ?? "Non attribué"}</span>}
-                  <span className="tabular-nums">{formatRange(t.startDate, t.endDate)}</span>
+                  <span
+                    className="flex items-center gap-1 tabular-nums"
+                    style={isTaskLate(t) ? { color: "var(--color-alert)", fontWeight: 600 } : undefined}
+                  >
+                    {isTaskLate(t) && <AlertTriangle size={11} className="flex-shrink-0" />}
+                    {formatRange(t.startDate, t.endDate)}
+                  </span>
                 </div>
               </button>
             ))}
@@ -253,8 +261,14 @@ export function TasksTable({
                       {t.assignee?.name ?? "Non attribué"}
                     </td>
                   )}
-                  <td className="border-b border-line px-3 py-2.5 text-sm text-ink tabular-nums">
-                    {formatRange(t.startDate, t.endDate)}
+                  <td
+                    className="border-b border-line px-3 py-2.5 text-sm tabular-nums"
+                    style={isTaskLate(t) ? { color: "var(--color-alert)", fontWeight: 600 } : { color: "var(--color-ink)" }}
+                  >
+                    <span className="flex items-center gap-1">
+                      {isTaskLate(t) && <AlertTriangle size={12} className="flex-shrink-0" />}
+                      {formatRange(t.startDate, t.endDate)}
+                    </span>
                   </td>
                   <td className="border-b border-line px-3 py-2.5">
                     <StatusBadge status={t.status} />

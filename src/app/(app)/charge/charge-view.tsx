@@ -1,10 +1,12 @@
 "use client";
 
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { addDays, belgianHolidaysRange, fromIsoDate, mondayOf, today } from "@/lib/planning/dates";
 import { weeklyLoad, type LoadAbsence, type LoadTask } from "@/lib/planning/availability";
 import { entryDurationMinutes, formatDurationFr } from "@/lib/planning/time";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ChargePerson {
   id: string;
@@ -141,7 +143,7 @@ export function ChargeView({
       </div>
 
       {people.length === 0 ? (
-        <p className="text-sm text-ink-muted">Aucune personne dans l’équipe.</p>
+        <EmptyState icon={Users} title="Aucune personne dans l’équipe" description="Ajoutez des personnes dans Équipe pour voir leur charge ici." />
       ) : (
         <>
           <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:max-w-xl">

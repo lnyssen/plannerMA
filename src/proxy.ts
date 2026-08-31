@@ -20,8 +20,19 @@ export default auth((req) => {
 
   if (
     isLoggedIn &&
-    (pathname.startsWith("/reglages") || pathname.startsWith("/charge") || pathname.startsWith("/demandes")) &&
+    (pathname.startsWith("/reglages") || pathname.startsWith("/demandes")) &&
     req.auth?.user.role !== "ADMIN"
+  ) {
+    return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));
+  }
+
+  // Charge : admin (vue complète) et responsable de studio (vue limitée à
+  // son propre studio, filtrée côté page) — voir (app)/charge/page.tsx.
+  if (
+    isLoggedIn &&
+    pathname.startsWith("/charge") &&
+    req.auth?.user.role !== "ADMIN" &&
+    req.auth?.user.role !== "STUDIO_LEAD"
   ) {
     return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));
   }

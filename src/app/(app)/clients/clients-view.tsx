@@ -1,9 +1,10 @@
 "use client";
 
-import { Globe, Mail, Phone, Plus } from "lucide-react";
+import { Building2, Globe, Mail, Phone, Plus } from "lucide-react";
 import { useState } from "react";
 import { ClientDetailModal } from "@/components/modals/client-detail-modal";
 import { primaryButtonClass } from "@/components/ui/buttons";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { ClientWithCounts } from "@/lib/data/clients";
 
 function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id: string) => void }) {
@@ -74,7 +75,13 @@ export function ClientsView({
       </div>
 
       {clients.length === 0 ? (
-        <p className="text-sm text-ink-muted">Aucun client. Utilisez « Nouveau client » pour commencer.</p>
+        <EmptyState
+          icon={Building2}
+          title="Aucun client pour l’instant"
+          description="Créez votre premier client — vous pourrez ensuite y rattacher des projets."
+          actionLabel="Nouveau client"
+          onAction={() => setOpenClientId("new")}
+        />
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
           {clients.map((c) => (

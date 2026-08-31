@@ -13,6 +13,7 @@ import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { ClientPicker } from "./client-picker";
 import { primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
+import { DetailSkeleton } from "@/components/ui/skeleton";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 
 export function EditProjectModal({
@@ -173,11 +174,21 @@ export function EditProjectModal({
 
   return (
     <ModalShell title={loading ? "Chargement…" : (project?.name ?? "Projet introuvable")} onClose={onClose}>
-      {loading && <p className="text-sm text-ink-muted">Chargement…</p>}
+      {loading && <DetailSkeleton />}
       {!loading && !project && <p className="text-sm text-ink-muted">Ce projet n’existe plus.</p>}
 
       {project && (
         <>
+          {overBudget && (
+            <div
+              className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold"
+              style={{ background: "var(--color-alert-wash)", color: "var(--color-alert)" }}
+            >
+              <AlertTriangle size={16} className="flex-shrink-0" />
+              Budget dépassé : {formatDurationFr(loggedMinutes)} enregistrées sur {formatDurationFr(budgetMinutes!)} prévues.
+            </div>
+          )}
+
           <FieldLabel htmlFor="edit-project-name">Nom du projet</FieldLabel>
           <input
             id="edit-project-name"

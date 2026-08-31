@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { AbsenceModal } from "@/components/modals/absence-modal";
 import { PersonModal } from "@/components/modals/person-modal";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
+import { EmptyState } from "@/components/ui/empty-state";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, toIsoDate } from "@/lib/planning/dates";
@@ -36,12 +37,14 @@ export function EquipeView({
   absences,
   studios,
   isAdmin,
+  isStudioLead,
   currentPersonId,
 }: {
   people: PersonRow[];
   absences: AbsenceRow[];
   studios: StudioSummary[];
   isAdmin: boolean;
+  isStudioLead: boolean;
   currentPersonId: string | null;
 }) {
   const router = useRouter();
@@ -51,9 +54,17 @@ export function EquipeView({
   const [absenceModalOpen, setAbsenceModalOpen] = useState(false);
 
   const teams = [...new Set(people.map((p) => p.team || "Studios"))];
-  const peopleForAbsenceForm = isAdmin
-    ? people.map((p) => ({ id: p.id, name: p.name }))
-    : people.filter((p) => p.id === currentPersonId).map((p) => ({ id: p.id, name: p.name }));
+  // Un responsable de studio gère les absences de son équipe (personnes qui
+  // partagent au moins un studio avec lui), en plus des siennes — voir
+  // canManageAbsenceFor côté serveur (src/lib/actions/absences.ts), qui
+  // applique la même règle et reste la source de vérité.
+  const myStudioIds = new Set(
+    people.find((p) => p.id === currentPersonId)?.studios.map(({ studio }) => studio.id) ?? [],
+  );
+  const canManage = (p: PersonRow) =>
+    isAdmin || p.id === currentPersonId || (isStudioLead && p.studios.some(({ studio }) => myStudioIds.has(studio.id)));
+  const peopleForAbsenceForm = people.filter(canManage).map((p) => ({ id: p.id, name: p.name }));
+  const manageablePersonIds = new Set(peopleForAbsenceForm.map((p) => p.id));
 
   return (
     <div className="px-8 py-8">
@@ -101,7 +112,15 @@ export function EquipeView({
 
       {tab === "gens" ? (
         <>
-          {people.length === 0 && <p className="text-sm text-ink-muted">Personne pour l’instant.</p>}
+          {people.length === 0 && (
+            <EmptyState
+              icon={Users}
+              title="Personne dans l’équipe pour l’instant"
+              description="Ajoutez la première personne pour commencer à assigner des tâches."
+              actionLabel={isAdmin ? "Ajouter une personne" : undefined}
+              onAction={isAdmin ? () => setPersonModal("new") : undefined}
+            />
+          )}
           {teams.map((team) => (
             <div key={team} className="mb-8">
               <h2 className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">{team}</h2>
@@ -161,7 +180,15 @@ export function EquipeView({
         </>
       ) : (
         <>
-          {absences.length === 0 && <p className="text-sm text-ink-muted">Aucune absence enregistrée.</p>}
+          {absences.length === 0 && (
+            <EmptyState
+              icon={Umbrella}
+              title="Aucune absence enregistrée"
+              description="Congé, maladie, formation… déclarez la première absence."
+              actionLabel="Déclarer une absence"
+              onAction={() => setAbsenceModalOpen(true)}
+            />
+          )}
           <div className="flex flex-col gap-2">
             {absences.map((a) => (
               <div
@@ -176,7 +203,7 @@ export function EquipeView({
                   du {formatShortFr(toIsoDate(a.startDate))} au {formatShortFr(toIsoDate(a.endDate))}
                   {a.reason && ` · ${a.reason}`}
                 </span>
-                {(isAdmin || a.personId === currentPersonId) && (
+                {manageablePersonIds.has(a.personId) && (
                   <button
                     type="button"
                     onClick={() => deleteAbsence(a.id).then(() => router.refresh())}
@@ -201,7 +228,6 @@ export function EquipeView({
       {absenceModalOpen && (
         <AbsenceModal
           people={peopleForAbsenceForm}
-          isAdmin={isAdmin}
           currentPersonId={currentPersonId}
           onClose={() => setAbsenceModalOpen(false)}
         />
