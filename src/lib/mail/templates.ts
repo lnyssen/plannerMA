@@ -110,6 +110,24 @@ export function inviteEmail(personName: string, email: string, temporaryPassword
   };
 }
 
+/** Distinct de inviteEmail : le compte existe déjà, seul le mot de passe change (voir resetPassword dans people.ts). */
+export function passwordResetEmail(personName: string, email: string, temporaryPassword: string) {
+  const subject = "Votre mot de passe Studio planner a été réinitialisé";
+  const lines = [
+    `Bonjour ${personName},`,
+    `Un administrateur a réinitialisé votre mot de passe sur Studio planner.`,
+    `Identifiant : ${email}`,
+    `Nouveau mot de passe temporaire : ${temporaryPassword}`,
+    `Connexion : ${APP_URL}/connexion`,
+    `Ce mot de passe est généré automatiquement — changez-le dès votre prochaine connexion (Réglages → Mon compte).`,
+  ];
+  return {
+    subject,
+    text: lines.join("\n\n"),
+    html: wrapHtml(subject, lines),
+  };
+}
+
 export interface DigestTaskInfo {
   title: string;
   projectName: string | null;

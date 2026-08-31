@@ -13,7 +13,7 @@ import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
 import { taskProgress } from "@/lib/planning/tasks";
-import { sumDurationMinutes } from "@/lib/planning/time";
+import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 
 const VIEW_STORAGE_KEY = "planning-studios:projets-view";
 
@@ -38,15 +38,19 @@ function milestoneHealth(project: ProjectWithCounts, referenceDate: string) {
 }
 
 /**
- * Dépassement de budget de temps — même règle que checkAndNotifyBudget
+ * Temps enregistré vs. budgété — même règle que checkAndNotifyBudget
  * (src/lib/actions/time-entries.ts) : total des écritures liées directement
- * au projet + celles de ses tâches, comparé au budget en heures. `null` si
- * aucun budget n'est défini (rien à comparer).
+ * au projet + celles de ses tâches. `budgetMinutes` reste `null` sans budget
+ * défini (rien à comparer).
  */
-function projectOverBudget(project: ProjectWithCounts): boolean {
-  if (project.budgetHours == null) return false;
+function projectHours(project: ProjectWithCounts): { loggedMinutes: number; budgetMinutes: number | null } {
   const loggedMinutes = sumDurationMinutes([...project.timeEntries, ...project.tasks.flatMap((t) => t.timeEntries)]);
-  return loggedMinutes > project.budgetHours * 60;
+  return { loggedMinutes, budgetMinutes: project.budgetHours != null ? project.budgetHours * 60 : null };
+}
+
+function projectOverBudget(project: ProjectWithCounts): boolean {
+  const { loggedMinutes, budgetMinutes } = projectHours(project);
+  return budgetMinutes != null && loggedMinutes > budgetMinutes;
 }
 
 function ProjectCard({
@@ -60,7 +64,8 @@ function ProjectCard({
 }) {
   const count = project._count.tasks;
   const progress = averageProgress(project, statuses);
-  const overBudget = projectOverBudget(project);
+  const { loggedMinutes, budgetMinutes } = projectHours(project);
+  const overBudget = budgetMinutes != null && loggedMinutes > budgetMinutes;
 
   return (
     <button
@@ -98,7 +103,13 @@ function ProjectCard({
         <div className="h-1.5 flex-1 bg-line">
           <div className="h-full bg-heading" style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
-        <span className="text-2xs tabular-nums text-ink-muted">{Math.round(progress * 100)}%</span>
+        <span
+          className="flex-shrink-0 text-2xs tabular-nums"
+          style={{ color: overBudget ? "var(--color-alert)" : "var(--color-ink-muted)" }}
+        >
+          {Math.round(progress * 100)}%
+          {budgetMinutes != null && ` · ${formatDurationFr(loggedMinutes)} / ${formatDurationFr(budgetMinutes)}`}
+        </span>
       </div>
       <div className="text-sm font-semibold text-ink">
         {count} tâche{count === 1 ? "" : "s"}

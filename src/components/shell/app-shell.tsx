@@ -5,6 +5,7 @@ import type { ThemePreference } from "@prisma/client";
 import {
   ArrowUpDown,
   Bell,
+  ChevronUp,
   ClipboardPlus,
   FolderPlus,
   KeyRound,
@@ -19,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { updateThemePreference } from "@/lib/actions/account";
 import { ChangePasswordModal } from "@/components/modals/change-password-modal";
 import { CreateProjectModal } from "@/components/modals/create-project-modal";
@@ -91,6 +92,19 @@ export function AppShell({
   const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | "navOrder" | "password" | null>(null);
   const [collapsed, setCollapsedState] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<ThemePreference>(theme);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [userMenuOpen]);
+
+  const userInitial = userName.trim().charAt(0).toUpperCase() || "?";
 
   function toggleTheme() {
     const next: ThemePreference = currentTheme === "DARK" ? "LIGHT" : "DARK";
@@ -243,59 +257,106 @@ export function AppShell({
           </button>
         </div>
 
-        <div className={`px-3 pt-2 pb-5 ${isCollapsed ? "flex flex-col items-center gap-2" : "px-5"}`}>
-          {!isCollapsed && (
-            <>
-              <p className="mb-1 truncate text-sm text-white">{userName}</p>
-              <p className="mb-2 text-xs text-white/70">{ROLE_LABEL[role]}</p>
-            </>
-          )}
-          <button
-            type="button"
-            onClick={() => setModal("notifications")}
-            title="Mes notifications"
-            className={`flex items-center gap-1.5 text-xs font-medium text-white/80 ${isCollapsed ? "justify-center rounded-md p-1.5 hover:bg-white/10" : "mb-2 text-left underline-offset-2 hover:underline"} ${textButtonClass}`}
-          >
-            <Bell size={13} aria-hidden="true" /> {!isCollapsed && "Mes notifications"}
-          </button>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            title={currentTheme === "DARK" ? "Passer au thème clair" : "Passer au thème sombre"}
-            className={`flex items-center gap-1.5 text-xs font-medium text-white/80 ${isCollapsed ? "justify-center rounded-md p-1.5 hover:bg-white/10" : "mb-2 text-left underline-offset-2 hover:underline"} ${textButtonClass}`}
-          >
-            {currentTheme === "DARK" ? (
-              <Sun size={13} aria-hidden="true" />
-            ) : (
-              <Moon size={13} aria-hidden="true" />
-            )}{" "}
-            {!isCollapsed && (currentTheme === "DARK" ? "Thème clair" : "Thème sombre")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setModal("navOrder")}
-            title="Réorganiser le menu"
-            className={`flex items-center gap-1.5 text-xs font-medium text-white/80 ${isCollapsed ? "justify-center rounded-md p-1.5 hover:bg-white/10" : "mb-2 text-left underline-offset-2 hover:underline"} ${textButtonClass}`}
-          >
-            <ArrowUpDown size={13} aria-hidden="true" /> {!isCollapsed && "Réorganiser le menu"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setModal("password")}
-            title="Changer mon mot de passe"
-            className={`flex items-center gap-1.5 text-xs font-medium text-white/80 ${isCollapsed ? "justify-center rounded-md p-1.5 hover:bg-white/10" : "mb-2 text-left underline-offset-2 hover:underline"} ${textButtonClass}`}
-          >
-            <KeyRound size={13} aria-hidden="true" /> {!isCollapsed && "Mon mot de passe"}
-          </button>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              title="Se déconnecter"
-              className={`flex items-center gap-1.5 text-xs font-medium text-white/80 ${isCollapsed ? "justify-center rounded-md p-1.5 hover:bg-white/10" : "text-left underline-offset-2 hover:underline"}`}
+        <div ref={userMenuRef} className={`relative px-3 pb-5 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
+          {userMenuOpen && (
+            <div
+              className={`absolute z-20 overflow-hidden rounded-lg border border-white/15 bg-rail shadow-lg ${
+                isCollapsed ? "bottom-0 left-full ml-2 w-56" : "right-3 bottom-full left-3 mb-2"
+              }`}
             >
-              <LogOut size={13} aria-hidden="true" /> {!isCollapsed && "Se déconnecter"}
-            </button>
-          </form>
+              <div className="px-3 pt-3 pb-2">
+                <p className="truncate text-sm font-semibold text-white">{userName}</p>
+                <p className="text-xs text-white/60">{ROLE_LABEL[role]}</p>
+              </div>
+              <div className="flex items-center justify-between gap-2 px-3 pb-2">
+                <span className="text-xs font-medium text-white/70">Thème</span>
+                <div className="flex overflow-hidden rounded-md border border-white/20">
+                  <button
+                    type="button"
+                    onClick={() => currentTheme !== "LIGHT" && toggleTheme()}
+                    aria-label="Thème clair"
+                    aria-pressed={currentTheme === "LIGHT"}
+                    className="flex h-7 w-8 items-center justify-center transition-colors duration-100"
+                    style={{ background: currentTheme === "LIGHT" ? "rgba(255,255,255,0.9)" : "transparent" }}
+                  >
+                    <Sun size={14} color={currentTheme === "LIGHT" ? "var(--color-rail)" : "rgba(255,255,255,0.7)"} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => currentTheme !== "DARK" && toggleTheme()}
+                    aria-label="Thème sombre"
+                    aria-pressed={currentTheme === "DARK"}
+                    className="flex h-7 w-8 items-center justify-center border-l border-white/20 transition-colors duration-100"
+                    style={{ background: currentTheme === "DARK" ? "rgba(255,255,255,0.9)" : "transparent" }}
+                  >
+                    <Moon size={14} color={currentTheme === "DARK" ? "var(--color-rail)" : "rgba(255,255,255,0.7)"} />
+                  </button>
+                </div>
+              </div>
+              <div className="border-t border-white/10 py-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModal("password");
+                    setUserMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-white/85 transition-colors duration-100 hover:bg-white/10"
+                >
+                  <KeyRound size={15} aria-hidden="true" /> Changer de mot de passe
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModal("notifications");
+                    setUserMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-white/85 transition-colors duration-100 hover:bg-white/10"
+                >
+                  <Bell size={15} aria-hidden="true" /> Mes notifications
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModal("navOrder");
+                    setUserMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-white/85 transition-colors duration-100 hover:bg-white/10"
+                >
+                  <ArrowUpDown size={15} aria-hidden="true" /> Réorganiser le menu
+                </button>
+              </div>
+              <form action={signOutAction} className="border-t border-white/10 py-1.5">
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-white/85 transition-colors duration-100 hover:bg-white/10"
+                >
+                  <LogOut size={15} aria-hidden="true" /> Déconnexion
+                </button>
+              </form>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setUserMenuOpen((v) => !v)}
+            aria-expanded={userMenuOpen}
+            title={userName}
+            className={`flex items-center gap-2.5 rounded-lg p-2 transition-colors duration-100 hover:bg-white/10 ${isCollapsed ? "justify-center" : "w-full text-left"}`}
+          >
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-rail">
+              {userInitial}
+            </span>
+            {!isCollapsed && (
+              <>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{userName}</span>
+                <ChevronUp
+                  size={14}
+                  className={`flex-shrink-0 text-white/60 transition-transform duration-150 ${userMenuOpen ? "" : "rotate-180"}`}
+                  aria-hidden="true"
+                />
+              </>
+            )}
+          </button>
         </div>
       </>
     );

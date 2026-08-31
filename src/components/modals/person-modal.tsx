@@ -1,10 +1,10 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import { AlertTriangle, Mail, Trash2, UserX } from "lucide-react";
+import { AlertTriangle, KeyRound, Mail, Trash2, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { createPerson, deletePerson, getPersonDetail, invitePerson, removeUserAccess, updatePerson } from "@/lib/actions/people";
+import { createPerson, deletePerson, getPersonDetail, invitePerson, removeUserAccess, resetPassword, updatePerson } from "@/lib/actions/people";
 import type { StudioSummary } from "@/lib/data/studios";
 import { dangerButtonClass, dangerOutlineButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { DetailSkeleton } from "@/components/ui/skeleton";
@@ -38,8 +38,13 @@ export function PersonModal({
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("COLLABORATOR");
   const [inviteSent, setInviteSent] = useState(false);
+  const [passwordJustReset, setPasswordJustReset] = useState(false);
   const [inviteEmailOk, setInviteEmailOk] = useState(true);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+  const [createAccount, setCreateAccount] = useState(false);
+  const [createdAccount, setCreatedAccount] = useState<{ email: string; emailSent: boolean; temporaryPassword: string | null } | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -101,6 +106,25 @@ export function PersonModal({
     });
   }
 
+  function handleResetPassword() {
+    if (!personId || !linkedUser) return;
+    if (!confirm(`Générer un nouveau mot de passe pour ${linkedUser.email} ? L’ancien cessera de fonctionner immédiatement.`)) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await resetPassword(personId);
+      if (result.temporaryPassword) {
+        setPasswordJustReset(true);
+        setInviteEmailOk(result.emailSent ?? false);
+        setGeneratedPassword(result.temporaryPassword);
+        router.refresh();
+        return;
+      }
+      if (result.error) {
+        setError(result.error);
+      }
+    });
+  }
+
   function remove() {
     if (!personId) return;
     if (!confirm(`Supprimer définitivement ${name || "cette personne"} de l’équipe ? Cette action est irréversible.`)) return;
@@ -122,12 +146,40 @@ export function PersonModal({
 
   function submit() {
     setError(null);
+    if (!personId && createAccount && !email.trim()) {
+      setError("Un courriel est requis pour créer un compte de connexion.");
+      return;
+    }
     startTransition(async () => {
-      const result = personId
-        ? await updatePerson(personId, { name, team, email, external, studioIds })
-        : await createPerson({ name, team, email, external, studioIds });
+      if (personId) {
+        const result = await updatePerson(personId, { name, team, email, external, studioIds });
+        if (result.error) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+        onClose();
+        return;
+      }
+
+      const result = await createPerson({ name, team, email, external, studioIds });
       if (result.error) {
         setError(result.error);
+        return;
+      }
+      if (createAccount && result.id) {
+        const invite = await invitePerson(result.id, { email: email.trim(), role: inviteRole });
+        // La personne est créée dans tous les cas — seul le compte de
+        // connexion peut échouer (courriel déjà pris, envoi du courriel en
+        // échec...) : on garde la fenêtre ouverte pour montrer le résultat
+        // plutôt que de fermer sur un échec silencieux.
+        setCreatedAccount({
+          email: email.trim(),
+          emailSent: invite.emailSent ?? false,
+          temporaryPassword: invite.temporaryPassword ?? null,
+        });
+        if (invite.error && !invite.temporaryPassword) setError(invite.error);
+        router.refresh();
         return;
       }
       router.refresh();
@@ -139,6 +191,33 @@ export function PersonModal({
     <ModalShell title={personId ? "Modifier la personne" : "Ajouter une personne"} onClose={onClose}>
       {loading ? (
         <DetailSkeleton />
+      ) : createdAccount ? (
+        <>
+          <p className="mb-3 text-sm text-ink">
+            <span className="font-semibold">{name}</span> a été ajouté·e, avec un compte de connexion :{" "}
+            <span className="font-semibold">{createdAccount.email}</span>.
+          </p>
+          {createdAccount.emailSent ? (
+            <p className="mb-4 text-sm text-ink-muted">Le mot de passe généré a été envoyé par courriel.</p>
+          ) : createdAccount.temporaryPassword ? (
+            <div className="mb-4">
+              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-alert">
+                <AlertTriangle size={14} className="flex-shrink-0" />
+                Le courriel n’a pas pu être envoyé — communiquez ce mot de passe vous-même.
+              </p>
+              <p className="select-all rounded-md border border-line bg-wash px-2.5 py-2 font-mono text-sm text-ink">
+                {createdAccount.temporaryPassword}
+              </p>
+            </div>
+          ) : (
+            <p className="mb-4 text-sm text-alert">{error}</p>
+          )}
+          <div className="flex justify-end">
+            <button type="button" onClick={onClose} className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}>
+              Fermer
+            </button>
+          </div>
+        </>
       ) : (
         <>
           <FieldLabel htmlFor="person-name">Prénom ou nom affiché</FieldLabel>
@@ -172,6 +251,35 @@ export function PersonModal({
             Sert aux alertes (attribution de tâche…) quand cette personne n’a pas de compte de connexion.
           </p>
 
+          {!personId && (
+            <div className="mb-4 rounded-lg border border-line p-3">
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input type="checkbox" checked={createAccount} onChange={(e) => setCreateAccount(e.target.checked)} />
+                Créer aussi un compte de connexion
+              </label>
+              {createAccount && (
+                <>
+                  <p className="mt-1.5 mb-2 text-xs text-ink-muted">
+                    Un mot de passe est généré automatiquement et envoyé au courriel ci-dessus.
+                  </p>
+                  <FieldLabel htmlFor="create-invite-role">Rôle</FieldLabel>
+                  <select
+                    id="create-invite-role"
+                    className={fieldInputClass}
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as Role)}
+                  >
+                    {Object.entries(ROLE_LABEL).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+            </div>
+          )}
+
           <FieldLabel>Studios de rattachement (facultatif)</FieldLabel>
           <div className="mb-3 flex flex-wrap gap-2">
             {studios.map((s) => {
@@ -196,20 +304,32 @@ export function PersonModal({
 
           {personId && linkedUser && (
             <div className="mb-4 rounded-lg border border-line p-3">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm text-ink">
                   Compte de connexion : <span className="font-semibold">{linkedUser.email}</span>
                 </span>
-                <button
-                  type="button"
-                  onClick={removeAccess}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${dangerOutlineButtonClass}`}
-                >
-                  <UserX size={13} /> Retirer l’accès
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${secondaryButtonClass}`}
+                  >
+                    <KeyRound size={13} /> Régénérer le mot de passe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removeAccess}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${dangerOutlineButtonClass}`}
+                  >
+                    <UserX size={13} /> Retirer l’accès
+                  </button>
+                </div>
               </div>
               {inviteSent && inviteEmailOk && (
                 <p className="mt-2 text-xs text-ink-muted">Invitation envoyée avec un mot de passe généré automatiquement.</p>
+              )}
+              {passwordJustReset && inviteEmailOk && (
+                <p className="mt-2 text-xs text-ink-muted">Nouveau mot de passe généré et envoyé par courriel.</p>
               )}
               {generatedPassword && !inviteEmailOk && (
                 <div className="mt-3 border-t border-line pt-3">

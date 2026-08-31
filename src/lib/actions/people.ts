@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { inviteEmail } from "@/lib/mail/templates";
+import { inviteEmail, passwordResetEmail } from "@/lib/mail/templates";
 import { sendMail } from "@/lib/mail/transport";
 
 const personSchema = z.object({
@@ -231,6 +231,52 @@ export async function invitePerson(
     revalidatePeopleViews();
     return {
       error: "Compte créé, mais l'envoi du courriel a échoué — communiquez le mot de passe ci-dessous vous-même.",
+      temporaryPassword,
+      emailSent: false,
+    };
+  }
+
+  revalidatePeopleViews();
+  return { temporaryPassword, emailSent: true };
+}
+
+/**
+ * Génère un nouveau mot de passe pour un compte existant — répond au cas où
+ * le mot de passe généré par invitePerson a été perdu (courriel jamais
+ * envoyé faute de SMTP configuré, ou simplement oublié) sans autre moyen de
+ * le récupérer, puisqu'il n'est jamais stocké en clair. Même mécanique que
+ * invitePerson (mot de passe généré, courriel best-effort, renvoyé si
+ * l'envoi échoue) mais sur un compte déjà lié plutôt qu'à la création.
+ */
+export async function resetPassword(personId: string): Promise<{ error?: string; temporaryPassword?: string; emailSent?: boolean }> {
+  const auth_ = await requireAdmin();
+  if ("error" in auth_) return auth_;
+  const { session } = auth_;
+
+  const person = await db.person.findUnique({ where: { id: personId }, include: { user: true } });
+  if (!person) return { error: "Cette personne n’existe plus." };
+  if (!person.user) return { error: "Cette personne n’a pas de compte de connexion." };
+
+  const temporaryPassword = generateTemporaryPassword();
+  const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+  await db.user.update({ where: { id: person.user.id }, data: { passwordHash } });
+
+  await db.journalEntry.create({
+    data: {
+      actorId: session.user.personId,
+      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      action: `Mot de passe réinitialisé pour ${person.name}`,
+    },
+  });
+
+  try {
+    const { subject, text, html } = passwordResetEmail(person.name, person.user.email, temporaryPassword);
+    await sendMail({ to: person.user.email, subject, text, html });
+  } catch (err) {
+    console.error("[mail] échec de l'envoi de la réinitialisation :", err);
+    revalidatePeopleViews();
+    return {
+      error: "Mot de passe réinitialisé, mais l'envoi du courriel a échoué — communiquez le mot de passe ci-dessous vous-même.",
       temporaryPassword,
       emailSent: false,
     };
