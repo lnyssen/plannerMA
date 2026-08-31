@@ -18,14 +18,25 @@ import {
 } from "./templates";
 import { sendMail } from "./transport";
 
-/** Alerte d'attribution — appelée après la création/modification d'une tâche si l'attributaire a changé. */
+/**
+ * Alerte d'attribution — appelée après la création/modification d'une tâche
+ * si l'attributaire a changé. Contrairement aux autres alertes ci-dessous,
+ * l'attributaire peut être une personne sans compte de connexion (externe,
+ * freelance) — on part donc de `Person`, pas de `User`. Avec un compte lié,
+ * son courriel et sa préférence prévalent ; sans compte, on retombe sur
+ * `Person.email` s'il est renseigné (pas de préférence à vérifier : cette
+ * personne n'a aucun moyen de la régler).
+ */
 export async function notifyAssignment(personId: string, task: AssignmentTaskInfo): Promise<void> {
-  const user = await db.user.findUnique({ where: { personId }, include: { person: true } });
-  if (!user || !user.notifyOnAssignment || !user.person) return;
+  const person = await db.person.findUnique({ where: { id: personId }, include: { user: true } });
+  if (!person) return;
+  if (person.user && !person.user.notifyOnAssignment) return;
+  const to = person.user?.email ?? person.email;
+  if (!to) return;
 
-  const { subject, text, html } = assignmentEmail(user.person.name, task);
+  const { subject, text, html } = assignmentEmail(person.name, task, person.user !== null);
   try {
-    await sendMail({ to: user.email, subject, text, html });
+    await sendMail({ to, subject, text, html });
   } catch (err) {
     // Une notification en échec ne doit jamais faire échouer l'action métier
     // (création/modification de la tâche) qui l'a déclenchée.

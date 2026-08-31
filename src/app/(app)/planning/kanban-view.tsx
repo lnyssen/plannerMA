@@ -26,7 +26,7 @@ function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) =
       <p className="mb-1.5 text-sm font-bold text-heading">{task.title}</p>
       {task.project && (
         <p className="mb-1.5 truncate text-2xs text-ink-muted">
-          {task.project.client.name} — {task.project.name}
+          <strong className="font-bold text-ink">{task.project.client.name}</strong> — {task.project.name}
         </p>
       )}
       <div className="mb-1.5">

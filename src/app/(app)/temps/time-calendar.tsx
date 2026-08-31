@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createTimeEntryAt, deleteTimeEntry, updateTimeEntryTimes } from "@/lib/actions/time-entries";
@@ -9,8 +9,9 @@ import type { TaskOption } from "@/lib/data/tasks";
 import { addDays, formatLongFr, fromIsoDate, mondayOf, toIsoDate, today } from "@/lib/planning/dates";
 import { formatDurationFr } from "@/lib/planning/time";
 import { formatHourMinute, taskContextLabel } from "@/lib/planning/labels";
-import { fieldInputClass } from "@/components/modals/modal-shell";
+import { FieldLabel, fieldInputClass, ModalShell } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { TaskContextLabelParts } from "@/components/ui/task-context-label";
 
 const HOUR_HEIGHT = 88; // px par heure — assez grand pour distinguer le quart d'heure au pixel près
 const GRID_START_HOUR = 6;
@@ -48,15 +49,7 @@ interface QuickAdd {
   startMinutes: number; // minutes depuis minuit, calé sur SNAP_MINUTES
   endMinutes: number; // minutes depuis minuit, calé sur SNAP_MINUTES — les deux champs affichent l'heure explicitement, pas seulement une durée
   taskId: string;
-  // Coordonnées viewport du double-clic — le popover est positionné en
-  // `fixed` à partir d'elles plutôt que niché dans la colonne du jour
-  // (~110px de large, bien trop étroite pour un select + deux boutons ;
-  // ça débordait hors de la grille, voir capture jointe par l'utilisateur).
-  clientX: number;
-  clientY: number;
 }
-
-const QUICK_ADD_WIDTH = 280;
 
 function minutesToTimeInput(min: number): string {
   const h = Math.floor(min / 60);
@@ -188,12 +181,10 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
       startMinutes: snapped,
       endMinutes: Math.min(GRID_END_HOUR * 60, snapped + 30),
       taskId: tasks[0].id,
-      clientX: ev.clientX,
-      clientY: ev.clientY,
     });
   }
 
-  function openEditEntry(entry: TimeEntryWithTask, ev: React.MouseEvent) {
+  function openEditEntry(entry: TimeEntryWithTask) {
     if (!entry.endedAt) return;
     const dayStart = new Date(entry.startedAt);
     dayStart.setUTCHours(0, 0, 0, 0);
@@ -203,8 +194,6 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
       startMinutes: minutesSinceMidnight(entry.startedAt),
       endMinutes: minutesSinceMidnight(entry.endedAt),
       taskId: entry.task.id,
-      clientX: ev.clientX,
-      clientY: ev.clientY,
     });
   }
 
@@ -311,13 +300,15 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
                       }}
                       onDoubleClick={(ev) => {
                         ev.stopPropagation();
-                        openEditEntry(e, ev);
+                        openEditEntry(e);
                       }}
                       title={`${taskContextLabel(e.task)} — ${formatHourMinute(e.startedAt)}–${formatHourMinute(e.endedAt)} (${formatDurationFr(endMin - startMin)}) — double-clic pour modifier`}
                       className="absolute left-0.5 right-0.5 cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-2xs font-semibold text-paper active:cursor-grabbing"
                       style={{ top, height, background: "var(--color-heading)" }}
                     >
-                      <span className="block truncate">{taskContextLabel(e.task)}</span>
+                      <span className="block truncate">
+                        <TaskContextLabelParts task={e.task} />
+                      </span>
                       <span className="block truncate opacity-80 tabular-nums">
                         {formatHourMinute(e.startedAt)}–{formatHourMinute(e.endedAt)}
                       </span>
@@ -343,115 +334,84 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
       </p>
 
       {quickAdd && (
-        <>
-          {/* Voile invisible pour fermer le popover au clic extérieur, sans intercepter le reste de la page. */}
-          <div className="fixed inset-0 z-40" onClick={() => setQuickAdd(null)} />
-          <div
-            className="fixed z-50 flex flex-col gap-3 rounded-lg border border-heading bg-paper p-3 shadow-none"
-            style={{
-              top: Math.min(quickAdd.clientY, window.innerHeight - 260),
-              left: Math.min(quickAdd.clientX, window.innerWidth - QUICK_ADD_WIDTH - 8),
-              width: QUICK_ADD_WIDTH,
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-[family-name:var(--font-display)] text-sm font-semibold text-heading">
-                {quickAdd.entryId ? "Modifier le créneau" : "Nouvelle écriture"}
-              </p>
-              <button
-                type="button"
-                onClick={() => setQuickAdd(null)}
-                aria-label="Fermer"
-                className="p-0.5 text-ink-muted hover:text-ink"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <div>
-              <span className="mb-1 block text-2xs font-semibold tracking-wide text-ink-muted uppercase">Date et heure</span>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="flex-shrink-0 rounded-md px-2 py-1.5 text-xs font-bold tabular-nums text-heading"
-                  style={{ background: "var(--color-wash)" }}
-                >
-                  {formatDurationFr(quickAdd.endMinutes - quickAdd.startMinutes)}
-                </span>
-                <input
-                  type="time"
-                  aria-label="Heure de début"
-                  step={SNAP_MINUTES * 60}
-                  value={minutesToTimeInput(quickAdd.startMinutes)}
-                  onChange={(ev) => {
-                    const parsed = timeInputToMinutes(ev.target.value);
-                    if (parsed === null) return;
-                    setQuickAdd((q) => (q ? { ...q, startMinutes: parsed, endMinutes: Math.max(parsed + SNAP_MINUTES, q.endMinutes) } : q));
-                  }}
-                  className={`${fieldInputClass} min-w-0 flex-1 text-xs`}
-                />
-                <span className="flex-shrink-0 text-ink-muted">–</span>
-                <input
-                  type="time"
-                  aria-label="Heure de fin"
-                  step={SNAP_MINUTES * 60}
-                  value={minutesToTimeInput(quickAdd.endMinutes)}
-                  onChange={(ev) => {
-                    const parsed = timeInputToMinutes(ev.target.value);
-                    if (parsed === null) return;
-                    setQuickAdd((q) => (q ? { ...q, endMinutes: Math.max(q.startMinutes + SNAP_MINUTES, parsed) } : q));
-                  }}
-                  className={`${fieldInputClass} min-w-0 flex-1 text-xs`}
-                />
-              </div>
-              <p className="mt-1 text-2xs text-ink-muted">{formatLongFr(toIsoDate(quickAdd.dayStart))}</p>
-            </div>
-
-            <div>
-              <span className="mb-1 block text-2xs font-semibold tracking-wide text-ink-muted uppercase">
-                Client — Projet — Tâche
-              </span>
-              <select
-                value={quickAdd.taskId}
-                onChange={(ev) => setQuickAdd((q) => (q ? { ...q, taskId: ev.target.value } : q))}
-                className={`${fieldInputClass} text-xs`}
-              >
-                {tasks.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {taskContextLabel(t)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-1.5">
+        <ModalShell
+          title={quickAdd.entryId ? "Modifier le créneau" : "Nouvelle écriture"}
+          onClose={() => setQuickAdd(null)}
+          footer={
+            <div className="flex items-center gap-2">
               {quickAdd.entryId && (
                 <button
                   type="button"
                   onClick={deleteQuickAdd}
                   aria-label="Retirer cette écriture"
-                  className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold ${dangerButtonClass}`}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${dangerButtonClass}`}
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={15} /> Retirer
                 </button>
               )}
               <span className="flex-1" />
-              <button
-                type="button"
-                onClick={() => setQuickAdd(null)}
-                className={`px-2.5 py-1.5 text-xs font-semibold ${secondaryButtonClass}`}
-              >
+              <button type="button" onClick={() => setQuickAdd(null)} className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}>
                 Annuler
               </button>
-              <button
-                type="button"
-                onClick={confirmQuickAdd}
-                className={`px-2.5 py-1.5 text-xs font-semibold ${primaryButtonClass}`}
-              >
+              <button type="button" onClick={confirmQuickAdd} className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}>
                 {quickAdd.entryId ? "Enregistrer" : "Ajouter"}
               </button>
             </div>
+          }
+        >
+          <div className="mb-4">
+            <FieldLabel>Date et heure</FieldLabel>
+            <div className="flex items-center gap-2">
+              <span
+                className="flex-shrink-0 rounded-md px-3 py-2.5 text-base font-bold tabular-nums text-heading"
+                style={{ background: "var(--color-wash)" }}
+              >
+                {formatDurationFr(quickAdd.endMinutes - quickAdd.startMinutes)}
+              </span>
+              <input
+                type="time"
+                aria-label="Heure de début"
+                step={SNAP_MINUTES * 60}
+                value={minutesToTimeInput(quickAdd.startMinutes)}
+                onChange={(ev) => {
+                  const parsed = timeInputToMinutes(ev.target.value);
+                  if (parsed === null) return;
+                  setQuickAdd((q) => (q ? { ...q, startMinutes: parsed, endMinutes: Math.max(parsed + SNAP_MINUTES, q.endMinutes) } : q));
+                }}
+                className={`${fieldInputClass} min-w-0 flex-1 text-base`}
+              />
+              <span className="flex-shrink-0 text-ink-muted">–</span>
+              <input
+                type="time"
+                aria-label="Heure de fin"
+                step={SNAP_MINUTES * 60}
+                value={minutesToTimeInput(quickAdd.endMinutes)}
+                onChange={(ev) => {
+                  const parsed = timeInputToMinutes(ev.target.value);
+                  if (parsed === null) return;
+                  setQuickAdd((q) => (q ? { ...q, endMinutes: Math.max(q.startMinutes + SNAP_MINUTES, parsed) } : q));
+                }}
+                className={`${fieldInputClass} min-w-0 flex-1 text-base`}
+              />
+            </div>
+            <p className="mt-1.5 text-sm text-ink-muted">{formatLongFr(toIsoDate(quickAdd.dayStart))}</p>
           </div>
-        </>
+
+          <div>
+            <FieldLabel>Client — Projet — Tâche</FieldLabel>
+            <select
+              value={quickAdd.taskId}
+              onChange={(ev) => setQuickAdd((q) => (q ? { ...q, taskId: ev.target.value } : q))}
+              className={`${fieldInputClass} text-sm`}
+            >
+              {tasks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {taskContextLabel(t)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </ModalShell>
       )}
     </div>
   );

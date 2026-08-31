@@ -11,6 +11,7 @@ import { formatHourMinute, taskContextLabel } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { fieldInputClass, FieldLabel } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
+import { TaskContextLabelParts } from "@/components/ui/task-context-label";
 import { TimeCalendar } from "./time-calendar";
 
 interface ProjectBudget {
@@ -177,7 +178,9 @@ export function TempsView({
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-heading bg-wash px-4 py-3">
               <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-alert" aria-hidden="true" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-heading">{taskContextLabel(runningTimer.task)}</p>
+                <p className="text-sm font-semibold text-heading">
+                  <TaskContextLabelParts task={runningTimer.task} />
+                </p>
                 <p className="text-xs text-ink-muted tabular-nums">Démarré à {formatHourMinute(runningTimer.startedAt)}</p>
               </div>
               <span className="font-[family-name:var(--font-display)] text-lg font-semibold text-heading tabular-nums">
@@ -332,7 +335,9 @@ export function TempsView({
                     {entries.map((e) => (
                       <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
                         <div className="flex-1">
-                          <span className="text-ink">{taskContextLabel(e.task)}</span>
+                          <span className="text-ink">
+                            <TaskContextLabelParts task={e.task} />
+                          </span>
                           {e.note && <p className="text-xs text-ink-muted">{e.note}</p>}
                         </div>
                         <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">
@@ -389,7 +394,9 @@ export function TempsView({
                 <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
                   <span className="w-32 flex-shrink-0 truncate font-semibold text-heading">{e.person.name}</span>
                   <div className="flex-1">
-                    <span className="text-ink">{taskContextLabel(e.task)}</span>
+                    <span className="text-ink">
+                      <TaskContextLabelParts task={e.task} />
+                    </span>
                   </div>
                   <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">{quandFr(e.startedAt)}</span>
                   <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">

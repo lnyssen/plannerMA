@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 const personSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis."),
   team: z.string().trim(),
+  email: z.string().trim().email("Courriel invalide.").or(z.literal("")),
   external: z.boolean(),
   studioIds: z.array(z.string()),
 });
@@ -25,12 +26,13 @@ export async function createPerson(input: PersonInput): Promise<{ error?: string
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
   const parsed = personSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { name, team, external, studioIds } = parsed.data;
+  const { name, team, email, external, studioIds } = parsed.data;
 
   const person = await db.person.create({
     data: {
       name,
       team: team || null,
+      email: email || null,
       external,
       studios: { create: studioIds.map((studioId) => ({ studioId })) },
     },
@@ -53,7 +55,7 @@ export async function updatePerson(personId: string, input: PersonInput): Promis
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
   const parsed = personSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { name, team, external, studioIds } = parsed.data;
+  const { name, team, email, external, studioIds } = parsed.data;
 
   await db.$transaction([
     db.personStudio.deleteMany({ where: { personId } }),
@@ -62,6 +64,7 @@ export async function updatePerson(personId: string, input: PersonInput): Promis
       data: {
         name,
         team: team || null,
+        email: email || null,
         external,
         studios: { create: studioIds.map((studioId) => ({ studioId })) },
       },

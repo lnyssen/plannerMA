@@ -49,13 +49,15 @@ fonctionne aujourd'hui, avec de vraies données en base :
   quotidien des tâches en cours/à venir sous sept jours, alerte de mention en
   commentaire, alerte de nouvelle demande (réservée aux administrateurs,
   seuls destinataires) — chacune activable ou non par compte (« Mes
-  notifications », en bas de la barre latérale). Sans SMTP configuré
-  (développement), les courriels sont écrits dans
-  `.data/mail/` plutôt qu'envoyés — voir `src/lib/mail/`. Le récap quotidien
-  se déclenche via `GET /api/cron/daily-digest` (en-tête `x-cron-secret`),
-  à programmer une fois par jour ouvré en production (planificateur
-  Infomaniak ou cron externe) ; un bouton de test manuel existe dans
-  Réglages.
+  notifications », en bas de la barre latérale). L'alerte d'attribution
+  atteint aussi une personne sans compte de connexion (externe, freelance) :
+  la fiche Équipe porte un champ courriel de repli (`Person.email`), utilisé
+  quand aucun `User` n'est lié — voir `src/lib/mail/notify.ts`. Sans SMTP
+  configuré (développement), les courriels sont écrits dans `.data/mail/`
+  plutôt qu'envoyés — voir `src/lib/mail/`. Le récap quotidien se déclenche
+  via `GET /api/cron/daily-digest` (en-tête `x-cron-secret`), à programmer
+  une fois par jour ouvré en production (planificateur Infomaniak ou cron
+  externe) ; un bouton de test manuel existe dans Réglages.
 - **Notifications dans l'application** (cloche, sondage court — pas de
   temps réel) : attribution d'une tâche, mention dans un commentaire,
   nouvelle demande (pour les administrateurs). Toujours actives,

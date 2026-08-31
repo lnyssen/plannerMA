@@ -186,7 +186,7 @@ function PersonRow({
                 <div className="text-2xs font-semibold">{t.title}</div>
                 {t.project && (
                   <div className="text-2xs opacity-85">
-                    {t.project.client.name} — {t.project.name}
+                    <strong className="font-bold">{t.project.client.name}</strong> — {t.project.name}
                   </div>
                 )}
               </button>

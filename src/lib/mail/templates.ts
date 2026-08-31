@@ -19,7 +19,8 @@ export interface AssignmentTaskInfo {
   endDate: string;
 }
 
-export function assignmentEmail(personName: string, task: AssignmentTaskInfo) {
+/** `hasAccount` distingue le pied de page : quelqu'un sans compte de connexion (voir notify.ts) ne peut pas régler cette préférence dans Réglages. */
+export function assignmentEmail(personName: string, task: AssignmentTaskInfo, hasAccount: boolean) {
   const range =
     task.startDate === task.endDate
       ? formatShortFr(task.startDate)
@@ -28,8 +29,10 @@ export function assignmentEmail(personName: string, task: AssignmentTaskInfo) {
   const lines = [
     `Bonjour ${personName},`,
     `Vous avez été attribué·e à la tâche « ${task.title} »${task.projectName ? ` (projet ${task.projectName})` : ""}, ${range}.`,
-    `Voir la tâche : ${APP_URL}/taches?open=${task.id}`,
-    `Vous recevez ce courriel car les alertes d'attribution sont activées pour votre compte (Réglages → Mes notifications).`,
+    ...(hasAccount ? [`Voir la tâche : ${APP_URL}/taches?open=${task.id}`] : []),
+    hasAccount
+      ? `Vous recevez ce courriel car les alertes d'attribution sont activées pour votre compte (Réglages → Mes notifications).`
+      : `Vous recevez ce courriel à l'adresse renseignée sur votre fiche équipe.`,
   ];
   return {
     subject,

@@ -126,6 +126,10 @@ model Person {
   name      String
   team      String? // "équipe ou service" en texte libre, comme le prototype
   external  Boolean  @default(false)
+  /// Courriel de contact — utilisé pour les alertes (ex. attribution de
+  /// tâche) quand la personne n'a pas de compte de connexion lié (`User`).
+  /// Si un compte existe, son courriel prévaut (voir notify.ts).
+  email     String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

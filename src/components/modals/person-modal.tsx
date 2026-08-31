@@ -21,6 +21,7 @@ export function PersonModal({
   const [loading, setLoading] = useState(!!personId);
   const [name, setName] = useState("");
   const [team, setTeam] = useState("");
+  const [email, setEmail] = useState("");
   const [external, setExternal] = useState(false);
   const [studioIds, setStudioIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,7 @@ export function PersonModal({
       if (p) {
         setName(p.name);
         setTeam(p.team ?? "");
+        setEmail(p.email ?? "");
         setExternal(p.external);
         setStudioIds(p.studios.map((s) => s.studioId));
       }
@@ -51,8 +53,8 @@ export function PersonModal({
     setError(null);
     startTransition(async () => {
       const result = personId
-        ? await updatePerson(personId, { name, team, external, studioIds })
-        : await createPerson({ name, team, external, studioIds });
+        ? await updatePerson(personId, { name, team, email, external, studioIds })
+        : await createPerson({ name, team, email, external, studioIds });
       if (result.error) {
         setError(result.error);
         return;
@@ -85,6 +87,19 @@ export function PersonModal({
             onChange={(e) => setTeam(e.target.value)}
             placeholder="Studios, Formations, agence partenaire…"
           />
+
+          <FieldLabel htmlFor="person-email">Courriel (facultatif)</FieldLabel>
+          <input
+            id="person-email"
+            type="email"
+            className={`${fieldInputClass} mb-1`}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="prenom.nom@media-animation.be"
+          />
+          <p className="mb-3 text-xs text-ink-muted">
+            Sert aux alertes (attribution de tâche…) quand cette personne n’a pas de compte de connexion.
+          </p>
 
           <FieldLabel>Studios de rattachement (facultatif)</FieldLabel>
           <div className="mb-3 flex flex-wrap gap-2">

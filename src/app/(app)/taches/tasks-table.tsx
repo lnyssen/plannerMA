@@ -186,7 +186,7 @@ export function TasksTable({
                 <div className="mb-2 text-xs text-ink-muted">
                   {t.project ? (
                     <>
-                      {t.project.client.name} — {t.project.name}
+                      <strong className="font-bold text-ink">{t.project.client.name}</strong> — {t.project.name}
                     </>
                   ) : (
                     "Sans projet"
@@ -234,7 +234,7 @@ export function TasksTable({
                   <td className="border-b border-line px-3 py-2.5 text-sm text-ink">
                     {t.project ? (
                       <div className="flex items-center gap-1.5">
-                        <span>{t.project.client.name}</span>
+                        <span className="font-bold text-heading">{t.project.client.name}</span>
                         <span className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
                           {t.project.type === "INTERNAL" ? "Interne" : "Externe"}
                         </span>
