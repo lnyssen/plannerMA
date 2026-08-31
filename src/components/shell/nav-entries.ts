@@ -11,11 +11,21 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+/** Clé vers un compteur calculé côté serveur (voir NavCounts) — absent = pas de puce. */
+export type NavCountKey = "mesTaches" | "demandes";
+
 export interface NavEntry {
   href: string;
   label: string;
   icon: LucideIcon;
   adminOnly: boolean;
+  countKey?: NavCountKey;
+}
+
+/** Compteurs affichés en puce sur les entrées correspondantes — voir (app)/layout.tsx. */
+export interface NavCounts {
+  mesTaches: number;
+  demandes: number;
 }
 
 // Ordre par défaut, conforme à la maquette Claude Design (5 écrans conçus :
@@ -26,12 +36,12 @@ export interface NavEntry {
 export const NAV_ENTRIES: NavEntry[] = [
   { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false },
   { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false },
-  { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false },
+  { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false, countKey: "mesTaches" },
   { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
   { href: "/charge", label: "Charge", icon: Activity, adminOnly: true },
-  { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true },
+  { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true, countKey: "demandes" },
   { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true },
 ];
 

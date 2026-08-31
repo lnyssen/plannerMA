@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await auth();
   if (!session?.user) redirect("/connexion"); // filet de sécurité, le middleware couvre déjà ce cas
 
-  const [studios, people, projects, clients, tasks, account] = await Promise.all([
+  const [studios, people, projects, clients, tasks, account, mesTachesCount, demandesCount] = await Promise.all([
     listStudios(),
     listPeople(),
     listActiveProjectsForForms(),
@@ -23,6 +23,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       where: { id: session.user.id },
       select: { notifyOnAssignment: true, notifyDailyDigest: true, navOrder: true },
     }),
+    // "Mes tâches" en attente : hors corbeille, statut pas encore "Terminé" —
+    // même repli à 0 si le compte n'est relié à aucune Person (ex. admin
+    // technique sans fiche personne).
+    session.user.personId
+      ? db.task.count({
+          where: { trashedAt: null, assigneeId: session.user.personId, status: { isDone: false } },
+        })
+      : Promise.resolve(0),
+    // Demandes en file : la table Request ne garde que ce qui n'a pas encore
+    // été converti en tâche (voir src/lib/actions/requests.ts) — son compte
+    // total est donc déjà "en attente", pas besoin d'un filtre de statut.
+    session.user.role === "ADMIN" ? db.request.count() : Promise.resolve(0),
   ]);
 
   return (
@@ -37,6 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       notifyOnAssignment={account?.notifyOnAssignment ?? true}
       notifyDailyDigest={account?.notifyDailyDigest ?? true}
       navOrder={parseNavOrder(account?.navOrder ?? null)}
+      counts={{ mesTaches: mesTachesCount, demandes: demandesCount }}
     >
       {children}
     </AppShell>

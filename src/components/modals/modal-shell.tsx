@@ -32,7 +32,7 @@ export function ModalShell({
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className={`flex max-h-[90vh] w-full flex-col border border-heading bg-paper ${SIZE_CLASS[size]}`}
+        className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-lg border border-heading bg-paper ${SIZE_CLASS[size]}`}
       >
         <div className="flex items-start justify-between gap-3 border-b border-line px-6 py-4">
           <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px] text-heading">
@@ -64,4 +64,4 @@ export function FieldLabel({ children, htmlFor }: { children: React.ReactNode; h
 }
 
 export const fieldInputClass =
-  "w-full border-[1.5px] border-heading bg-paper px-2.5 py-2 text-sm text-ink outline-none";
+  "w-full rounded-md border-[1.5px] border-heading bg-paper px-2.5 py-2 text-sm text-ink outline-none";

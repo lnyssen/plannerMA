@@ -166,7 +166,7 @@ export function EditProjectModal({
               return (
                 <label
                   key={s.id}
-                  className="flex cursor-pointer items-center gap-1.5 px-2 py-1 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-heading/10"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-heading/10"
                   style={{ border: `1.5px solid ${checked ? "var(--color-heading)" : "var(--color-line)"}` }}
                 >
                   <input type="checkbox" checked={checked} onChange={() => toggleStudio(s.id)} />
@@ -185,10 +185,10 @@ export function EditProjectModal({
               <a
                 key={t.id}
                 href={`/taches?open=${t.id}`}
-                className="flex items-center gap-2 border border-line px-2.5 py-1.5 text-sm transition-colors duration-100 hover:border-heading"
+                className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm transition-colors duration-100 hover:border-heading"
               >
                 <span
-                  className="flex-shrink-0 px-1.5 py-0.5 text-2xs font-semibold"
+                  className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-2xs font-semibold"
                   style={{ background: t.status.fillHex, color: t.status.colorHex }}
                 >
                   {t.status.name}
@@ -208,7 +208,7 @@ export function EditProjectModal({
           <div className="mb-3 flex flex-col gap-1.5">
             {project.milestones.length === 0 && <p className="text-xs text-ink-muted">Aucun jalon.</p>}
             {project.milestones.map((m) => (
-              <div key={m.id} className="flex items-center gap-2 border border-line px-2.5 py-1.5 text-sm">
+              <div key={m.id} className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm">
                 <input
                   type="checkbox"
                   checked={m.isDone}
@@ -259,7 +259,7 @@ export function EditProjectModal({
           )}
 
           {project.archived && (
-            <p className="mb-3 border border-line bg-wash px-3 py-2 text-xs text-ink-muted">Ce projet est archivé.</p>
+            <p className="mb-3 rounded-lg border border-line bg-wash px-3 py-2 text-xs text-ink-muted">Ce projet est archivé.</p>
           )}
 
           {error && (

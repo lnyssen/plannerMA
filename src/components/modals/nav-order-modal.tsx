@@ -52,7 +52,7 @@ export function NavOrderModal({
       <p className="mb-4 text-sm text-ink">Propre à votre compte — n’affecte pas les autres.</p>
       <div className="mb-5 flex flex-col gap-1.5">
         {entries.map((entry, i) => (
-          <div key={entry.href} className="flex items-center gap-2 border border-line px-2.5 py-1.5 text-sm">
+          <div key={entry.href} className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm">
             <div className="flex flex-col">
               <button
                 type="button"

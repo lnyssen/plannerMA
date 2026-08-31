@@ -52,12 +52,12 @@ function ProjectCard({
     <button
       type="button"
       onClick={() => onOpen(project.id)}
-      className="border border-line p-4 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
+      className="rounded-lg border border-line p-4 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
       title="Modifier le projet"
     >
       <div className="mb-1 flex items-start justify-between gap-2">
         <div className="font-[family-name:var(--font-body)] text-base font-bold text-rail">{project.name}</div>
-        <span className="flex-shrink-0 px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
+        <span className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
           {project.type === "INTERNAL" ? "Interne" : "Externe"}
         </span>
       </div>
@@ -187,7 +187,7 @@ export function ProjectsView({
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Projets
         </h1>
-        <div className="flex border-[1.5px] border-heading" role="group" aria-label="Présentation">
+        <div className="flex overflow-hidden rounded-lg border-[1.5px] border-heading" role="group" aria-label="Présentation">
           <button
             type="button"
             onClick={() => changeView("cards")}
@@ -224,11 +224,11 @@ export function ProjectsView({
 
       {view === "table" && (
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:max-w-md">
-          <div className="border border-line p-3">
+          <div className="rounded-lg border border-line p-3">
             <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Projets affichés</p>
             <p className="font-[family-name:var(--font-display)] text-2xl font-semibold text-heading">{rows.length}</p>
           </div>
-          <div className="border border-line p-3">
+          <div className="rounded-lg border border-line p-3">
             <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Jalons en retard</p>
             <p
               className="font-[family-name:var(--font-display)] text-2xl font-semibold"
@@ -246,7 +246,7 @@ export function ProjectsView({
           placeholder="Rechercher…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
+          className="w-full max-w-md rounded-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
         />
         {view === "table" && (
           <div className="flex flex-wrap gap-1.5">
@@ -286,7 +286,7 @@ export function ProjectsView({
             : "Aucun projet. Utilisez « Nouveau projet » dans la barre latérale pour commencer."}
         </p>
       ) : filtered.length === 0 ? (
-        <div className="border border-line p-16 text-center">
+        <div className="rounded-lg border border-line p-16 text-center">
           <p className="mb-2 font-[family-name:var(--font-display)] text-lg font-semibold text-heading">
             Aucun projet ne correspond
           </p>

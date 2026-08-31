@@ -63,7 +63,7 @@ export function SemaineView({
           value={monday}
           onChange={(e) => e.target.value && goTo(e.target.value)}
           aria-label="Aller à une date"
-          className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+          className="rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
         />
         <button
           type="button"

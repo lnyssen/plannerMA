@@ -124,13 +124,13 @@ export function TasksTable({
           placeholder="Rechercher…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md flex-1 border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
+          className="w-full max-w-md flex-1 rounded-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
         />
         <select
           value={studioFilter}
           onChange={(e) => setStudioFilter(e.target.value)}
           aria-label="Filtrer par studio"
-          className="border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
         >
           <option value="">Tous les studios</option>
           {studios.map((s) => (
@@ -144,7 +144,7 @@ export function TasksTable({
             value={personFilter}
             onChange={(e) => setPersonFilter(e.target.value)}
             aria-label="Filtrer par personne"
-            className="border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+            className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
           >
             <option value="">Toutes les personnes</option>
             {people.map((p) => (
@@ -157,7 +157,7 @@ export function TasksTable({
       </div>
 
       {rows.length === 0 ? (
-        <div className="border border-line p-16 text-center">
+        <div className="rounded-lg border border-line p-16 text-center">
           <p className="mb-2 font-[family-name:var(--font-display)] text-lg font-semibold text-heading">
             Aucune tâche ne correspond
           </p>
@@ -175,7 +175,7 @@ export function TasksTable({
                 key={t.id}
                 type="button"
                 onClick={() => setOpenTaskId(t.id)}
-                className="border border-line p-3 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
+                className="rounded-lg border border-line p-3 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
               >
                 <div className="mb-1.5 flex items-start justify-between gap-2">
                   <span className="text-sm font-semibold text-rail">{t.title}</span>
@@ -193,7 +193,7 @@ export function TasksTable({
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
                   <StudioBadge name={t.studio.name} fillHex={t.studio.fillHex} colorHex={t.studio.colorHex} />
                   {t.project && (
-                    <span className="px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
+                    <span className="rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
                       {t.project.type === "INTERNAL" ? "Interne" : "Externe"}
                     </span>
                   )}
@@ -235,7 +235,7 @@ export function TasksTable({
                     {t.project ? (
                       <div className="flex items-center gap-1.5">
                         <span>{t.project.client.name}</span>
-                        <span className="flex-shrink-0 px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
+                        <span className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
                           {t.project.type === "INTERNAL" ? "Interne" : "Externe"}
                         </span>
                       </div>

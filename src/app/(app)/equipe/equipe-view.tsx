@@ -99,7 +99,7 @@ export function EquipeView({
                   .map((p) => (
                     <div
                       key={p.id}
-                      className="flex flex-wrap items-center gap-3 border border-line p-3 transition-colors duration-100 hover:border-heading"
+                      className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3 transition-colors duration-100 hover:border-heading"
                     >
                       <div className="min-w-[130px]">
                         <span className="font-[family-name:var(--font-body)] text-base font-bold text-rail">{p.name}</span>
@@ -135,7 +135,7 @@ export function EquipeView({
             {absences.map((a) => (
               <div
                 key={a.id}
-                className="flex flex-wrap items-center gap-3 border border-line p-3 transition-colors duration-100 hover:border-heading"
+                className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3 transition-colors duration-100 hover:border-heading"
               >
                 <Umbrella size={16} className="flex-shrink-0 text-heading" aria-hidden="true" />
                 <span className="min-w-[130px] font-[family-name:var(--font-body)] text-base font-bold text-rail">

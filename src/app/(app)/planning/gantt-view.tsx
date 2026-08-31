@@ -342,7 +342,7 @@ export function GanttView({
           <select
             value={weeks}
             onChange={(e) => setWeeks(Number(e.target.value))}
-            className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+            className="rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
           >
             {[2, 4, 8, 12, 16].map((n) => (
               <option key={n} value={n}>
@@ -359,7 +359,7 @@ export function GanttView({
             value={startIsoOfView}
             onChange={(e) => e.target.value && setWeekStart(mondayOf(fromIsoDate(e.target.value)))}
             aria-label="Aller à une date"
-            className="border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+            className="rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
           />
           <button
             type="button"
@@ -437,11 +437,10 @@ export function GanttView({
             <div style={{ height: HEADER_HEIGHT }} className="sticky top-0 z-10 border-b border-line bg-wash">
               {days.map((d, i) => {
                 if (i % 7 !== 0) return null;
-                // L'année n'apparaît que là où elle change dans la vue (premier
-                // groupe, ou bascule au 1er janvier) : évite de l'afficher sept
-                // fois de suite sans pour autant la cacher quand la plage
-                // affichée chevauche deux années.
-                const showYear = i === 0 || days[i - 1].getUTCFullYear() !== d.getUTCFullYear();
+                // L'année n'est pas répétée ici : la plage affichée en toutes
+                // lettres au-dessus du Gantt (rangeLabel) la porte déjà —
+                // l'an prochain aurait sinon accolé "2026" au mois sans
+                // espace dès la première colonne.
                 return (
                   <div
                     key={i}
@@ -449,7 +448,6 @@ export function GanttView({
                     className="flex items-center overflow-hidden border-l border-line pl-1.5 text-xs font-bold whitespace-nowrap text-ink"
                   >
                     {d.getUTCDate()} {MOIS[d.getUTCMonth()]}
-                    {showYear && <span className="text-ink-muted"> {d.getUTCFullYear()}</span>}
                   </div>
                 );
               })}

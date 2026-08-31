@@ -21,7 +21,7 @@ function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) =
         e.dataTransfer.effectAllowed = "move";
       }}
       onClick={() => onOpen(task.id)}
-      className="cursor-grab border border-line bg-paper p-2.5 text-left transition-colors duration-100 hover:border-heading active:cursor-grabbing"
+      className="cursor-grab rounded-lg border border-line bg-paper p-2.5 text-left transition-colors duration-100 hover:border-heading active:cursor-grabbing"
     >
       <p className="mb-1.5 text-sm font-bold text-rail">{task.title}</p>
       {task.project && <p className="mb-1.5 truncate text-2xs text-ink-muted">{task.project.name}</p>}
@@ -106,13 +106,13 @@ export function KanbanView({
           placeholder="Rechercher…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md flex-1 border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
+          className="w-full max-w-md flex-1 rounded-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
         />
         <select
           value={studioFilter}
           onChange={(e) => setStudioFilter(e.target.value)}
           aria-label="Filtrer par studio"
-          className="border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
         >
           <option value="">Tous les studios</option>
           {studios.map((s) => (
@@ -125,7 +125,7 @@ export function KanbanView({
           value={personFilter}
           onChange={(e) => setPersonFilter(e.target.value)}
           aria-label="Filtrer par personne"
-          className="border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
         >
           <option value="">Toutes les personnes</option>
           {people.map((p) => (
@@ -161,7 +161,7 @@ export function KanbanView({
               const taskId = e.dataTransfer.getData("text/plain");
               if (taskId) moveTask(taskId, status.id);
             }}
-            className="flex min-h-[200px] w-72 flex-shrink-0 flex-col gap-2 border border-line bg-wash p-2.5"
+            className="flex min-h-[200px] w-72 flex-shrink-0 flex-col gap-2 rounded-lg border border-line bg-wash p-2.5"
             style={{ outline: dragOverStatusId === status.id ? "2px solid var(--color-heading)" : undefined, outlineOffset: -2 }}
           >
             <div

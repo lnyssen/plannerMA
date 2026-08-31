@@ -72,7 +72,7 @@ export function DemandesView({
       ) : (
         <div className="flex max-w-2xl flex-col gap-3">
           {requests.map((r) => (
-            <div key={r.id} className="border border-line p-4">
+            <div key={r.id} className="rounded-lg border border-line p-4">
               <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-[family-name:var(--font-body)] text-base font-bold text-rail">{r.subject}</p>

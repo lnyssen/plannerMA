@@ -105,7 +105,7 @@ export function ChargeView({
         <select
           value={weeks}
           onChange={(e) => setWeeks(Number(e.target.value))}
-          className="ml-2 border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+          className="ml-2 rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
         >
           {WEEK_OPTIONS.map((n) => (
             <option key={n} value={n}>
@@ -120,13 +120,13 @@ export function ChargeView({
       ) : (
         <>
           <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:max-w-xl">
-            <div className="border border-line p-3">
+            <div className="rounded-lg border border-line p-3">
               <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Charge moyenne équipe</p>
               <p className="font-[family-name:var(--font-display)] text-2xl font-semibold text-heading">
                 {Math.round(teamAverage * 100)}%
               </p>
             </div>
-            <div className="border border-line p-3">
+            <div className="rounded-lg border border-line p-3">
               <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">
                 En surcharge (≥ {Math.round(OVERLOAD_THRESHOLD * 100)}%)
               </p>
@@ -137,7 +137,7 @@ export function ChargeView({
                 {overloadedCount}
               </p>
             </div>
-            <div className="border border-line p-3">
+            <div className="rounded-lg border border-line p-3">
               <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Chevauchements</p>
               <p
                 className="font-[family-name:var(--font-display)] text-2xl font-semibold"

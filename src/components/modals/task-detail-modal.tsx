@@ -312,7 +312,7 @@ export function TaskDetailModal({
           />
 
           {task.trashedAt && (
-            <p className="mb-3 border border-line bg-wash px-3 py-2 text-xs text-ink-muted">
+            <p className="mb-3 rounded-lg border border-line bg-wash px-3 py-2 text-xs text-ink-muted">
               À la corbeille depuis le {quandFr(task.trashedAt)}.
             </p>
           )}
@@ -323,7 +323,7 @@ export function TaskDetailModal({
           <div className="mb-3 flex flex-col gap-1.5">
             {task.subtasks.length === 0 && <p className="text-xs text-ink-muted">Aucune sous-tâche.</p>}
             {task.subtasks.map((s) => (
-              <div key={s.id} className="flex items-center gap-2 border border-line px-2.5 py-1.5 text-sm">
+              <div key={s.id} className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm">
                 <input
                   type="checkbox"
                   checked={s.done}
@@ -379,7 +379,7 @@ export function TaskDetailModal({
           <div className="mb-3 flex flex-col gap-1.5">
             {task.attachments.length === 0 && <p className="text-xs text-ink-muted">Aucune pièce jointe.</p>}
             {task.attachments.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 border border-line px-2.5 py-1.5 text-sm">
+              <div key={a.id} className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm">
                 {a.kind === "LINK" ? (
                   <ExternalLink size={14} className="flex-shrink-0 text-heading" aria-hidden="true" />
                 ) : (
@@ -438,7 +438,7 @@ export function TaskDetailModal({
           <div className="mb-3 flex max-h-40 flex-col gap-2 overflow-y-auto">
             {task.comments.length === 0 && <p className="text-xs text-ink-muted">Aucun commentaire.</p>}
             {task.comments.map((c) => (
-              <div key={c.id} className="border border-line p-2.5 text-sm">
+              <div key={c.id} className="rounded-lg border border-line p-2.5 text-sm">
                 <div className="mb-0.5 flex items-baseline gap-2">
                   <span className="font-semibold text-rail">{c.authorName}</span>
                   <span className="text-2xs text-ink-muted">{quandFr(c.createdAt)}</span>
@@ -461,7 +461,7 @@ export function TaskDetailModal({
                   key={p.id}
                   type="button"
                   onClick={() => mention(p.name)}
-                  className={`flex items-center gap-1 border border-line px-2 py-1 text-2xs font-semibold text-ink-muted ${textButtonClass}`}
+                  className={`flex items-center gap-1 rounded-md border border-line px-2 py-1 text-2xs font-semibold text-ink-muted ${textButtonClass}`}
                 >
                   <AtSign size={11} /> {p.name}
                 </button>

@@ -14,7 +14,7 @@ function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id:
     <button
       type="button"
       onClick={() => onOpen(client.id)}
-      className="border border-line p-4 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
+      className="rounded-lg border border-line p-4 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
       title="Modifier le client"
     >
       <div className="mb-1 font-[family-name:var(--font-body)] text-base font-bold text-rail">{client.name}</div>

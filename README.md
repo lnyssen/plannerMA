@@ -138,6 +138,18 @@ fonctionne aujourd'hui, avec de vraies données en base :
   texte libre, séparé des cases à cocher « Studios de rattachement » —
   permet un intitulé comme « Projets Européens » ou « EP » sans que ce soit
   traité comme un studio. Regroupe aussi les personnes sur la page Équipe.
+- **Menu repliable** : le bouton en haut de la barre latérale (icône panneau)
+  la réduit à une colonne d'icônes (survol pour le libellé), pour libérer de
+  la largeur — préférence locale à l'appareil (pas propre au compte, contrairement
+  à l'ordre du menu). L'entrée active est surlignée en pastille arrondie
+  plutôt que par un trait sur le bord, et « Mes tâches »/« Demandes »
+  affichent une puce avec le nombre en attente quand il y en a.
+- **Bords arrondis** dans toute l'application (boutons, cartes, champs,
+  modales, puces de statut/studio) — jetons `rounded-md`/`rounded-lg` plutôt
+  que des angles droits partout, plus proche de la maquette Claude Design
+  d'origine. Le fond de la barre latérale utilise désormais la même teinte
+  violette que les titres/bordures actives (`#612DFA`, contraste AA conservé
+  avec le texte blanc).
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav à
 6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/
