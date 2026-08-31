@@ -1,10 +1,11 @@
 "use client";
 
+import { UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { createPerson, getPersonDetail, updatePerson } from "@/lib/actions/people";
+import { createPerson, getPersonDetail, removeUserAccess, updatePerson } from "@/lib/actions/people";
 import type { StudioSummary } from "@/lib/data/studios";
-import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { dangerOutlineButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 
 export function PersonModal({
@@ -24,6 +25,7 @@ export function PersonModal({
   const [email, setEmail] = useState("");
   const [external, setExternal] = useState(false);
   const [studioIds, setStudioIds] = useState<string[]>([]);
+  const [linkedUser, setLinkedUser] = useState<{ email: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export function PersonModal({
         setEmail(p.email ?? "");
         setExternal(p.external);
         setStudioIds(p.studios.map((s) => s.studioId));
+        setLinkedUser(p.user ? { email: p.user.email } : null);
       }
       setLoading(false);
     });
@@ -44,6 +47,20 @@ export function PersonModal({
       cancelled = true;
     };
   }, [personId]);
+
+  function removeAccess() {
+    if (!personId || !linkedUser) return;
+    if (!confirm(`Retirer l’accès de connexion pour ${linkedUser.email} ? La fiche personne et son historique restent intacts.`)) return;
+    startTransition(async () => {
+      const result = await removeUserAccess(personId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setLinkedUser(null);
+      router.refresh();
+    });
+  }
 
   function toggleStudio(id: string) {
     setStudioIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -122,6 +139,21 @@ export function PersonModal({
             <input type="checkbox" checked={external} onChange={(e) => setExternal(e.target.checked)} />
             Personne extérieure à Média Animation
           </label>
+
+          {personId && linkedUser && (
+            <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-line p-3">
+              <span className="text-sm text-ink">
+                Compte de connexion : <span className="font-semibold">{linkedUser.email}</span>
+              </span>
+              <button
+                type="button"
+                onClick={removeAccess}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${dangerOutlineButtonClass}`}
+              >
+                <UserX size={13} /> Retirer l’accès
+              </button>
+            </div>
+          )}
 
           {error && (
             <p role="alert" className="mb-3 text-xs font-semibold text-alert">

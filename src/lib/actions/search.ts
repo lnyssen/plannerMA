@@ -7,7 +7,7 @@ const RESULT_LIMIT = 5;
 
 export interface SearchResults {
   tasks: { id: string; title: string; projectName: string | null }[];
-  projects: { id: string; name: string; clientName: string }[];
+  projects: { id: string; name: string; code: string | null; clientName: string; archived: boolean }[];
   clients: { id: string; name: string }[];
 }
 
@@ -29,10 +29,16 @@ export async function globalSearch(query: string): Promise<SearchResults> {
       select: { id: true, title: true, project: { select: { name: true } } },
     }),
     db.project.findMany({
-      where: { archived: false, name: { contains: q, mode: "insensitive" } },
+      // Le nom ET le code (ex. "BETTER-3", la clé de recherche mise en avant
+      // pour le reporting — voir README) ; les projets archivés restent
+      // trouvables, juste signalés (voir global-search.tsx), sinon un
+      // projet clos redevient introuvable même par son nom exact.
+      where: {
+        OR: [{ name: { contains: q, mode: "insensitive" } }, { code: { contains: q, mode: "insensitive" } }],
+      },
       take: RESULT_LIMIT,
       orderBy: { name: "asc" },
-      select: { id: true, name: true, client: { select: { name: true } } },
+      select: { id: true, name: true, code: true, archived: true, client: { select: { name: true } } },
     }),
     db.client.findMany({
       where: { name: { contains: q, mode: "insensitive" } },
@@ -44,7 +50,7 @@ export async function globalSearch(query: string): Promise<SearchResults> {
 
   return {
     tasks: tasks.map((t) => ({ id: t.id, title: t.title, projectName: t.project?.name ?? null })),
-    projects: projects.map((p) => ({ id: p.id, name: p.name, clientName: p.client.name })),
+    projects: projects.map((p) => ({ id: p.id, name: p.name, code: p.code, archived: p.archived, clientName: p.client.name })),
     clients: clients.map((c) => ({ id: c.id, name: c.name })),
   };
 }

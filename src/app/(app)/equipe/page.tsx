@@ -1,9 +1,11 @@
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { listStudios } from "@/lib/data/studios";
 import { EquipeView } from "./equipe-view";
 
 export default async function EquipePage() {
-  const [people, absences, studios] = await Promise.all([
+  const [session, people, absences, studios] = await Promise.all([
+    auth(),
     db.person.findMany({
       orderBy: { name: "asc" },
       include: {
@@ -22,17 +24,21 @@ export default async function EquipePage() {
         name: p.name,
         team: p.team,
         external: p.external,
+        active: p.active,
         studios: p.studios,
         activeTaskCount: p._count.tasks,
       }))}
       absences={absences.map((a) => ({
         id: a.id,
+        personId: a.personId,
         personName: a.person.name,
         startDate: a.startDate,
         endDate: a.endDate,
         reason: a.reason,
       }))}
       studios={studios}
+      isAdmin={session?.user.role === "ADMIN"}
+      currentPersonId={session?.user.personId ?? null}
     />
   );
 }

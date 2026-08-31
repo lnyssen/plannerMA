@@ -121,7 +121,9 @@ export function GlobalSearch() {
                   >
                     <ClipboardList size={14} className="flex-shrink-0 text-heading" aria-hidden="true" />
                     <span className="truncate">
-                      {p.name} <span className="text-ink-muted">— {p.clientName}</span>
+                      {p.name}
+                      {p.code && <span className="text-ink-muted"> ({p.code})</span>} <span className="text-ink-muted">— {p.clientName}</span>
+                      {p.archived && <span className="text-ink-muted"> · archivé</span>}
                     </span>
                   </Link>
                 ))}

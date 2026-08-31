@@ -31,6 +31,8 @@ export default async function PlanningPage({
         trashedAt: null,
         startDate: { lte: fromIsoDate(rangeEnd) },
         endDate: { gte: fromIsoDate(mondayIso) },
+        // Un projet archivé sort ses tâches de la vue Semaine (voir src/lib/data/tasks.ts).
+        OR: [{ projectId: null }, { project: { archived: false } }],
       },
       include: { studio: true, project: { include: { client: true } } },
     }),

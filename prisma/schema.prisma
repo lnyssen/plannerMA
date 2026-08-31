@@ -128,6 +128,11 @@ model Person {
   name      String
   team      String? // "équipe ou service" en texte libre, comme le prototype
   external  Boolean  @default(false)
+  /// Offboarding sans perte d'historique : une personne inactive sort des
+  /// sélecteurs (assignation, absences) mais ses tâches/écritures passées
+  /// restent intactes — voir listPeople() vs. equipe/page.tsx (qui liste
+  /// tout le monde, actif ou non, avec un bouton pour basculer).
+  active    Boolean  @default(true)
   /// Courriel de contact — utilisé pour les alertes (ex. attribution de
   /// tâche) quand la personne n'a pas de compte de connexion lié (`User`).
   /// Si un compte existe, son courriel prévaut (voir notify.ts).
@@ -506,6 +511,7 @@ enum NotificationType {
   ASSIGNMENT
   MENTION
   REQUEST
+  BUDGET_EXCEEDED
 }
 
 /// Notifications dans l'application (cloche de la barre latérale) — distinctes

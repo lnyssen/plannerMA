@@ -367,21 +367,25 @@ export function EditProjectModal({
           )}
 
           <div className="flex items-center justify-between gap-2.5">
-            <button
-              type="button"
-              onClick={toggleArchived}
-              className={`flex items-center gap-1.5 text-sm font-semibold text-heading ${textButtonClass}`}
-            >
-              {project.archived ? (
-                <>
-                  <RotateCcw size={14} /> Réactiver
-                </>
-              ) : (
-                <>
-                  <Archive size={14} /> Archiver
-                </>
-              )}
-            </button>
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={toggleArchived}
+                className={`flex items-center gap-1.5 text-sm font-semibold text-heading ${textButtonClass}`}
+              >
+                {project.archived ? (
+                  <>
+                    <RotateCcw size={14} /> Réactiver
+                  </>
+                ) : (
+                  <>
+                    <Archive size={14} /> Archiver
+                  </>
+                )}
+              </button>
+            ) : (
+              <span />
+            )}
             <div className="flex gap-2.5">
               <button
                 type="button"

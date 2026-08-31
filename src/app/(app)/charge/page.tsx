@@ -13,7 +13,7 @@ export default async function ChargePage() {
 
   return (
     <ChargeView
-      people={people.map((p) => ({ id: p.id, name: p.name, studios: p.studios.map((s) => s.studio.name) }))}
+      people={people.map((p) => ({ id: p.id, name: p.name, external: p.external, studios: p.studios.map((s) => s.studio.name) }))}
       tasks={tasks.map((t) => ({
         personId: t.assigneeId!,
         isDone: t.status.isDone,

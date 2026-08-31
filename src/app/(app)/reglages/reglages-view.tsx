@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { sendDailyDigestNow } from "@/lib/actions/account";
 import { createStudio, renameStudio } from "@/lib/actions/studios";
 import {
+  countTaskCategoryUsage,
   createTaskCategory,
   deleteTaskCategory,
   moveTaskCategory,
@@ -465,8 +466,13 @@ function CategoryGroup({
             />
             <button
               type="button"
-              onClick={() => {
-                if (!confirm(`Supprimer la catégorie « ${c.name} » ?`)) return;
+              onClick={async () => {
+                const usage = await countTaskCategoryUsage(c.id);
+                const message =
+                  usage > 0
+                    ? `Supprimer la catégorie « ${c.name} » ? ${usage} écriture${usage > 1 ? "s" : ""} de temps perdra${usage > 1 ? "ont" : ""} ce classement.`
+                    : `Supprimer la catégorie « ${c.name} » ?`;
+                if (!confirm(message)) return;
                 onError(null);
                 startTransition(async () => {
                   const result = await deleteTaskCategory(c.id);

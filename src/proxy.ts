@@ -20,7 +20,7 @@ export default auth((req) => {
 
   if (
     isLoggedIn &&
-    (pathname.startsWith("/reglages") || pathname.startsWith("/charge")) &&
+    (pathname.startsWith("/reglages") || pathname.startsWith("/charge") || pathname.startsWith("/demandes")) &&
     req.auth?.user.role !== "ADMIN"
   ) {
     return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));

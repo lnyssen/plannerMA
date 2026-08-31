@@ -49,11 +49,17 @@ export function DemandesView({
     setConverting(null);
   }
 
+  // Le nom du demandeur n'a nulle part où vivre une fois la Request
+  // supprimée (converti en Task ou écartée) — pas de FK vers Person, juste
+  // un texte libre — donc on le préserve dans la description plutôt que de
+  // le perdre silencieusement à la conversion.
   const initialValues: Partial<TaskFormValues> | undefined = converting
     ? {
         title: converting.subject,
         studioId: converting.studioId,
-        description: converting.detail ?? "",
+        description: [converting.requester ? `Demandé par ${converting.requester}.` : null, converting.detail]
+          .filter(Boolean)
+          .join("\n\n"),
         startDate: converting.wantedFor ? toIsoDate(converting.wantedFor) : today(),
         endDate: converting.wantedFor ? toIsoDate(converting.wantedFor) : today(),
       }

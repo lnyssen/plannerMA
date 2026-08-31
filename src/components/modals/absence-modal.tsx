@@ -9,15 +9,20 @@ import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 
 export function AbsenceModal({
   people,
+  isAdmin,
+  currentPersonId,
   onClose,
 }: {
+  /** Pour un compte non-admin, ne contient que la personne elle-même — déclarer l'absence de quelqu'un d'autre est réservé aux administrateurs (voir absences.ts). */
   people: { id: string; name: string }[];
+  isAdmin: boolean;
+  currentPersonId: string | null;
   onClose: () => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const auj = today();
-  const [personId, setPersonId] = useState(people[0]?.id ?? "");
+  const [personId, setPersonId] = useState(isAdmin ? (people[0]?.id ?? "") : (currentPersonId ?? ""));
   const [startDate, setStartDate] = useState(auj);
   const [endDate, setEndDate] = useState(auj);
   const [reason, setReason] = useState("");
@@ -44,6 +49,7 @@ export function AbsenceModal({
         className={`${fieldInputClass} mb-3`}
         value={personId}
         onChange={(e) => setPersonId(e.target.value)}
+        disabled={!isAdmin}
       >
         {people.map((p) => (
           <option key={p.id} value={p.id}>

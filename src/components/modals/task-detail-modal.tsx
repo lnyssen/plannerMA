@@ -127,6 +127,7 @@ export function TaskDetailModal({
 
   function trash() {
     if (!task) return;
+    if (!confirm(`Mettre « ${task.title} » à la corbeille ?`)) return;
     startTransition(async () => {
       const result = await trashTask(task.id);
       if (result.error) {
@@ -356,6 +357,18 @@ export function TaskDetailModal({
     </div>
   );
 
+  // La dépendance actuelle doit toujours apparaître comme option valide,
+  // même si la tâche dont on dépend est passée à la corbeille depuis —
+  // sinon le select retombe silencieusement sur "Aucune dépendance" alors
+  // que le lien existe toujours (voir getTaskDetail).
+  const dependencyOptions =
+    task?.dependsOn && !tasks.some((t) => t.id === task.dependsOn!.id)
+      ? [
+          ...tasks.filter((t) => t.id !== task.id),
+          { ...task.dependsOn, title: `${task.dependsOn.title} (à la corbeille)` },
+        ]
+      : tasks.filter((t) => t.id !== (task?.id ?? ""));
+
   return (
     <ModalShell
       title={loading ? "Chargement…" : (task?.title ?? "Tâche introuvable")}
@@ -375,7 +388,7 @@ export function TaskDetailModal({
             projects={projects}
             people={people}
             statuses={statuses}
-            tasks={tasks.filter((t) => t.id !== task.id)}
+            tasks={dependencyOptions}
             showStatus
           />
 
@@ -450,30 +463,33 @@ export function TaskDetailModal({
             {task.timeEntries.length === 0 && <p className="text-xs text-ink-muted">Aucune écriture.</p>}
             {task.timeEntries.map((e) => (
               <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm">
-                <span className="flex-1 text-ink">{e.person.name}</span>
+                <span className="flex-1 text-ink">{e.person?.name ?? "Quelqu’un d’autre"}</span>
                 <span className="text-2xs text-ink-muted tabular-nums">{quandFr(e.startedAt)}</span>
                 <span className="flex-shrink-0 text-xs font-semibold text-ink tabular-nums">
                   {formatDurationFr(entryDurationMinutes(e))}
                 </span>
-                {e.endedAt ? (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteTime(e.id)}
-                    aria-label={`Retirer cette écriture de ${e.person.name}`}
-                    className={`flex-shrink-0 p-0.5 text-ink-muted hover:text-alert ${textButtonClass}`}
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleStopTimer(e.id)}
-                    aria-label="Arrêter ce minuteur"
-                    className={`flex-shrink-0 p-0.5 text-alert ${textButtonClass}`}
-                  >
-                    <Square size={13} />
-                  </button>
-                )}
+                {/* Sans `person` (écriture d'un tiers, vue non-admin — voir getTaskDetail), ni retrait ni arrêt :
+                    le serveur les refuserait de toute façon (seul l'auteur ou un admin peut agir dessus). */}
+                {e.person &&
+                  (e.endedAt ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTime(e.id)}
+                      aria-label={`Retirer cette écriture de ${e.person.name}`}
+                      className={`flex-shrink-0 p-0.5 text-ink-muted hover:text-alert ${textButtonClass}`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleStopTimer(e.id)}
+                      aria-label="Arrêter ce minuteur"
+                      className={`flex-shrink-0 p-0.5 text-alert ${textButtonClass}`}
+                    >
+                      <Square size={13} />
+                    </button>
+                  ))}
               </div>
             ))}
           </div>

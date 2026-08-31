@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { createNotification } from "./notifications";
+import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
 
@@ -39,11 +41,64 @@ async function resolveEntryContext(
   input: z.infer<typeof entryContextSchema>,
 ): Promise<{ error: string } | { taskId: string | null; projectId: string | null; studioId: string; categoryId: string | null }> {
   if (input.taskId) {
-    const task = await db.task.findUnique({ where: { id: input.taskId }, select: { studioId: true, projectId: true } });
+    const task = await db.task.findUnique({
+      where: { id: input.taskId },
+      select: { studioId: true, projectId: true, project: { select: { archived: true } } },
+    });
     if (!task) return { error: "Cette tâche n’existe plus." };
+    // Un projet archivé ne doit plus recevoir de nouveau suivi de temps —
+    // même via une tâche encore liée (voir src/lib/data/tasks.ts, qui
+    // l'exclut déjà des sélecteurs pour les nouvelles écritures).
+    if (task.project?.archived) return { error: "Le projet de cette tâche est archivé — impossible d’y ajouter du temps." };
     return { taskId: input.taskId, projectId: task.projectId, studioId: task.studioId, categoryId: input.categoryId ?? null };
   }
+  if (input.projectId) {
+    const project = await db.project.findUnique({ where: { id: input.projectId }, select: { archived: true } });
+    if (!project) return { error: "Ce projet n’existe plus." };
+    if (project.archived) return { error: "Ce projet est archivé — impossible d’y ajouter du temps." };
+  }
   return { taskId: null, projectId: input.projectId ?? null, studioId: input.studioId, categoryId: input.categoryId ?? null };
+}
+
+/**
+ * Alerte les administrateurs (cloche, comme les autres notifications) quand
+ * le temps enregistré sur un projet dépasse son budget — appelée après
+ * chaque écriture qui change le total. Un seul rappel par 24h par projet
+ * plutôt qu'à chaque nouvelle écriture une fois le seuil franchi (pas de
+ * détection fine du franchissement, un minuteur en cours dérive déjà en
+ * continu — un rappel journalier reste un signal utile sans spammer).
+ */
+async function checkAndNotifyBudget(projectId: string | null): Promise<void> {
+  if (!projectId) return;
+  const project = await db.project.findUnique({ where: { id: projectId }, select: { id: true, name: true, budgetHours: true } });
+  if (!project?.budgetHours) return;
+
+  const [direct, viaTasks] = await Promise.all([
+    db.timeEntry.findMany({ where: { projectId }, select: { startedAt: true, endedAt: true } }),
+    db.timeEntry.findMany({ where: { task: { projectId } }, select: { startedAt: true, endedAt: true } }),
+  ]);
+  const totalMinutes = sumDurationMinutes([...direct, ...viaTasks]);
+  const budgetMinutes = project.budgetHours * 60;
+  if (totalMinutes <= budgetMinutes) return;
+
+  const link = `/projets?open=${project.id}`;
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recent = await db.notification.findFirst({ where: { type: "BUDGET_EXCEEDED", link, createdAt: { gte: since } } });
+  if (recent) return;
+
+  const admins = await db.user.findMany({ where: { role: "ADMIN", personId: { not: null } }, select: { personId: true } });
+  await Promise.all(
+    admins
+      .filter((a): a is { personId: string } => a.personId !== null)
+      .map((a) =>
+        createNotification({
+          recipientId: a.personId,
+          type: "BUDGET_EXCEEDED",
+          message: `Le projet « ${project.name} » dépasse son budget de temps (${formatDurationFr(totalMinutes)} sur ${formatDurationFr(budgetMinutes)} prévues).`,
+          link,
+        }),
+      ),
+  );
 }
 
 /** Le minuteur en cours de l'utilisateur connecté (n'importe quel contexte), ou null. */
@@ -96,13 +151,14 @@ export async function stopTimer(entryId: string): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
 
-  const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true } });
+  const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true, projectId: true } });
   if (!entry) return { error: "Ce minuteur n’existe plus." };
   if (entry.personId !== session.user.personId && session.user.role !== "ADMIN") {
     return { error: "Vous ne pouvez arrêter que votre propre minuteur." };
   }
 
   await db.timeEntry.update({ where: { id: entryId }, data: { endedAt: new Date() } });
+  await checkAndNotifyBudget(entry.projectId);
   revalidateTimeViews();
   return {};
 }
@@ -144,6 +200,7 @@ export async function addManualEntry(input: z.infer<typeof manualEntrySchema>): 
     },
   });
 
+  await checkAndNotifyBudget(resolved.projectId);
   revalidateTimeViews();
   return {};
 }
@@ -179,6 +236,7 @@ export async function createTimeEntryAt(input: z.infer<typeof createAtSchema>): 
     },
   });
 
+  await checkAndNotifyBudget(resolved.projectId);
   revalidateTimeViews();
   return {};
 }
@@ -208,7 +266,7 @@ export async function updateTimeEntryTimes(input: z.infer<typeof moveEntrySchema
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Créneau invalide." };
   const { entryId, startedAt, endedAt, studioId } = parsed.data;
 
-  const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true, endedAt: true } });
+  const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true, endedAt: true, projectId: true } });
   if (!entry) return { error: "Cette écriture n’existe plus." };
   if (entry.personId !== session.user.personId && session.user.role !== "ADMIN") {
     return { error: "Vous ne pouvez modifier que vos propres écritures." };
@@ -226,6 +284,7 @@ export async function updateTimeEntryTimes(input: z.infer<typeof moveEntrySchema
     where: { id: entryId },
     data: { startedAt: new Date(startedAt), endedAt: new Date(endedAt), ...contextData },
   });
+  await checkAndNotifyBudget(contextData.projectId !== undefined ? contextData.projectId : entry.projectId);
   revalidateTimeViews();
   return {};
 }

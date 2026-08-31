@@ -194,6 +194,7 @@ const toggleArchiveSchema = z.object({ projectId: z.string(), archived: z.boolea
 export async function setProjectArchived(input: z.infer<typeof toggleArchiveSchema>) {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
   const { projectId, archived } = toggleArchiveSchema.parse(input);
 
   const project = await db.project.update({ where: { id: projectId }, data: { archived } });

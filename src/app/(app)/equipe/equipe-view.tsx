@@ -1,12 +1,13 @@
 "use client";
 
-import { Pencil, Plus, Umbrella, Users } from "lucide-react";
-import { useState } from "react";
+import { Pencil, Plus, RotateCcw, UserMinus, Umbrella, Users } from "lucide-react";
+import { useState, useTransition } from "react";
 import { deleteAbsence } from "@/lib/actions/absences";
+import { setPersonActive } from "@/lib/actions/people";
 import { useRouter } from "next/navigation";
 import { AbsenceModal } from "@/components/modals/absence-modal";
 import { PersonModal } from "@/components/modals/person-modal";
-import { dangerButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, toIsoDate } from "@/lib/planning/dates";
@@ -16,12 +17,14 @@ interface PersonRow {
   name: string;
   team: string | null;
   external: boolean;
+  active: boolean;
   studios: { studio: StudioSummary }[];
   activeTaskCount: number;
 }
 
 interface AbsenceRow {
   id: string;
+  personId: string;
   personName: string;
   startDate: Date;
   endDate: Date;
@@ -32,18 +35,25 @@ export function EquipeView({
   people,
   absences,
   studios,
+  isAdmin,
+  currentPersonId,
 }: {
   people: PersonRow[];
   absences: AbsenceRow[];
   studios: StudioSummary[];
+  isAdmin: boolean;
+  currentPersonId: string | null;
 }) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [tab, setTab] = useState<"gens" | "absences">("gens");
   const [personModal, setPersonModal] = useState<"new" | string | null>(null);
   const [absenceModalOpen, setAbsenceModalOpen] = useState(false);
 
   const teams = [...new Set(people.map((p) => p.team || "Studios"))];
-  const peopleForAbsenceForm = people.map((p) => ({ id: p.id, name: p.name, team: p.team, external: p.external }));
+  const peopleForAbsenceForm = isAdmin
+    ? people.map((p) => ({ id: p.id, name: p.name }))
+    : people.filter((p) => p.id === currentPersonId).map((p) => ({ id: p.id, name: p.name }));
 
   return (
     <div className="px-8 py-8">
@@ -69,13 +79,15 @@ export function EquipeView({
         </div>
         <span className="flex-1" />
         {tab === "gens" ? (
-          <button
-            type="button"
-            onClick={() => setPersonModal("new")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${primaryButtonClass}`}
-          >
-            <Plus size={14} /> Ajouter une personne
-          </button>
+          isAdmin && (
+            <button
+              type="button"
+              onClick={() => setPersonModal("new")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${primaryButtonClass}`}
+            >
+              <Plus size={14} /> Ajouter une personne
+            </button>
+          )
         ) : (
           <button
             type="button"
@@ -100,10 +112,12 @@ export function EquipeView({
                     <div
                       key={p.id}
                       className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3 transition-colors duration-100 hover:border-heading"
+                      style={p.active ? undefined : { opacity: 0.6 }}
                     >
                       <div className="min-w-[130px]">
                         <span className="font-[family-name:var(--font-body)] text-base font-bold text-heading">{p.name}</span>
                         {p.external && <span className="ml-2 text-2xs font-bold text-alert">Invité</span>}
+                        {!p.active && <span className="ml-2 text-2xs font-bold text-ink-muted">Inactif</span>}
                       </div>
                       <div className="flex flex-1 flex-wrap gap-1.5">
                         {p.studios.length === 0 ? (
@@ -115,13 +129,30 @@ export function EquipeView({
                         )}
                       </div>
                       <span className="text-sm tabular-nums text-ink">{p.activeTaskCount} en cours</span>
-                      <button
-                        type="button"
-                        onClick={() => setPersonModal(p.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
-                      >
-                        <Pencil size={13} /> Modifier
-                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            startTransition(async () => {
+                              await setPersonActive(p.id, !p.active);
+                              router.refresh();
+                            })
+                          }
+                          title={p.active ? "Désactiver — sort des sélecteurs, l’historique reste intact" : "Réactiver"}
+                          className={`flex items-center gap-1 text-ink-muted hover:text-alert ${textButtonClass}`}
+                        >
+                          {p.active ? <UserMinus size={14} /> : <RotateCcw size={14} />}
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setPersonModal(p.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
+                        >
+                          <Pencil size={13} /> Modifier
+                        </button>
+                      )}
                     </div>
                   ))}
               </div>
@@ -145,13 +176,15 @@ export function EquipeView({
                   du {formatShortFr(toIsoDate(a.startDate))} au {formatShortFr(toIsoDate(a.endDate))}
                   {a.reason && ` · ${a.reason}`}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => deleteAbsence(a.id).then(() => router.refresh())}
-                  className={`px-2 py-1 text-sm font-semibold ${dangerButtonClass}`}
-                >
-                  Retirer
-                </button>
+                {(isAdmin || a.personId === currentPersonId) && (
+                  <button
+                    type="button"
+                    onClick={() => deleteAbsence(a.id).then(() => router.refresh())}
+                    className={`px-2 py-1 text-sm font-semibold ${dangerButtonClass}`}
+                  >
+                    Retirer
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -165,7 +198,14 @@ export function EquipeView({
           onClose={() => setPersonModal(null)}
         />
       )}
-      {absenceModalOpen && <AbsenceModal people={peopleForAbsenceForm} onClose={() => setAbsenceModalOpen(false)} />}
+      {absenceModalOpen && (
+        <AbsenceModal
+          people={peopleForAbsenceForm}
+          isAdmin={isAdmin}
+          currentPersonId={currentPersonId}
+          onClose={() => setAbsenceModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

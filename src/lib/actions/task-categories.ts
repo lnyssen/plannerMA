@@ -47,7 +47,14 @@ export async function renameTaskCategory(categoryId: string, name: string): Prom
   return {};
 }
 
-/** Sans blocage sur l'usage : une écriture perd simplement sa catégorie (categoryId passe à nul, voir la clé étrangère). */
+/** Pour afficher un avertissement avant suppression — voir deleteTaskCategory, qui ne bloque pas mais ne doit pas surprendre. */
+export async function countTaskCategoryUsage(categoryId: string): Promise<number> {
+  const auth_ = await requireAdmin();
+  if ("error" in auth_) return 0;
+  return db.timeEntry.count({ where: { categoryId } });
+}
+
+/** Sans blocage sur l'usage : une écriture perd simplement sa catégorie (categoryId passe à nul, voir la clé étrangère) — countTaskCategoryUsage permet d'avertir avant coup plutôt que de surprendre. */
 export async function deleteTaskCategory(categoryId: string): Promise<{ error?: string }> {
   const auth_ = await requireAdmin();
   if ("error" in auth_) return auth_;

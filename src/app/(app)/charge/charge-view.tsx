@@ -10,6 +10,7 @@ interface ChargePerson {
   id: string;
   name: string;
   studios: string[];
+  external: boolean;
 }
 
 interface ChargeTimeEntry {
@@ -218,6 +219,11 @@ export function ChargeView({
                 <tr key={person.id}>
                   <td className="sticky left-0 z-10 flex items-center gap-1.5 whitespace-nowrap bg-paper px-3 py-2 text-sm text-heading">
                     {person.name}
+                    {person.external && (
+                      <span className="text-2xs font-bold text-alert" title="Personne extérieure — capacité non garantie comme le personnel salarié.">
+                        Invité
+                      </span>
+                    )}
                     {overlapping.has(person.id) && (
                       <span
                         title="Deux tâches actives se chevauchent pour cette personne — voir le Gantt."

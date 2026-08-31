@@ -84,6 +84,7 @@ export async function updateClientDetail(
 export async function deleteClient(clientId: string): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
 
   const projectCount = await db.project.count({ where: { clientId } });
   if (projectCount > 0) {

@@ -14,7 +14,7 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
 export async function getTaskDetail(taskId: string) {
   const session = await auth();
   if (!session?.user) return null;
-  return db.task.findUnique({
+  const task = await db.task.findUnique({
     where: { id: taskId },
     include: {
       project: true,
@@ -24,11 +24,35 @@ export async function getTaskDetail(taskId: string) {
       comments: { orderBy: { createdAt: "asc" }, include: { mentions: { include: { person: true } } } },
       subtasks: { orderBy: { position: "asc" } },
       status: true,
-      dependsOn: { select: { id: true, title: true } },
+      // Nom + projet même si la tâche dont on dépend est à la corbeille —
+      // sinon le formulaire l'affiche à tort comme "Aucune dépendance"
+      // (elle n'apparaît plus dans les options actives, voir
+      // listActiveTasksForForms) alors que le lien existe toujours.
+      dependsOn: {
+        select: { id: true, title: true, studioId: true, project: { select: { name: true, client: { select: { name: true } } } } },
+      },
       journalEntries: { orderBy: { createdAt: "desc" } },
       timeEntries: { orderBy: { startedAt: "desc" }, include: { person: { select: { name: true } } } },
     },
   });
+  if (!task) return null;
+
+  // Qui a passé combien de temps est réservé aux administrateurs (même
+  // règle que Temps → Équipe et la fiche projet, voir getProjectDetail) —
+  // sauf ses propres écritures, toujours visibles pour pouvoir les gérer
+  // (arrêter un minuteur, retirer une écriture) sans dépendre du nom pour
+  // se reconnaître dans la liste.
+  if (session.user.role !== "ADMIN") {
+    return {
+      ...task,
+      timeEntries: task.timeEntries.map((e) =>
+        e.personId === session.user.personId
+          ? e
+          : { ...e, personId: null as string | null, person: null as { name: string } | null },
+      ),
+    };
+  }
+  return task;
 }
 
 export type TaskDetail = NonNullable<Awaited<ReturnType<typeof getTaskDetail>>>;
@@ -472,6 +496,12 @@ export async function trashTask(taskId: string): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
 
+  const existing = await db.task.findUnique({ where: { id: taskId }, select: { assigneeId: true } });
+  if (!existing) return { error: "Cette tâche n’existe plus." };
+  if (session.user.role !== "ADMIN" && existing.assigneeId !== session.user.personId) {
+    return { error: "Seul un administrateur ou la personne attribuée peut mettre cette tâche à la corbeille." };
+  }
+
   const task = await db.task.update({ where: { id: taskId }, data: { trashedAt: new Date() } });
   await db.journalEntry.create({
     data: {
@@ -489,6 +519,7 @@ export async function trashTask(taskId: string): Promise<{ error?: string }> {
 export async function restoreTask(taskId: string): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
 
   const task = await db.task.update({ where: { id: taskId }, data: { trashedAt: null } });
   await db.journalEntry.create({

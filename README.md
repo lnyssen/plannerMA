@@ -294,3 +294,31 @@ n'existe.
 - Sauvegardes quotidiennes automatiques de la base, avec procédure de
   restauration documentée et testée (voir `docs/` une fois le palier
   correspondant livré) — pas seulement configurées.
+- **Droits ADMIN vs. le reste** : au-delà du studio/de la tâche qu'on
+  travaille, la gestion de l'équipe (ajout/édition/désactivation d'une
+  personne, retrait d'un accès de connexion), l'archivage d'un projet, la
+  suppression d'un client et la restauration depuis la corbeille sont
+  réservés aux administrateurs — un COLLABORATOR ne peut mettre à la
+  corbeille que ses propres tâches (avec confirmation), et ne peut déclarer/
+  retirer une absence que pour lui-même. `STUDIO_LEAD` reste identique à
+  `COLLABORATOR` côté droits (voir le commentaire sur `Role` dans
+  `prisma/schema.prisma`) — à affiner si le besoin se précise à l'usage.
+- **Offboarding** : une personne se désactive (`Person.active`) plutôt que
+  se supprime — elle sort des sélecteurs d'assignation/d'absence sans
+  perdre son historique (tâches, écritures de temps, journal). Un compte de
+  connexion se retire indépendamment (`Réglages` → fiche personne →
+  « Retirer l'accès »), la fiche personne reste intacte ; impossible de
+  retirer le dernier compte administrateur restant.
+- **Suivi de temps et confidentialité** : qui a passé combien de temps
+  (fiche tâche, fiche projet, `Temps` → `Équipe`, export CSV) est retiré
+  côté serveur pour un compte non-admin — jamais juste masqué côté
+  interface — sauf ses propres écritures, toujours visibles pour pouvoir
+  les gérer.
+- **Alerte de dépassement de budget** : en plus de l'indicateur visuel sur
+  la fiche projet, une notification (cloche) part vers les administrateurs
+  dès qu'une écriture de temps fait franchir le budget d'un projet — au
+  plus une fois par 24h par projet pour ne pas spammer sur un minuteur
+  laissé ouvert.
+- Un projet archivé sort ses tâches de toutes les vues de travail actif
+  (Tâches, Mes tâches, Planning, Charge) et refuse tout nouveau suivi de
+  temps, y compris via une tâche qui lui reste liée.
