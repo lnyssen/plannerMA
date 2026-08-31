@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Mail, Plus, RefreshCw, ScrollText, Settings, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Mail, Plus, RefreshCw, ScrollText, Settings, Tags, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { sendDailyDigestNow } from "@/lib/actions/account";
@@ -53,7 +53,7 @@ export function ReglagesView({
   journal: JournalEntrySummary[];
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"general" | "corbeille" | "journal">("general");
+  const [tab, setTab] = useState<"general" | "categories" | "corbeille" | "journal">("general");
   const [, startTransition] = useTransition();
   const [newStudioName, setNewStudioName] = useState("");
   const [newStatusName, setNewStatusName] = useState("");
@@ -65,6 +65,7 @@ export function ReglagesView({
 
   const TABS = [
     { id: "general" as const, label: "Général", icon: Settings },
+    { id: "categories" as const, label: "Catégories de tâches", icon: Tags },
     { id: "corbeille" as const, label: `Corbeille${trashedTasks.length ? ` (${trashedTasks.length})` : ""}`, icon: Trash2 },
     { id: "journal" as const, label: "Journal", icon: ScrollText },
   ];
@@ -282,39 +283,42 @@ export function ReglagesView({
               <Plus size={14} /> Ajouter
             </button>
           </div>
+        </div>
+      )}
 
-          <h2 className="mt-8 mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">
-            Catégories de tâches (suivi de temps)
-          </h2>
-          <p className="mb-4 text-sm text-ink">
+      {tab === "categories" && (
+        <div>
+          <p className="mb-4 max-w-2xl text-sm text-ink">
             Le « type de tâche » à choisir en enregistrant du temps (minuteur, saisie manuelle, calendrier) —
             nomenclature transmise par l’équipe. Les catégories générales sont proposées pour tous les studios ;
             chaque studio peut avoir en plus les siennes.
           </p>
           {categoryError && <p className="mb-3 text-xs font-semibold text-alert">{categoryError}</p>}
-          <CategoryGroup
-            title="Général (tous studios)"
-            studioId={null}
-            categories={categories.filter((c) => c.studioId === null)}
-            newName={newCategoryNames.general ?? ""}
-            onNewNameChange={(v) => setNewCategoryNames((n) => ({ ...n, general: v }))}
-            onError={setCategoryError}
-            router={router}
-            startTransition={startTransition}
-          />
-          {studios.map((s) => (
+          <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
             <CategoryGroup
-              key={s.id}
-              title={s.name}
-              studioId={s.id}
-              categories={categories.filter((c) => c.studioId === s.id)}
-              newName={newCategoryNames[s.id] ?? ""}
-              onNewNameChange={(v) => setNewCategoryNames((n) => ({ ...n, [s.id]: v }))}
+              title="Général (tous studios)"
+              studioId={null}
+              categories={categories.filter((c) => c.studioId === null)}
+              newName={newCategoryNames.general ?? ""}
+              onNewNameChange={(v) => setNewCategoryNames((n) => ({ ...n, general: v }))}
               onError={setCategoryError}
               router={router}
               startTransition={startTransition}
             />
-          ))}
+            {studios.map((s) => (
+              <CategoryGroup
+                key={s.id}
+                title={s.name}
+                studioId={s.id}
+                categories={categories.filter((c) => c.studioId === s.id)}
+                newName={newCategoryNames[s.id] ?? ""}
+                onNewNameChange={(v) => setNewCategoryNames((n) => ({ ...n, [s.id]: v }))}
+                onError={setCategoryError}
+                router={router}
+                startTransition={startTransition}
+              />
+            ))}
+          </div>
         </div>
       )}
 

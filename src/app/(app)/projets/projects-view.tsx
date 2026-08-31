@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { EditProjectModal } from "@/components/modals/edit-project-modal";
 import { secondaryButtonClass } from "@/components/ui/buttons";
+import { CreateButton } from "@/components/shell/create-button";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { ClientSummary } from "@/lib/data/clients";
@@ -220,6 +221,7 @@ export function ProjectsView({
         >
           <Archive size={14} /> {showArchived ? "Projets actifs" : "Archives"}
         </Link>
+        <CreateButton kind="project" />
       </div>
 
       {view === "table" && (
@@ -283,7 +285,7 @@ export function ProjectsView({
         <p className="text-sm text-ink-muted">
           {showArchived
             ? "Aucun projet archivé."
-            : "Aucun projet. Utilisez « Nouveau projet » dans la barre latérale pour commencer."}
+            : "Aucun projet. Utilisez « Nouveau projet » ci-dessus pour commencer."}
         </p>
       ) : filtered.length === 0 ? (
         <div className="rounded-lg border border-line p-16 text-center">

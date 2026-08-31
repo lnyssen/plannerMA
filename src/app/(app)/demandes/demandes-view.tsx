@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
 import type { TaskFormValues } from "@/components/modals/task-form-fields";
+import { CreateButton } from "@/components/shell/create-button";
 import { dangerOutlineButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import { deleteRequest } from "@/lib/actions/requests";
@@ -60,12 +61,14 @@ export function DemandesView({
 
   return (
     <div className="px-8 py-8">
-      <h1 className="mb-1 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
-        Demandes
-      </h1>
-      <p className="mb-6 text-sm text-ink-muted">
-        Déposées via « + Nouvelle demande » dans la barre latérale — à convertir en tâche ou à écarter.
-      </p>
+      <div className="mb-1 flex flex-wrap items-center gap-3">
+        <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
+          Demandes
+        </h1>
+        <span className="flex-1" />
+        <CreateButton kind="request" />
+      </div>
+      <p className="mb-6 text-sm text-ink-muted">À convertir en tâche ou à écarter.</p>
 
       {requests.length === 0 ? (
         <p className="text-sm text-ink-muted">Aucune demande en attente.</p>
