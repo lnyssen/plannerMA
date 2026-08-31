@@ -16,6 +16,11 @@ const credentialsSchema = z.object({
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Sans ça, Auth.js v5 refuse l'en-tête d'hôte fourni par la plateforme
+  // (Vercel, ou tout hébergeur derrière un proxy) et échoue avec une erreur
+  // de configuration générique — sûr ici : c'est Vercel/le proxy amont qui
+  // pose l'en-tête, pas une requête cliente arbitraire.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/connexion",
