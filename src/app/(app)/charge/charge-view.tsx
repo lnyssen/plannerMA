@@ -3,12 +3,19 @@
 import { useMemo, useState } from "react";
 import { addDays, belgianHolidaysRange, fromIsoDate, mondayOf, today } from "@/lib/planning/dates";
 import { weeklyLoad, type LoadAbsence, type LoadTask } from "@/lib/planning/availability";
+import { entryDurationMinutes, formatDurationFr } from "@/lib/planning/time";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 
 interface ChargePerson {
   id: string;
   name: string;
   studios: string[];
+}
+
+interface ChargeTimeEntry {
+  personId: string;
+  startedAt: Date;
+  endedAt: Date | null;
 }
 
 const WEEK_OPTIONS = [4, 8, 12];
@@ -29,10 +36,12 @@ export function ChargeView({
   people,
   tasks,
   absences,
+  timeEntries,
 }: {
   people: ChargePerson[];
   tasks: LoadTask[];
   absences: LoadAbsence[];
+  timeEntries: ChargeTimeEntry[];
 }) {
   const [weeks, setWeeks] = useState(8);
   const weekStart0 = useMemo(() => mondayOf(fromIsoDate(today())), []);
@@ -41,6 +50,21 @@ export function ChargeView({
     () => Array.from({ length: weeks }, (_, i) => addDays(weekStart0, i * 7)),
     [weeks, weekStart0],
   );
+
+  // Total réellement enregistré (Temps) sur la même période affichée, par
+  // personne — comparé à la charge prévue (%) sans convertir l'un dans
+  // l'unité de l'autre : la charge n'a pas de notion d'heures par jour à
+  // temps plein définie dans l'appli, une conversion serait une fausse
+  // précision. Les deux chiffres côte à côte suffisent à repérer un écart.
+  const rangeEnd = useMemo(() => addDays(weekStarts[weekStarts.length - 1] ?? weekStart0, 7), [weekStarts, weekStart0]);
+  const actualMinutesByPerson = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const e of timeEntries) {
+      if (e.startedAt < weekStart0 || e.startedAt >= rangeEnd) continue;
+      map.set(e.personId, (map.get(e.personId) ?? 0) + entryDurationMinutes(e));
+    }
+    return map;
+  }, [timeEntries, weekStart0, rangeEnd]);
 
   const holidays = useMemo(() => {
     const years = weekStarts.map((d) => d.getUTCFullYear());
@@ -184,6 +208,9 @@ export function ChargeView({
                 <th className="min-w-[64px] border-l border-line px-1 py-2 text-center text-2xs font-semibold text-ink-muted uppercase">
                   Moyenne
                 </th>
+                <th className="min-w-[72px] px-1 py-2 text-center text-2xs font-semibold text-ink-muted uppercase">
+                  Temps réel
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -217,6 +244,9 @@ export function ChargeView({
                   <td className="border-l border-line px-1 py-2 text-center text-sm font-semibold text-rail tabular-nums">
                     {Math.round(average * 100)}%
                   </td>
+                  <td className="px-1 py-2 text-center text-xs text-ink-muted tabular-nums">
+                    {formatDurationFr(actualMinutesByPerson.get(person.id) ?? 0)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -229,7 +259,9 @@ export function ChargeView({
         Part des jours ouvrables occupés par des tâches non terminées (jours fériés, week-ends et absences déduits).
         Une tâche avec une estimation (demi-journées, fiche de tâche) répartit son effort sur sa plage de dates ;
         sans estimation, tout jour couvert compte comme entièrement occupé. Puce rose : chevauchement de deux tâches
-        actives pour cette personne.
+        actives pour cette personne. « Temps réel » (depuis Temps) : total effectivement enregistré sur la même
+        période — à lire à côté de la charge prévue, pas convertie dans la même unité (l’appli ne définit pas
+        d’heures par jour à temps plein).
       </p>
     </div>
   );

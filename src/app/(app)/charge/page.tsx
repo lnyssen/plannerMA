@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { loadChargeData } from "@/lib/data/charge";
+import { listAllTimeEntries } from "@/lib/data/time-entries";
 import { toIsoDate } from "@/lib/planning/dates";
 import { ChargeView } from "./charge-view";
 
@@ -8,7 +9,7 @@ export default async function ChargePage() {
   const session = await auth();
   if (session?.user.role !== "ADMIN") redirect("/projets"); // filet de sécurité, le middleware couvre déjà ce cas
 
-  const [people, tasks, absences] = await loadChargeData();
+  const [[people, tasks, absences], timeEntries] = await Promise.all([loadChargeData(), listAllTimeEntries()]);
 
   return (
     <ChargeView
@@ -24,6 +25,11 @@ export default async function ChargePage() {
         personId: a.personId,
         startDate: toIsoDate(a.startDate),
         endDate: toIsoDate(a.endDate),
+      }))}
+      timeEntries={timeEntries.map((e) => ({
+        personId: e.person.id,
+        startedAt: e.startedAt,
+        endedAt: e.endedAt,
       }))}
     />
   );

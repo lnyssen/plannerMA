@@ -26,6 +26,7 @@ export async function getTaskDetail(taskId: string) {
       status: true,
       dependsOn: { select: { id: true, title: true } },
       journalEntries: { orderBy: { createdAt: "desc" } },
+      timeEntries: { orderBy: { startedAt: "desc" }, include: { person: { select: { name: true } } } },
     },
   });
 }

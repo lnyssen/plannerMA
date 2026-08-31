@@ -1,18 +1,20 @@
 "use client";
 
-import { AtSign, ExternalLink, Paperclip, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { AtSign, ExternalLink, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { addLinkAttachment, deleteAttachment, uploadFileAttachment } from "@/lib/actions/attachments";
 import { addComment } from "@/lib/actions/comments";
 import { addSubtask, deleteSubtask, toggleSubtask } from "@/lib/actions/subtasks";
 import { getTaskDetail, restoreTask, trashTask, updateTask, type TaskDetail } from "@/lib/actions/tasks";
+import { addManualEntry, deleteTimeEntry, startTimer, stopTimer } from "@/lib/actions/time-entries";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskOption } from "@/lib/data/tasks";
-import { quandFr, toIsoDate } from "@/lib/planning/dates";
+import { quandFr, toIsoDate, today } from "@/lib/planning/dates";
+import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { fieldInputClass, ModalShell } from "./modal-shell";
 import { EMPTY_TASK_FORM, TaskFormFields, type TaskFormValues } from "./task-form-fields";
@@ -47,6 +49,11 @@ export function TaskDetailModal({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [newSubtaskDue, setNewSubtaskDue] = useState("");
   const [subtaskError, setSubtaskError] = useState<string | null>(null);
+  const [timeError, setTimeError] = useState<string | null>(null);
+  const [showManualTime, setShowManualTime] = useState(false);
+  const [manualDate, setManualDate] = useState(today());
+  const [manualHours, setManualHours] = useState("0");
+  const [manualMinutes, setManualMinutes] = useState("30");
 
   useEffect(() => {
     let cancelled = false;
@@ -223,6 +230,66 @@ export function TaskDetailModal({
     });
   }
 
+  function handleStartTimer() {
+    if (!task) return;
+    setTimeError(null);
+    startTransition(async () => {
+      const result = await startTimer(task.id);
+      if (result.error) {
+        setTimeError(result.error);
+        return;
+      }
+      await refreshTask();
+      router.refresh();
+    });
+  }
+
+  function handleStopTimer(entryId: string) {
+    setTimeError(null);
+    startTransition(async () => {
+      const result = await stopTimer(entryId);
+      if (result.error) {
+        setTimeError(result.error);
+        return;
+      }
+      await refreshTask();
+      router.refresh();
+    });
+  }
+
+  function handleManualTime() {
+    if (!task) return;
+    setTimeError(null);
+    startTransition(async () => {
+      const result = await addManualEntry({
+        taskId: task.id,
+        date: manualDate,
+        hours: Number(manualHours) || 0,
+        minutes: Number(manualMinutes) || 0,
+        note: null,
+      });
+      if (result.error) {
+        setTimeError(result.error);
+        return;
+      }
+      setShowManualTime(false);
+      await refreshTask();
+      router.refresh();
+    });
+  }
+
+  function handleDeleteTime(entryId: string) {
+    startTransition(async () => {
+      const result = await deleteTimeEntry(entryId);
+      if (result.error) {
+        setTimeError(result.error);
+        return;
+      }
+      await refreshTask();
+      router.refresh();
+    });
+  }
+
   function mention(name: string) {
     const tag = `@${name} `;
     setCommentBody((b) => (b.includes(tag) ? b : `${b}${b && !b.endsWith(" ") ? " " : ""}${tag}`));
@@ -372,6 +439,98 @@ export function TaskDetailModal({
           {subtaskError && (
             <p role="alert" className="mb-3 text-xs font-semibold text-alert">
               {subtaskError}
+            </p>
+          )}
+
+          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
+            <Timer size={13} /> Temps ({formatDurationFr(sumDurationMinutes(task.timeEntries))})
+          </h3>
+          <div className="mb-3 flex flex-col gap-1.5">
+            {task.timeEntries.length === 0 && <p className="text-xs text-ink-muted">Aucune écriture.</p>}
+            {task.timeEntries.map((e) => (
+              <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5 text-sm">
+                <span className="flex-1 text-ink">{e.person.name}</span>
+                <span className="text-2xs text-ink-muted tabular-nums">{quandFr(e.startedAt)}</span>
+                <span className="flex-shrink-0 text-xs font-semibold text-ink tabular-nums">
+                  {formatDurationFr(entryDurationMinutes(e))}
+                </span>
+                {e.endedAt ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTime(e.id)}
+                    aria-label={`Retirer cette écriture de ${e.person.name}`}
+                    className={`flex-shrink-0 p-0.5 text-ink-muted hover:text-alert ${textButtonClass}`}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleStopTimer(e.id)}
+                    aria-label="Arrêter ce minuteur"
+                    className={`flex-shrink-0 p-0.5 text-alert ${textButtonClass}`}
+                  >
+                    <Square size={13} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="mb-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleStartTimer}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+            >
+              <Timer size={14} /> Démarrer un minuteur
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowManualTime((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+            >
+              <Plus size={14} /> Saisie manuelle
+            </button>
+          </div>
+          {showManualTime && (
+            <div className="mb-2 flex flex-wrap items-end gap-2">
+              <input
+                type="date"
+                aria-label="Date"
+                value={manualDate}
+                onChange={(e) => setManualDate(e.target.value)}
+                className={fieldInputClass}
+              />
+              <input
+                type="number"
+                aria-label="Heures"
+                min={0}
+                max={24}
+                value={manualHours}
+                onChange={(e) => setManualHours(e.target.value)}
+                className={`${fieldInputClass} w-16`}
+              />
+              <input
+                type="number"
+                aria-label="Minutes"
+                min={0}
+                max={59}
+                value={manualMinutes}
+                onChange={(e) => setManualMinutes(e.target.value)}
+                className={`${fieldInputClass} w-16`}
+              />
+              <button
+                type="button"
+                onClick={handleManualTime}
+                className={`px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+              >
+                Ajouter
+              </button>
+            </div>
+          )}
+          {timeError && (
+            <p role="alert" className="mb-3 text-xs font-semibold text-alert">
+              {timeError}
             </p>
           )}
 

@@ -1,13 +1,14 @@
 "use client";
 
-import { Archive, Flag, ListChecks, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { AlertTriangle, Archive, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
 import { getProjectDetail, setProjectArchived, updateProject, type ProjectDetail } from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
+import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { ClientPicker } from "./client-picker";
 import { primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
@@ -32,6 +33,7 @@ export function EditProjectModal({
   const [newClientName, setNewClientName] = useState<string | null>(null);
   const [type, setType] = useState<"INTERNAL" | "EXTERNAL">("EXTERNAL");
   const [studioIds, setStudioIds] = useState<string[]>([]);
+  const [budgetHours, setBudgetHours] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
   const [newMilestoneDue, setNewMilestoneDue] = useState(today());
@@ -45,6 +47,7 @@ export function EditProjectModal({
       setClientId(p.clientId);
       setType(p.type);
       setStudioIds(p.studios.map((s) => s.studioId));
+      setBudgetHours(p.budgetHours != null ? String(p.budgetHours) : "");
     }
     return p;
   }
@@ -59,6 +62,7 @@ export function EditProjectModal({
         setClientId(p.clientId);
         setType(p.type);
         setStudioIds(p.studios.map((s) => s.studioId));
+        setBudgetHours(p.budgetHours != null ? String(p.budgetHours) : "");
       }
       setLoading(false);
     });
@@ -66,6 +70,13 @@ export function EditProjectModal({
       cancelled = true;
     };
   }, [projectId]);
+
+  const loggedMinutes = useMemo(
+    () => (project ? sumDurationMinutes(project.tasks.flatMap((t) => t.timeEntries)) : 0),
+    [project],
+  );
+  const budgetMinutes = project?.budgetHours != null ? project.budgetHours * 60 : null;
+  const overBudget = budgetMinutes != null && loggedMinutes > budgetMinutes;
 
   function toggleStudio(id: string) {
     setStudioIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -105,7 +116,15 @@ export function EditProjectModal({
   function save() {
     setError(null);
     startTransition(async () => {
-      const result = await updateProject({ projectId, name, clientId, newClientName, type, studioIds });
+      const result = await updateProject({
+        projectId,
+        name,
+        clientId,
+        newClientName,
+        type,
+        studioIds,
+        budgetHours: budgetHours ? Number(budgetHours) : null,
+      });
       if (result.error) {
         setError(result.error);
         return;
@@ -175,6 +194,24 @@ export function EditProjectModal({
               );
             })}
           </div>
+
+          <FieldLabel htmlFor="edit-project-budget">Budget de temps (heures, facultatif)</FieldLabel>
+          <input
+            id="edit-project-budget"
+            type="number"
+            min={1}
+            step={1}
+            className={`${fieldInputClass} mb-1.5 max-w-[140px]`}
+            value={budgetHours}
+            onChange={(e) => setBudgetHours(e.target.value)}
+            placeholder="—"
+          />
+          <p className="mb-4 flex items-center gap-1.5 text-xs" style={{ color: overBudget ? "var(--color-alert)" : "var(--color-ink-muted)" }}>
+            {overBudget && <AlertTriangle size={13} className="flex-shrink-0" />}
+            <Timer size={13} className="flex-shrink-0" aria-hidden="true" />
+            {formatDurationFr(loggedMinutes)} enregistrées
+            {budgetMinutes != null && ` sur ${formatDurationFr(budgetMinutes)} prévues`}
+          </p>
 
           <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
             <ListChecks size={13} /> Tâches ({project.tasks.length})

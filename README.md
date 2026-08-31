@@ -156,6 +156,19 @@ fonctionne aujourd'hui, avec de vraies données en base :
   (pas une simple inversion), contrastes vérifiés AA sur le fond sombre. Posé
   sur `<html>` par le layout racine avant le premier rendu pour éviter un
   flash du thème clair à l'arrivée.
+- **Temps** (nouvel écran, nav) : feuilles de temps façon Clockify —
+  minuteur (un seul actif à la fois par personne, en démarrer un nouveau
+  arrête l'ancien) ou saisie manuelle (date + durée) contre une tâche.
+  « Mon temps » : liste groupée par jour, ou vue **calendrier** (semaine,
+  glisser un bloc pour changer son heure, glisser son bord bas pour changer
+  sa durée — pas de 15 min). Seul un administrateur voit l'onglet « Équipe »
+  (toutes les écritures, tous les comptes) ; chacun ne voit et ne modifie
+  que les siennes. `Project.budgetHours` (facultatif, fiche projet) déclenche
+  un avertissement quand le temps enregistré le dépasse, affiché sur la
+  fiche projet et listé dans Temps → Équipe. La vue Charge affiche aussi une
+  colonne « Temps réel » à côté de la charge prévue (deux mesures
+  différentes — occupation planifiée vs heures effectivement enregistrées —
+  pas converties dans la même unité).
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav à
 6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/

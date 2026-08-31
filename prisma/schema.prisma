@@ -135,6 +135,7 @@ model Person {
   journalEntries  JournalEntry[]
   notifications   Notification[]
   mentions        CommentMention[]
+  timeEntries     TimeEntry[]
 
   @@map("people")
 }
@@ -190,6 +191,11 @@ model Project {
   clientId  String     @map("client_id")
   type      ClientType
   archived  Boolean    @default(false)
+  /// Budget de temps estimé pour tout le projet (heures) — facultatif. Sert
+  /// uniquement à l'avertissement de dépassement (fiche projet, Temps) ;
+  /// distinct de `Task.estimatedHalfDays` qui reste une estimation par
+  /// tâche pour le calcul de charge.
+  budgetHours Int?      @map("budget_hours")
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
@@ -321,6 +327,7 @@ model Task {
   comments       Comment[]
   attachments    Attachment[]
   journalEntries JournalEntry[]
+  timeEntries    TimeEntry[]
 
   @@index([studioId])
   @@index([projectId])
@@ -346,6 +353,29 @@ model Subtask {
 
   @@index([taskId])
   @@map("subtasks")
+}
+
+/// Feuille de temps — un minuteur en cours (`endedAt` nul) ou une écriture
+/// manuelle (les deux bornes posées d'un coup). Rattachée à une tâche (donc
+/// indirectement à un projet et un studio) plutôt qu'au projet directement :
+/// c'est la tâche qu'on travaille, l'agrégation par projet se fait à la
+/// lecture (voir src/lib/data/time-entries.ts). Démarrer un nouveau
+/// minuteur arrête automatiquement celui en cours pour la même personne —
+/// un seul actif à la fois, comme Clockify.
+model TimeEntry {
+  id        String    @id @default(cuid())
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String    @map("task_id")
+  person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId  String    @map("person_id")
+  startedAt DateTime  @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+  note      String?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@index([personId, endedAt])
+  @@map("time_entries")
 }
 
 // --------------------------------------------------------------------------

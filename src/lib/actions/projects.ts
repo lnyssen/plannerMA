@@ -85,6 +85,7 @@ export async function getProjectDetail(projectId: string) {
           endDate: true,
           status: { select: { name: true, colorHex: true, fillHex: true } },
           assignee: { select: { name: true } },
+          timeEntries: { select: { startedAt: true, endedAt: true } },
         },
       },
       _count: { select: { tasks: { where: { trashedAt: null } } } },
@@ -99,6 +100,7 @@ const updateProjectSchema = z.object({
   name: z.string().trim().min(1, "Le nom du projet est requis."),
   type: z.enum(["INTERNAL", "EXTERNAL"]),
   studioIds: z.array(z.string()).min(1, "Choisissez au moins un studio."),
+  budgetHours: z.number().int().positive().nullable(),
 }).and(clientRefSchema);
 
 export type UpdateProjectInput = z.input<typeof updateProjectSchema>;
@@ -109,7 +111,7 @@ export async function updateProject(input: UpdateProjectInput): Promise<{ error?
 
   const parsed = updateProjectSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { projectId, name, type, studioIds } = parsed.data;
+  const { projectId, name, type, studioIds, budgetHours } = parsed.data;
   const clientId = await resolveClientId(parsed.data);
 
   await db.$transaction([
@@ -120,6 +122,7 @@ export async function updateProject(input: UpdateProjectInput): Promise<{ error?
         name,
         clientId,
         type,
+        budgetHours,
         studios: { create: studioIds.map((studioId) => ({ studioId })) },
       },
     }),
