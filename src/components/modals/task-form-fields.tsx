@@ -5,7 +5,7 @@ import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskOption } from "@/lib/data/tasks";
-import { taskContextLabel } from "@/lib/planning/labels";
+import { sortByTaskContext, taskContextLabel } from "@/lib/planning/labels";
 import { FieldLabel, fieldInputClass } from "./modal-shell";
 
 export interface TaskFormValues {
@@ -151,7 +151,7 @@ export function TaskFormFields({
             onChange={(e) => onChange({ dependsOnId: e.target.value })}
           >
             <option value="">Aucune dépendance</option>
-            {tasks.map((t) => (
+            {sortByTaskContext(tasks).map((t) => (
               <option key={t.id} value={t.id}>
                 {taskContextLabel(t)}
               </option>

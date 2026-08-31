@@ -3,7 +3,9 @@ import { db } from "@/lib/db";
 export function listActiveProjectsForForms() {
   return db.project.findMany({
     where: { archived: false },
-    orderBy: { name: "asc" },
+    // Client puis Projet — même ordre que la nomenclature Client — Projet
+    // affichée (voir src/lib/planning/labels.ts).
+    orderBy: [{ client: { name: "asc" } }, { name: "asc" }],
     select: { id: true, name: true, client: { select: { name: true } } },
   });
 }

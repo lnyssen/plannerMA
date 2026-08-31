@@ -11,6 +11,7 @@ import { formatDurationFr } from "@/lib/planning/time";
 import { formatHourMinute, taskContextLabel } from "@/lib/planning/labels";
 import { FieldLabel, fieldInputClass, ModalShell } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { TaskCombobox } from "@/components/ui/task-combobox";
 import { TaskContextLabelParts } from "@/components/ui/task-context-label";
 
 const HOUR_HEIGHT = 88; // px par heure — assez grand pour distinguer le quart d'heure au pixel près
@@ -399,17 +400,12 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
 
           <div>
             <FieldLabel>Client — Projet — Tâche</FieldLabel>
-            <select
+            <TaskCombobox
+              tasks={tasks}
               value={quickAdd.taskId}
-              onChange={(ev) => setQuickAdd((q) => (q ? { ...q, taskId: ev.target.value } : q))}
+              onChange={(taskId) => setQuickAdd((q) => (q ? { ...q, taskId } : q))}
               className={`${fieldInputClass} text-sm`}
-            >
-              {tasks.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {taskContextLabel(t)}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </ModalShell>
       )}

@@ -7,10 +7,11 @@ import { addManualEntry, deleteTimeEntry, startTimer, stopTimer, type RunningTim
 import type { TimeEntryWithPerson, TimeEntryWithTask } from "@/lib/data/time-entries";
 import type { TaskOption } from "@/lib/data/tasks";
 import { formatLongFr, quandFr, toIsoDate, today } from "@/lib/planning/dates";
-import { formatHourMinute, taskContextLabel } from "@/lib/planning/labels";
+import { formatHourMinute } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { fieldInputClass, FieldLabel } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
+import { TaskCombobox } from "@/components/ui/task-combobox";
 import { TaskContextLabelParts } from "@/components/ui/task-context-label";
 import { TimeCalendar } from "./time-calendar";
 
@@ -198,18 +199,7 @@ export function TempsView({
             <div className="mb-6 flex flex-wrap items-end gap-2">
               <div className="flex-1 min-w-[200px]">
                 <FieldLabel htmlFor="timer-task">Tâche</FieldLabel>
-                <select
-                  id="timer-task"
-                  className={fieldInputClass}
-                  value={taskId}
-                  onChange={(e) => setTaskId(e.target.value)}
-                >
-                  {tasks.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {taskContextLabel(t)}
-                    </option>
-                  ))}
-                </select>
+                <TaskCombobox id="timer-task" tasks={tasks} value={taskId} onChange={setTaskId} className={fieldInputClass} />
               </div>
               <button
                 type="button"
