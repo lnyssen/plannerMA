@@ -341,7 +341,8 @@ export function AppShell({
             onClick={() => setUserMenuOpen((v) => !v)}
             aria-expanded={userMenuOpen}
             title={userName}
-            className={`flex items-center gap-2.5 rounded-lg p-2 transition-colors duration-100 hover:bg-white/10 ${isCollapsed ? "justify-center" : "w-full text-left"}`}
+            className={`flex items-center gap-2.5 rounded-lg border p-2 transition-colors duration-100 hover:bg-white/10 ${isCollapsed ? "justify-center" : "w-full text-left"}`}
+            style={{ borderColor: userMenuOpen ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)" }}
           >
             <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-rail">
               {userInitial}
