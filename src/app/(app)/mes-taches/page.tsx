@@ -42,7 +42,7 @@ export default async function MesTachesPage({
           people={people}
           projects={projects}
           statuses={statuses}
-          dependencyOptions={allTasks.map((t) => ({ id: t.id, title: t.title, project: t.project }))}
+          dependencyOptions={allTasks.map((t) => ({ id: t.id, title: t.title, studioId: t.studioId, project: t.project }))}
           hidePersonFilter
           hidePersonColumn
           initialOpenTaskId={open ?? null}

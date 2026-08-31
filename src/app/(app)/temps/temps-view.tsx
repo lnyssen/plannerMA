@@ -1,24 +1,28 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, List, Play, Plus, Square, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Download, List, Play, Plus, Square, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { addManualEntry, deleteTimeEntry, startTimer, stopTimer, type RunningTimer } from "@/lib/actions/time-entries";
 import type { TimeEntryWithPerson, TimeEntryWithTask } from "@/lib/data/time-entries";
+import type { ProjectOption } from "@/lib/data/projects";
+import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskCategoryOption } from "@/lib/data/task-categories";
 import type { TaskOption } from "@/lib/data/tasks";
 import { formatLongFr, quandFr, toIsoDate, today } from "@/lib/planning/dates";
 import { formatHourMinute } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { fieldInputClass, FieldLabel } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
-import { TaskCombobox } from "@/components/ui/task-combobox";
-import { TaskContextLabelParts } from "@/components/ui/task-context-label";
+import { EntryContextLabelParts } from "@/components/ui/task-context-label";
+import { EntryContextFields, type EntryContextValue } from "@/components/temps/entry-context-fields";
 import { TimeCalendar } from "./time-calendar";
 
 interface ProjectBudget {
   id: string;
   name: string;
   budgetHours: number | null;
+  timeEntries: { startedAt: Date; endedAt: Date | null }[];
   tasks: { timeEntries: { startedAt: Date; endedAt: Date | null }[] }[];
 }
 
@@ -26,6 +30,9 @@ export function TempsView({
   myEntries,
   runningTimer,
   tasks,
+  studios,
+  projects,
+  categories,
   allEntries,
   projectsWithBudget,
   isAdmin,
@@ -34,6 +41,9 @@ export function TempsView({
   myEntries: TimeEntryWithTask[];
   runningTimer: RunningTimer;
   tasks: TaskOption[];
+  studios: StudioSummary[];
+  projects: ProjectOption[];
+  categories: TaskCategoryOption[];
   allEntries: TimeEntryWithPerson[];
   projectsWithBudget: ProjectBudget[];
   isAdmin: boolean;
@@ -43,7 +53,12 @@ export function TempsView({
   const [, startTransition] = useTransition();
   const [tab, setTab] = useState<"mine" | "team">("mine");
   const [mineView, setMineView] = useState<"list" | "calendar">("list");
-  const [taskId, setTaskId] = useState(tasks[0]?.id ?? "");
+  const [context, setContext] = useState<EntryContextValue>({
+    taskId: tasks[0]?.id ?? null,
+    studioId: tasks[0]?.studioId ?? studios[0]?.id ?? "",
+    projectId: null,
+    categoryId: null,
+  });
   const [showManual, setShowManual] = useState(false);
   const [manualDate, setManualDate] = useState(today());
   const [manualHours, setManualHours] = useState("0");
@@ -51,6 +66,10 @@ export function TempsView({
   const [manualNote, setManualNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+
+  function patchContext(patch: Partial<EntryContextValue>) {
+    setContext((c) => ({ ...c, ...patch }));
+  }
 
   // Fait avancer l'affichage du minuteur en cours sans re-solliciter le
   // serveur — juste une horloge locale, la vraie donnée (startedAt) reste
@@ -64,10 +83,10 @@ export function TempsView({
   const referenceNow = useMemo(() => new Date(), [tick]);
 
   function handleStart() {
-    if (!taskId) return;
+    if (!context.studioId) return;
     setError(null);
     startTransition(async () => {
-      const result = await startTimer(taskId);
+      const result = await startTimer(context);
       if (result.error) {
         setError(result.error);
         return;
@@ -84,11 +103,11 @@ export function TempsView({
   }
 
   function handleManualSubmit() {
-    if (!taskId) return;
+    if (!context.studioId) return;
     setError(null);
     startTransition(async () => {
       const result = await addManualEntry({
-        taskId,
+        ...context,
         date: manualDate,
         hours: Number(manualHours) || 0,
         minutes: Number(manualMinutes) || 0,
@@ -127,7 +146,7 @@ export function TempsView({
         .map((p) => ({
           id: p.id,
           name: p.name,
-          totalMinutes: sumDurationMinutes(p.tasks.flatMap((t) => t.timeEntries), referenceNow),
+          totalMinutes: sumDurationMinutes([...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)], referenceNow),
           budgetMinutes: (p.budgetHours ?? 0) * 60,
         }))
         .filter((p) => p.totalMinutes > p.budgetMinutes),
@@ -180,7 +199,7 @@ export function TempsView({
               <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-alert" aria-hidden="true" />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-heading">
-                  <TaskContextLabelParts task={runningTimer.task} />
+                  <EntryContextLabelParts entry={runningTimer} />
                 </p>
                 <p className="text-xs text-ink-muted tabular-nums">Démarré à {formatHourMinute(runningTimer.startedAt)}</p>
               </div>
@@ -196,26 +215,32 @@ export function TempsView({
               </button>
             </div>
           ) : (
-            <div className="mb-6 flex flex-wrap items-end gap-2">
-              <div className="flex-1 min-w-[200px]">
-                <FieldLabel htmlFor="timer-task">Tâche</FieldLabel>
-                <TaskCombobox id="timer-task" tasks={tasks} value={taskId} onChange={setTaskId} className={fieldInputClass} />
+            <div className="mb-6 flex flex-col gap-3 rounded-lg border border-line p-3">
+              <EntryContextFields
+                value={context}
+                onChange={patchContext}
+                studios={studios}
+                projects={projects}
+                categories={categories}
+                tasks={tasks}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!context.studioId}
+                  onClick={handleStart}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
+                >
+                  <Play size={14} /> Démarrer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowManual((v) => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+                >
+                  <Plus size={14} /> Saisie manuelle
+                </button>
               </div>
-              <button
-                type="button"
-                disabled={!taskId}
-                onClick={handleStart}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
-              >
-                <Play size={14} /> Démarrer
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowManual((v) => !v)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
-              >
-                <Plus size={14} /> Saisie manuelle
-              </button>
             </div>
           )}
 
@@ -308,7 +333,7 @@ export function TempsView({
           </div>
 
           {mineView === "calendar" ? (
-            <TimeCalendar entries={myEntries} tasks={tasks} />
+            <TimeCalendar entries={myEntries} tasks={tasks} studios={studios} projects={projects} categories={categories} />
           ) : groupedMine.length === 0 ? (
             <p className="text-sm text-ink-muted">Aucune écriture pour l’instant.</p>
           ) : (
@@ -326,7 +351,7 @@ export function TempsView({
                       <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
                         <div className="flex-1">
                           <span className="text-ink">
-                            <TaskContextLabelParts task={e.task} />
+                            <EntryContextLabelParts entry={e} />
                           </span>
                           {e.note && <p className="text-xs text-ink-muted">{e.note}</p>}
                         </div>
@@ -341,7 +366,7 @@ export function TempsView({
                           <button
                             type="button"
                             onClick={() => handleDelete(e.id)}
-                            aria-label={`Retirer l’écriture sur ${e.task.title}`}
+                            aria-label="Retirer cette écriture"
                             className={`flex-shrink-0 p-0.5 text-ink-muted hover:text-alert ${textButtonClass}`}
                           >
                             <Trash2 size={13} />
@@ -359,6 +384,13 @@ export function TempsView({
 
       {tab === "team" && isAdmin && (
         <div className="max-w-4xl">
+          <a
+            href="/api/export/time-entries"
+            className={`mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
+          >
+            <Download size={14} /> Exporter en CSV
+          </a>
+
           {overBudget.length > 0 && (
             <div className="mb-6 flex flex-col gap-2">
               {overBudget.map((p) => (
@@ -385,7 +417,7 @@ export function TempsView({
                   <span className="w-32 flex-shrink-0 truncate font-semibold text-heading">{e.person.name}</span>
                   <div className="flex-1">
                     <span className="text-ink">
-                      <TaskContextLabelParts task={e.task} />
+                      <EntryContextLabelParts entry={e} />
                     </span>
                   </div>
                   <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">{quandFr(e.startedAt)}</span>

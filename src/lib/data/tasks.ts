@@ -10,12 +10,17 @@ export function listActiveTasksForListing() {
 
 export type TaskListItem = Awaited<ReturnType<typeof listActiveTasksForListing>>[number];
 
-/** Candidates pour le champ "Dépend de" — nom + projet seuls, pas les détails complets d'une tâche. */
+/** Candidates pour le champ "Dépend de" et le suivi de temps — nom, studio et projet, pas les détails complets d'une tâche. */
 export function listActiveTasksForForms() {
   return db.task.findMany({
     where: { trashedAt: null },
     orderBy: { title: "asc" },
-    select: { id: true, title: true, project: { select: { name: true, client: { select: { name: true } } } } },
+    select: {
+      id: true,
+      title: true,
+      studioId: true,
+      project: { select: { name: true, client: { select: { name: true } } } },
+    },
   });
 }
 

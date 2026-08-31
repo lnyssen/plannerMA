@@ -52,7 +52,7 @@ export default async function PlanningPage({
       people={people}
       projects={projects}
       statuses={statuses}
-      dependencyOptions={boardTasks.map((t) => ({ id: t.id, title: t.title, project: t.project }))}
+      dependencyOptions={boardTasks.map((t) => ({ id: t.id, title: t.title, studioId: t.studioId, project: t.project }))}
     />
   );
 }

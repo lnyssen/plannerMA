@@ -162,18 +162,35 @@ fonctionne aujourd'hui, avec de vraies données en base :
   flash du thème clair à l'arrivée.
 - **Temps** (nouvel écran, nav) : feuilles de temps façon Clockify —
   minuteur (un seul actif à la fois par personne, en démarrer un nouveau
-  arrête l'ancien) ou saisie manuelle (date + durée) contre une tâche.
-  « Mon temps » : liste groupée par jour, ou vue **calendrier** (semaine,
-  double-cliquer une case pour ajouter une écriture, glisser un bloc pour
-  changer son heure, glisser son bord bas pour changer sa durée — pas de
-  15 min). Seul un administrateur voit l'onglet « Équipe »
-  (toutes les écritures, tous les comptes) ; chacun ne voit et ne modifie
-  que les siennes. `Project.budgetHours` (facultatif, fiche projet) déclenche
-  un avertissement quand le temps enregistré le dépasse, affiché sur la
-  fiche projet et listé dans Temps → Équipe. La vue Charge affiche aussi une
-  colonne « Temps réel » à côté de la charge prévue (deux mesures
-  différentes — occupation planifiée vs heures effectivement enregistrées —
-  pas converties dans la même unité).
+  arrête l'ancien) ou saisie manuelle (date + durée), contre une tâche
+  planifiée **ou** non ("Tâche planifiée" / "Autre activité" — voir
+  ci-dessous). « Mon temps » : liste groupée par jour, ou vue
+  **calendrier** (semaine, double-cliquer une case pour ouvrir une écriture
+  — modale centrée avec heure de début/fin, durée, Studio/Projet/Catégorie ;
+  glisser un bloc pour changer son heure, glisser son bord bas pour changer
+  sa durée — pas de 15 min). Seul un administrateur voit l'onglet « Équipe »
+  (toutes les écritures, tous les comptes, plus un bouton **Exporter en
+  CSV**) ; chacun ne voit et ne modifie que les siennes. `Project.budgetHours`
+  (facultatif, fiche projet) déclenche un avertissement quand le temps
+  enregistré le dépasse (tâches du projet *et* écritures directes),
+  affiché sur la fiche projet et listé dans Temps → Équipe. La vue Charge
+  affiche aussi une colonne « Temps réel » à côté de la charge prévue (deux
+  mesures différentes — occupation planifiée vs heures effectivement
+  enregistrées — pas converties dans la même unité).
+- **Nomenclature de suivi de temps** (transmise par l'équipe, voir
+  `TaskCategory` dans le schéma) : chaque écriture porte Studio, Projet
+  (`null` = « AGENCE », le hors-projet — administratif, réunions,
+  coordination…) et une Catégorie ("type de tâche") — table éditable
+  depuis Réglages → Catégories de tâches, catégories générales (tous
+  studios) plus des listes spécifiques par studio, non un enum figé
+  puisque la nomenclature "pourra être ajustée avec l'usage". `Project`
+  porte aussi un `code` court (facultatif, ex. "BETTER-3") et un
+  `projectType` (Externe / Équipe éducative / Européen / Fonctionnement,
+  distinct de `ClientType`) pour le reporting. Une écriture n'est donc
+  plus obligatoirement liée à une `Task` (`TimeEntry.taskId` facultatif) :
+  le lien reste possible ("Tâche planifiée", Studio/Projet alors dérivés de
+  la tâche) mais "Autre activité" permet de logger du temps sans créer de
+  tâche au préalable, pour rester rapide sur du travail non planifié.
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav à
 6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/

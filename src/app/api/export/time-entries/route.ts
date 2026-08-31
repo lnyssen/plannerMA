@@ -1,0 +1,65 @@
+// Export CSV des écritures de temps — colonnes alignées sur la nomenclature
+// "Suivi hebdo du temps de travail" transmise par l'équipe (Date, Studio,
+// Projet, Type de projet, Type de tâche, Heures, Note), avec la personne en
+// tête puisque c'est un export toutes personnes confondues (réservé aux
+// administrateurs, comme la vue "Équipe" de Temps).
+
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { toIsoDate } from "@/lib/planning/dates";
+import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
+
+function csvCell(value: string): string {
+  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+function csvRow(cells: string[]): string {
+  return cells.map(csvCell).join(",") + "\r\n";
+}
+
+export async function GET() {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return new NextResponse("Non autorisé", { status: 401 });
+  }
+
+  const entries = await db.timeEntry.findMany({
+    where: { endedAt: { not: null } },
+    orderBy: { startedAt: "asc" },
+    include: {
+      person: { select: { name: true } },
+      studio: { select: { name: true } },
+      project: { select: { name: true, code: true, projectType: true } },
+      category: { select: { name: true } },
+    },
+  });
+
+  const header = ["Personne", "Date", "Studio", "Projet", "Type_projet", "Type_tâche", "Heures", "Note"];
+  let csv = csvRow(header);
+
+  for (const e of entries) {
+    const hours = ((e.endedAt!.getTime() - e.startedAt.getTime()) / 3_600_000).toFixed(2);
+    const projet = e.project ? (e.project.code || e.project.name) : "AGENCE";
+    const typeProjet = e.project ? PROJECT_TYPE_LABELS[e.project.projectType] : PROJECT_TYPE_LABELS.FONCTIONNEMENT;
+    csv += csvRow([
+      e.person.name,
+      toIsoDate(e.startedAt),
+      e.studio.name,
+      projet,
+      typeProjet,
+      e.category?.name ?? "",
+      hours,
+      e.note ?? "",
+    ]);
+  }
+
+  return new NextResponse(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="suivi-temps-${toIsoDate(new Date())}.csv"`,
+      "Cache-Control": "private, max-age=0, no-cache",
+    },
+  });
+}

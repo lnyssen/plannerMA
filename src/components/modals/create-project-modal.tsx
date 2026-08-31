@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import type { ProjectType } from "@prisma/client";
 import { createProject } from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
+import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
 import { ClientPicker } from "./client-picker";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, ModalShell, fieldInputClass } from "./modal-shell";
@@ -23,9 +25,11 @@ export function CreateProjectModal({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
+  const [code, setCode] = useState("");
   const [clientId, setClientId] = useState<string | null>(clients[0]?.id ?? null);
   const [newClientName, setNewClientName] = useState<string | null>(clients.length === 0 ? "" : null);
   const [type, setType] = useState<"INTERNAL" | "EXTERNAL">("EXTERNAL");
+  const [projectType, setProjectType] = useState<ProjectType>("EXTERNE");
   const [studioIds, setStudioIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +40,7 @@ export function CreateProjectModal({
   function submit() {
     setError(null);
     startTransition(async () => {
-      const result = await createProject({ name, clientId, newClientName, type, studioIds });
+      const result = await createProject({ name, code: code.trim() || null, clientId, newClientName, type, projectType, studioIds });
       if (result.error) {
         setError(result.error);
         return;
@@ -55,6 +59,15 @@ export function CreateProjectModal({
         value={name}
         onChange={(e) => setName(e.target.value)}
         autoFocus
+      />
+
+      <FieldLabel htmlFor="project-code">Code (facultatif)</FieldLabel>
+      <input
+        id="project-code"
+        className={`${fieldInputClass} mb-3`}
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        placeholder="BETTER-3, ONE-6…"
       />
 
       <ClientPicker
@@ -76,6 +89,20 @@ export function CreateProjectModal({
           <input type="radio" checked={type === "EXTERNAL"} onChange={() => setType("EXTERNAL")} /> Externe
         </label>
       </div>
+
+      <FieldLabel htmlFor="project-type">Type de projet (suivi de temps)</FieldLabel>
+      <select
+        id="project-type"
+        className={`${fieldInputClass} mb-3`}
+        value={projectType}
+        onChange={(e) => setProjectType(e.target.value as ProjectType)}
+      >
+        {Object.entries(PROJECT_TYPE_LABELS).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
 
       <FieldLabel>Studios concernés</FieldLabel>
       <div className="mb-4 flex flex-wrap gap-2">

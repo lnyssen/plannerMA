@@ -6,6 +6,12 @@ import { useState, useTransition } from "react";
 import { sendDailyDigestNow } from "@/lib/actions/account";
 import { createStudio, renameStudio } from "@/lib/actions/studios";
 import {
+  createTaskCategory,
+  deleteTaskCategory,
+  moveTaskCategory,
+  renameTaskCategory,
+} from "@/lib/actions/task-categories";
+import {
   createTaskStatus,
   deleteTaskStatus,
   moveTaskStatus,
@@ -15,6 +21,7 @@ import {
 import { destroyTask, restoreTask } from "@/lib/actions/tasks";
 import type { JournalEntrySummary } from "@/lib/data/journal";
 import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskCategoryOption } from "@/lib/data/task-categories";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { quandFr } from "@/lib/planning/dates";
 import { fieldInputClass } from "@/components/modals/modal-shell";
@@ -35,11 +42,13 @@ interface TrashedTask {
 export function ReglagesView({
   studios,
   statuses,
+  categories,
   trashedTasks,
   journal,
 }: {
   studios: StudioSummary[];
   statuses: TaskStatusSummary[];
+  categories: TaskCategoryOption[];
   trashedTasks: TrashedTask[];
   journal: JournalEntrySummary[];
 }) {
@@ -50,6 +59,9 @@ export function ReglagesView({
   const [newStatusName, setNewStatusName] = useState("");
   const [digestResult, setDigestResult] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  // Clé "general" ou l'id du studio — un brouillon de nouvelle catégorie par groupe.
+  const [newCategoryNames, setNewCategoryNames] = useState<Record<string, string>>({});
+  const [categoryError, setCategoryError] = useState<string | null>(null);
 
   const TABS = [
     { id: "general" as const, label: "Général", icon: Settings },
@@ -270,6 +282,39 @@ export function ReglagesView({
               <Plus size={14} /> Ajouter
             </button>
           </div>
+
+          <h2 className="mt-8 mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">
+            Catégories de tâches (suivi de temps)
+          </h2>
+          <p className="mb-4 text-sm text-ink">
+            Le « type de tâche » à choisir en enregistrant du temps (minuteur, saisie manuelle, calendrier) —
+            nomenclature transmise par l’équipe. Les catégories générales sont proposées pour tous les studios ;
+            chaque studio peut avoir en plus les siennes.
+          </p>
+          {categoryError && <p className="mb-3 text-xs font-semibold text-alert">{categoryError}</p>}
+          <CategoryGroup
+            title="Général (tous studios)"
+            studioId={null}
+            categories={categories.filter((c) => c.studioId === null)}
+            newName={newCategoryNames.general ?? ""}
+            onNewNameChange={(v) => setNewCategoryNames((n) => ({ ...n, general: v }))}
+            onError={setCategoryError}
+            router={router}
+            startTransition={startTransition}
+          />
+          {studios.map((s) => (
+            <CategoryGroup
+              key={s.id}
+              title={s.name}
+              studioId={s.id}
+              categories={categories.filter((c) => c.studioId === s.id)}
+              newName={newCategoryNames[s.id] ?? ""}
+              onNewNameChange={(v) => setNewCategoryNames((n) => ({ ...n, [s.id]: v }))}
+              onError={setCategoryError}
+              router={router}
+              startTransition={startTransition}
+            />
+          ))}
         </div>
       )}
 
@@ -340,6 +385,126 @@ export function ReglagesView({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Un groupe de catégories (général, ou un studio) avec réorganisation/renommage/suppression — voir la section Statuts pour le même patron. */
+function CategoryGroup({
+  title,
+  studioId,
+  categories,
+  newName,
+  onNewNameChange,
+  onError,
+  router,
+  startTransition,
+}: {
+  title: string;
+  studioId: string | null;
+  categories: TaskCategoryOption[];
+  newName: string;
+  onNewNameChange: (value: string) => void;
+  onError: (message: string | null) => void;
+  router: { refresh: () => void };
+  startTransition: (callback: () => void) => void;
+}) {
+  return (
+    <div className="mb-5">
+      <h3 className="mb-2 text-xs font-semibold text-ink">{title}</h3>
+      {categories.length === 0 && <p className="mb-2 text-xs text-ink-muted">Aucune catégorie.</p>}
+      <div className="mb-2 flex flex-col gap-1.5">
+        {categories.map((c, i) => (
+          <div key={c.id} className="flex items-center gap-2">
+            <div className="flex flex-col">
+              <button
+                type="button"
+                disabled={i === 0}
+                onClick={() =>
+                  startTransition(async () => {
+                    await moveTaskCategory(c.id, "up");
+                    router.refresh();
+                  })
+                }
+                aria-label={`Monter « ${c.name} »`}
+                className={`text-ink-muted disabled:opacity-30 ${textButtonClass}`}
+              >
+                <ChevronUp size={13} />
+              </button>
+              <button
+                type="button"
+                disabled={i === categories.length - 1}
+                onClick={() =>
+                  startTransition(async () => {
+                    await moveTaskCategory(c.id, "down");
+                    router.refresh();
+                  })
+                }
+                aria-label={`Descendre « ${c.name} »`}
+                className={`text-ink-muted disabled:opacity-30 ${textButtonClass}`}
+              >
+                <ChevronDown size={13} />
+              </button>
+            </div>
+            <input
+              defaultValue={c.name}
+              onBlur={(e) => {
+                const value = e.target.value.trim();
+                if (value && value !== c.name) {
+                  startTransition(async () => {
+                    await renameTaskCategory(c.id, value);
+                    router.refresh();
+                  });
+                }
+              }}
+              className={`${fieldInputClass} max-w-xs text-sm`}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (!confirm(`Supprimer la catégorie « ${c.name} » ?`)) return;
+                onError(null);
+                startTransition(async () => {
+                  const result = await deleteTaskCategory(c.id);
+                  if (result.error) onError(result.error);
+                  router.refresh();
+                });
+              }}
+              aria-label={`Supprimer « ${c.name} »`}
+              className={`flex-shrink-0 p-1 text-ink-muted hover:text-alert ${textButtonClass}`}
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={newName}
+          onChange={(e) => onNewNameChange(e.target.value)}
+          placeholder="Nouvelle catégorie"
+          className={`${fieldInputClass} max-w-xs text-sm`}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            if (!newName.trim()) return;
+            onError(null);
+            startTransition(async () => {
+              const result = await createTaskCategory(newName.trim(), studioId);
+              if (result.error) {
+                onError(result.error);
+                return;
+              }
+              onNewNameChange("");
+              router.refresh();
+            });
+          }}
+          className={`flex items-center gap-1.5 px-3 text-sm font-semibold ${secondaryButtonClass}`}
+        >
+          <Plus size={13} /> Ajouter
+        </button>
+      </div>
     </div>
   );
 }

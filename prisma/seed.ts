@@ -76,6 +76,53 @@ async function main() {
     statuses[s.key] = status.id;
   }
 
+  // Nomenclature transmise par l'équipe ("Suivi hebdo du temps de
+  // travail — nomenclature commune") : catégories générales disponibles
+  // pour tous les studios, plus des catégories spécifiques par studio.
+  // "Design" (PDF) correspond au studio "Graphisme" de l'app.
+  console.log("Semis des catégories de tâches…");
+  const GENERAL_CATEGORIES = [
+    "Préparation projet",
+    "Administratif",
+    "Formation",
+    "Réunion interne",
+    "Réunion client",
+    "Réunion projet",
+    "Coordination",
+    "Suivi projet",
+    "Devis",
+    "Support interne",
+    "Organisation",
+    "Absence",
+  ];
+  const STUDIO_CATEGORIES: Record<string, string[]> = {
+    web: ["Développement", "Support technique", "Corrections", "UX", "Design", "Accessibilité", "Documentation"],
+    graphisme: ["Design"],
+    consultance: ["Consultance", "Formation", "Rapport", "Rédaction éditoriale"],
+    video: ["Motion design", "Écriture", "Dérush", "Montage", "Production"],
+    son: ["Enregistrement", "Montage"],
+  };
+  for (const [i, name] of GENERAL_CATEGORIES.entries()) {
+    // Pas d'upsert par clé composite ici : un index unique (studioId, name)
+    // ne matche jamais deux valeurs NULL entre elles en PostgreSQL, donc
+    // Prisma ne type même pas `null` comme filtre valide dans ce cas.
+    const existing = await db.taskCategory.findFirst({ where: { studioId: null, name } });
+    if (existing) {
+      await db.taskCategory.update({ where: { id: existing.id }, data: { position: i } });
+    } else {
+      await db.taskCategory.create({ data: { name, position: i } });
+    }
+  }
+  for (const [slug, names] of Object.entries(STUDIO_CATEGORIES)) {
+    for (const [i, name] of names.entries()) {
+      await db.taskCategory.upsert({
+        where: { studioId_name: { studioId: studios[slug], name } },
+        update: { position: i },
+        create: { name, studioId: studios[slug], position: i },
+      });
+    }
+  }
+
   console.log("Semis de l'équipe…");
   const people: Record<string, string> = {};
   const PEOPLE = [
@@ -129,6 +176,7 @@ async function main() {
   const projetInterne = await db.project.create({
     data: {
       name: "Refonte du site vitrine",
+      code: "SITE-VITRINE",
       client: {
         connectOrCreate: {
           where: { name: "Média Animation — communication interne" },
@@ -136,6 +184,7 @@ async function main() {
         },
       },
       type: "INTERNAL",
+      projectType: "FONCTIONNEMENT",
       studios: { create: [{ studioId: studios.web }, { studioId: studios.graphisme }] },
       tasks: {
         create: [
@@ -169,8 +218,10 @@ async function main() {
   await db.project.create({
     data: {
       name: "Campagne de sensibilisation",
+      code: "OXFAM-SENSIB",
       client: { connectOrCreate: { where: { name: "Oxfam Belgique" }, create: { name: "Oxfam Belgique" } } },
       type: "EXTERNAL",
+      projectType: "EXTERNE",
       studios: { create: [{ studioId: studios.video }, { studioId: studios.consultance }] },
       tasks: {
         create: [

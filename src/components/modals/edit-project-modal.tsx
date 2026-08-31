@@ -1,5 +1,6 @@
 "use client";
 
+import type { ProjectType } from "@prisma/client";
 import { AlertTriangle, Archive, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -8,6 +9,7 @@ import { getProjectDetail, setProjectArchived, updateProject, type ProjectDetail
 import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
+import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
 import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { ClientPicker } from "./client-picker";
 import { primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
@@ -29,9 +31,11 @@ export function EditProjectModal({
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [name, setName] = useState("");
+  const [code, setCode] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
   const [newClientName, setNewClientName] = useState<string | null>(null);
   const [type, setType] = useState<"INTERNAL" | "EXTERNAL">("EXTERNAL");
+  const [projectType, setProjectType] = useState<ProjectType>("EXTERNE");
   const [studioIds, setStudioIds] = useState<string[]>([]);
   const [budgetHours, setBudgetHours] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +48,10 @@ export function EditProjectModal({
     if (p) {
       setProject(p);
       setName(p.name);
+      setCode(p.code ?? "");
       setClientId(p.clientId);
       setType(p.type);
+      setProjectType(p.projectType);
       setStudioIds(p.studios.map((s) => s.studioId));
       setBudgetHours(p.budgetHours != null ? String(p.budgetHours) : "");
     }
@@ -59,8 +65,10 @@ export function EditProjectModal({
       if (p) {
         setProject(p);
         setName(p.name);
+        setCode(p.code ?? "");
         setClientId(p.clientId);
         setType(p.type);
+        setProjectType(p.projectType);
         setStudioIds(p.studios.map((s) => s.studioId));
         setBudgetHours(p.budgetHours != null ? String(p.budgetHours) : "");
       }
@@ -72,7 +80,7 @@ export function EditProjectModal({
   }, [projectId]);
 
   const loggedMinutes = useMemo(
-    () => (project ? sumDurationMinutes(project.tasks.flatMap((t) => t.timeEntries)) : 0),
+    () => (project ? sumDurationMinutes([...project.timeEntries, ...project.tasks.flatMap((t) => t.timeEntries)]) : 0),
     [project],
   );
   const budgetMinutes = project?.budgetHours != null ? project.budgetHours * 60 : null;
@@ -119,9 +127,11 @@ export function EditProjectModal({
       const result = await updateProject({
         projectId,
         name,
+        code: code.trim() || null,
         clientId,
         newClientName,
         type,
+        projectType,
         studioIds,
         budgetHours: budgetHours ? Number(budgetHours) : null,
       });
@@ -158,6 +168,15 @@ export function EditProjectModal({
             onChange={(e) => setName(e.target.value)}
           />
 
+          <FieldLabel htmlFor="edit-project-code">Code (facultatif)</FieldLabel>
+          <input
+            id="edit-project-code"
+            className={`${fieldInputClass} mb-3`}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="BETTER-3, ONE-6…"
+          />
+
           <ClientPicker
             clients={clients}
             clientId={clientId}
@@ -177,6 +196,20 @@ export function EditProjectModal({
               <input type="radio" checked={type === "EXTERNAL"} onChange={() => setType("EXTERNAL")} /> Externe
             </label>
           </div>
+
+          <FieldLabel htmlFor="edit-project-type">Type de projet (suivi de temps)</FieldLabel>
+          <select
+            id="edit-project-type"
+            className={`${fieldInputClass} mb-3`}
+            value={projectType}
+            onChange={(e) => setProjectType(e.target.value as ProjectType)}
+          >
+            {Object.entries(PROJECT_TYPE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
 
           <FieldLabel>Studios concernés</FieldLabel>
           <div className="mb-4 flex flex-wrap gap-2">

@@ -5,14 +5,17 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createTimeEntryAt, deleteTimeEntry, updateTimeEntryTimes } from "@/lib/actions/time-entries";
 import type { TimeEntryWithTask } from "@/lib/data/time-entries";
+import type { ProjectOption } from "@/lib/data/projects";
+import type { StudioSummary } from "@/lib/data/studios";
+import type { TaskCategoryOption } from "@/lib/data/task-categories";
 import type { TaskOption } from "@/lib/data/tasks";
 import { addDays, formatLongFr, fromIsoDate, mondayOf, toIsoDate, today } from "@/lib/planning/dates";
 import { formatDurationFr } from "@/lib/planning/time";
-import { formatHourMinute, taskContextLabel } from "@/lib/planning/labels";
+import { entryContextLabel, formatHourMinute } from "@/lib/planning/labels";
 import { FieldLabel, fieldInputClass, ModalShell } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
-import { TaskCombobox } from "@/components/ui/task-combobox";
-import { TaskContextLabelParts } from "@/components/ui/task-context-label";
+import { EntryContextFields, type EntryContextValue } from "@/components/temps/entry-context-fields";
+import { EntryContextLabelParts } from "@/components/ui/task-context-label";
 
 const HOUR_HEIGHT = 88; // px par heure — assez grand pour distinguer le quart d'heure au pixel près
 const GRID_START_HOUR = 6;
@@ -49,7 +52,7 @@ interface QuickAdd {
   dayStart: Date;
   startMinutes: number; // minutes depuis minuit, calé sur SNAP_MINUTES
   endMinutes: number; // minutes depuis minuit, calé sur SNAP_MINUTES — les deux champs affichent l'heure explicitement, pas seulement une durée
-  taskId: string;
+  context: EntryContextValue;
 }
 
 function minutesToTimeInput(min: number): string {
@@ -74,7 +77,19 @@ function timeInputToMinutes(value: string): number | null {
  * Un minuteur en cours n'apparaît pas ici (pas d'heure de fin à positionner)
  * — voir le bandeau au-dessus de la liste.
  */
-export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[]; tasks: TaskOption[] }) {
+export function TimeCalendar({
+  entries,
+  tasks,
+  studios,
+  projects,
+  categories,
+}: {
+  entries: TimeEntryWithTask[];
+  tasks: TaskOption[];
+  studios: StudioSummary[];
+  projects: ProjectOption[];
+  categories: TaskCategoryOption[];
+}) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [weekStart, setWeekStart] = useState(() => mondayOf(fromIsoDate(today())));
@@ -166,7 +181,7 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
   }
 
   function openQuickAdd(day: Date, ev: React.MouseEvent<HTMLDivElement>) {
-    if (tasks.length === 0) return;
+    if (studios.length === 0) return;
     const gridTop = ev.currentTarget.getBoundingClientRect().top;
     const offsetY = ev.clientY - gridTop;
     const rawMinutes = (offsetY / HOUR_HEIGHT) * 60 + GRID_START_HOUR * 60;
@@ -181,7 +196,12 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
       dayStart,
       startMinutes: snapped,
       endMinutes: Math.min(GRID_END_HOUR * 60, snapped + 30),
-      taskId: tasks[0].id,
+      context: {
+        taskId: tasks[0]?.id ?? null,
+        studioId: tasks[0]?.studioId ?? studios[0].id,
+        projectId: null,
+        categoryId: null,
+      },
     });
   }
 
@@ -194,7 +214,12 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
       dayStart,
       startMinutes: minutesSinceMidnight(entry.startedAt),
       endMinutes: minutesSinceMidnight(entry.endedAt),
-      taskId: entry.task.id,
+      context: {
+        taskId: entry.task?.id ?? null,
+        studioId: entry.studio.id,
+        projectId: entry.project?.id ?? null,
+        categoryId: entry.category?.id ?? null,
+      },
     });
   }
 
@@ -202,13 +227,13 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
     if (!quickAdd) return;
     const startedAt = new Date(quickAdd.dayStart.getTime() + quickAdd.startMinutes * 60_000);
     const endedAt = new Date(quickAdd.dayStart.getTime() + quickAdd.endMinutes * 60_000);
-    const { taskId, entryId } = quickAdd;
+    const { context, entryId } = quickAdd;
     setQuickAdd(null);
     startTransition(async () => {
       if (entryId) {
-        await updateTimeEntryTimes({ entryId, taskId, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString() });
+        await updateTimeEntryTimes({ entryId, ...context, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString() });
       } else {
-        await createTimeEntryAt({ taskId, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString() });
+        await createTimeEntryAt({ ...context, startedAt: startedAt.toISOString(), endedAt: endedAt.toISOString() });
       }
       router.refresh();
     });
@@ -303,12 +328,12 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
                         ev.stopPropagation();
                         openEditEntry(e);
                       }}
-                      title={`${taskContextLabel(e.task)} — ${formatHourMinute(e.startedAt)}–${formatHourMinute(e.endedAt)} (${formatDurationFr(endMin - startMin)}) — double-clic pour modifier`}
+                      title={`${entryContextLabel(e)} — ${formatHourMinute(e.startedAt)}–${formatHourMinute(e.endedAt)} (${formatDurationFr(endMin - startMin)}) — double-clic pour modifier`}
                       className="absolute left-0.5 right-0.5 cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-2xs font-semibold text-paper active:cursor-grabbing"
                       style={{ top, height, background: "var(--color-heading)" }}
                     >
                       <span className="block truncate">
-                        <TaskContextLabelParts task={e.task} />
+                        <EntryContextLabelParts entry={e} />
                       </span>
                       <span className="block truncate opacity-80 tabular-nums">
                         {formatHourMinute(e.startedAt)}–{formatHourMinute(e.endedAt)}
@@ -398,15 +423,14 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
             <p className="mt-1.5 text-sm text-ink-muted">{formatLongFr(toIsoDate(quickAdd.dayStart))}</p>
           </div>
 
-          <div>
-            <FieldLabel>Client — Projet — Tâche</FieldLabel>
-            <TaskCombobox
-              tasks={tasks}
-              value={quickAdd.taskId}
-              onChange={(taskId) => setQuickAdd((q) => (q ? { ...q, taskId } : q))}
-              className={`${fieldInputClass} text-sm`}
-            />
-          </div>
+          <EntryContextFields
+            value={quickAdd.context}
+            onChange={(patch) => setQuickAdd((q) => (q ? { ...q, context: { ...q.context, ...patch } } : q))}
+            studios={studios}
+            projects={projects}
+            categories={categories}
+            tasks={tasks}
+          />
         </ModalShell>
       )}
     </div>

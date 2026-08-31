@@ -64,23 +64,23 @@ model User {
   lastLoginAt  DateTime? @map("last_login_at")
 
   /// Alerte par courriel à l'attribution d'une tâche (soi-même comme destinataire).
-  notifyOnAssignment Boolean @default(true) @map("notify_on_assignment")
+  notifyOnAssignment Boolean         @default(true) @map("notify_on_assignment")
   /// Récapitulatif quotidien par courriel des tâches en cours/à venir.
-  notifyDailyDigest  Boolean @default(true) @map("notify_daily_digest")
+  notifyDailyDigest  Boolean         @default(true) @map("notify_daily_digest")
   /// Alerte par courriel quand on est mentionné·e ("@Nom") dans un commentaire.
-  notifyOnMention    Boolean @default(true) @map("notify_on_mention")
+  notifyOnMention    Boolean         @default(true) @map("notify_on_mention")
   /// Alerte par courriel à une nouvelle demande — n'a d'effet que pour un compte ADMIN (seuls destinataires des demandes).
-  notifyOnRequest    Boolean @default(true) @map("notify_on_request")
+  notifyOnRequest    Boolean         @default(true) @map("notify_on_request")
   /// Ordre personnalisé des entrées du menu de gauche (tableau JSON de
   /// `href`, ex. `["/taches","/projets",…]`) — null tant que l'utilisateur
   /// n'a rien réordonné, auquel cas l'ordre par défaut de NAV_ENTRIES
   /// s'applique. Une entrée absente de ce tableau (nouvel écran ajouté
   /// depuis) retombe en fin de liste dans son ordre par défaut.
-  navOrder String? @map("nav_order")
+  navOrder           String?         @map("nav_order")
   /// Clair par défaut ; bascule manuelle dans la barre latérale, propre au
   /// compte (suit d'un appareil à l'autre, comme navOrder) plutôt qu'une
   /// préférence de navigateur.
-  theme ThemePreference @default(LIGHT)
+  theme              ThemePreference @default(LIGHT)
 
   @@map("users")
 }
@@ -108,10 +108,12 @@ model Studio {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tasks    Task[]
-  projects ProjectStudio[]
-  people   PersonStudio[]
-  requests Request[]
+  tasks       Task[]
+  projects    ProjectStudio[]
+  people      PersonStudio[]
+  requests    Request[]
+  categories  TaskCategory[]
+  timeEntries TimeEntry[]
 
   @@map("studios")
 }
@@ -133,17 +135,17 @@ model Person {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user            User?
-  studios         PersonStudio[]
-  tasks           Task[]
-  subtasks        Subtask[]
-  absences        Absence[]
-  comments        Comment[]
-  uploadedFiles   Attachment[]
-  journalEntries  JournalEntry[]
-  notifications   Notification[]
-  mentions        CommentMention[]
-  timeEntries     TimeEntry[]
+  user           User?
+  studios        PersonStudio[]
+  tasks          Task[]
+  subtasks       Subtask[]
+  absences       Absence[]
+  comments       Comment[]
+  uploadedFiles  Attachment[]
+  journalEntries JournalEntry[]
+  notifications  Notification[]
+  mentions       CommentMention[]
+  timeEntries    TimeEntry[]
 
   @@map("people")
 }
@@ -167,6 +169,16 @@ model PersonStudio {
 enum ClientType {
   INTERNAL
   EXTERNAL
+}
+
+/// Nature du projet pour le reporting de temps (nomenclature transmise par
+/// l'équipe) — un axe distinct de ClientType : un projet européen ou pour
+/// l'équipe éducative peut très bien avoir un client interne ou externe.
+enum ProjectType {
+  EXTERNE
+  EQUIPE_EDUCATIVE
+  EUROPEEN
+  FONCTIONNEMENT
 }
 
 /// Client au sens organisation (ONG, fédération, service interne…), distinct
@@ -193,23 +205,29 @@ model Client {
 /// Un projet peut concerner plusieurs studios à la fois (ex. une campagne
 /// Graphisme + Web) : voir ProjectStudio.
 model Project {
-  id        String     @id @default(cuid())
-  name      String
-  client    Client     @relation(fields: [clientId], references: [id])
-  clientId  String     @map("client_id")
-  type      ClientType
-  archived  Boolean    @default(false)
+  id          String      @id @default(cuid())
+  name        String
+  /// Code court pour le reporting (ex. "BETTER-3", "ONE-6") — facultatif,
+  /// distinct du nom complet.
+  code        String?
+  client      Client      @relation(fields: [clientId], references: [id])
+  clientId    String      @map("client_id")
+  type        ClientType
+  /// Nature du projet pour le suivi de temps — voir ProjectType.
+  projectType ProjectType @default(EXTERNE) @map("project_type")
+  archived    Boolean     @default(false)
   /// Budget de temps estimé pour tout le projet (heures) — facultatif. Sert
   /// uniquement à l'avertissement de dépassement (fiche projet, Temps) ;
   /// distinct de `Task.estimatedHalfDays` qui reste une estimation par
   /// tâche pour le calcul de charge.
-  budgetHours Int?      @map("budget_hours")
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
+  budgetHours Int?        @map("budget_hours")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
 
-  studios    ProjectStudio[]
-  tasks      Task[]
-  milestones Milestone[]
+  studios     ProjectStudio[]
+  tasks       Task[]
+  milestones  Milestone[]
+  timeEntries TimeEntry[]
 
   @@map("projects")
 }
@@ -285,33 +303,33 @@ enum RecurrenceFrequency {
 /// fichier source), appliquée par ligne plutôt que sur tout le jeu de
 /// données.
 model Task {
-  id                String     @id @default(cuid())
-  title             String
-  description       String?
-  project           Project?   @relation(fields: [projectId], references: [id])
-  projectId         String?    @map("project_id")
-  studio            Studio     @relation(fields: [studioId], references: [id])
-  studioId          String     @map("studio_id")
-  assignee          Person?    @relation(fields: [assigneeId], references: [id])
-  assigneeId        String?    @map("assignee_id")
-  startDate         DateTime   @map("start_date") @db.Date
-  endDate           DateTime   @map("end_date") @db.Date
+  id                  String               @id @default(cuid())
+  title               String
+  description         String?
+  project             Project?             @relation(fields: [projectId], references: [id])
+  projectId           String?              @map("project_id")
+  studio              Studio               @relation(fields: [studioId], references: [id])
+  studioId            String               @map("studio_id")
+  assignee            Person?              @relation(fields: [assigneeId], references: [id])
+  assigneeId          String?              @map("assignee_id")
+  startDate           DateTime             @map("start_date") @db.Date
+  endDate             DateTime             @map("end_date") @db.Date
   /// Durée maximale en jours calendaires (Fin - Début + 1). Facultatif : un
   /// garde-fou contre une plage saisie par erreur, pas une estimation de
   /// charge (voir le module `src/lib/planning` pour l'avancement/la charge,
   /// qui restent distincts de cette borne).
-  maxDurationDays   Int?       @map("max_duration_days")
+  maxDurationDays     Int?                 @map("max_duration_days")
   /// Estimation d'effort en demi-journées (1 = une demi-journée), distincte
   /// de la plage de dates : une tâche peut s'étaler sur cinq jours
   /// calendaires sans en occuper la personne à plein temps. Absente = ancien
   /// comportement dans le calcul de charge (tout jour couvert compte comme
   /// entièrement occupé) — voir src/lib/planning/availability.ts.
-  estimatedHalfDays Int?       @map("estimated_half_days")
-  status            TaskStatus @relation(fields: [statusId], references: [id])
-  statusId          String     @map("status_id")
-  dependsOn         Task?      @relation("TaskDependency", fields: [dependsOnId], references: [id])
-  dependsOnId       String?    @map("depends_on_id")
-  dependents        Task[]     @relation("TaskDependency")
+  estimatedHalfDays   Int?                 @map("estimated_half_days")
+  status              TaskStatus           @relation(fields: [statusId], references: [id])
+  statusId            String               @map("status_id")
+  dependsOn           Task?                @relation("TaskDependency", fields: [dependsOnId], references: [id])
+  dependsOnId         String?              @map("depends_on_id")
+  dependents          Task[]               @relation("TaskDependency")
   /// Récurrence facultative : quand la tâche passe à un statut "Terminé"
   /// (isDone), l'occurrence suivante est générée automatiquement (dates
   /// décalées de `recurrenceInterval` semaines/mois) — voir
@@ -325,11 +343,11 @@ model Task {
   recurrenceParent    Task?                @relation("TaskRecurrence", fields: [recurrenceParentId], references: [id], onDelete: SetNull)
   recurrenceParentId  String?              @map("recurrence_parent_id")
   recurrenceChildren  Task[]               @relation("TaskRecurrence")
-  validationRounds  Int        @default(0) @map("validation_rounds")
-  version           Int        @default(0)
-  trashedAt         DateTime?  @map("trashed_at")
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
+  validationRounds    Int                  @default(0) @map("validation_rounds")
+  version             Int                  @default(0)
+  trashedAt           DateTime?            @map("trashed_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
 
   subtasks       Subtask[]
   comments       Comment[]
@@ -349,40 +367,71 @@ model Task {
 /// Sous-tâche avec échéance propre, éventuellement attribuée à quelqu'un
 /// d'autre que le titulaire de la tâche (repris tel quel du prototype).
 model Subtask {
-  id       String    @id @default(cuid())
-  task     Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  taskId   String    @map("task_id")
-  title    String
-  dueDate  DateTime? @map("due_date") @db.Date
-  assignee Person?   @relation(fields: [assigneeId], references: [id])
-  assigneeId String? @map("assignee_id")
-  done     Boolean   @default(false)
-  position Int       @default(0)
+  id         String    @id @default(cuid())
+  task       Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId     String    @map("task_id")
+  title      String
+  dueDate    DateTime? @map("due_date") @db.Date
+  assignee   Person?   @relation(fields: [assigneeId], references: [id])
+  assigneeId String?   @map("assignee_id")
+  done       Boolean   @default(false)
+  position   Int       @default(0)
 
   @@index([taskId])
   @@map("subtasks")
 }
 
+/// Catégorie d'activité pour le suivi de temps (nomenclature transmise par
+/// l'équipe : "Développement", "Réunion interne", "Administratif"…) — table
+/// éditable depuis Réglages plutôt qu'un enum figé, même logique que
+/// TaskStatus : la liste "pourra être ajustée avec l'usage" (demande
+/// explicite du document source). `studioId` nul = catégorie générale
+/// disponible pour tous les studios ; renseigné = spécifique à ce studio,
+/// proposée en plus des générales (voir src/lib/data/task-categories.ts).
+model TaskCategory {
+  id        String   @id @default(cuid())
+  name      String
+  studio    Studio?  @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  studioId  String?  @map("studio_id")
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  timeEntries TimeEntry[]
+
+  @@unique([studioId, name])
+  @@map("task_categories")
+}
+
 /// Feuille de temps — un minuteur en cours (`endedAt` nul) ou une écriture
-/// manuelle (les deux bornes posées d'un coup). Rattachée à une tâche (donc
-/// indirectement à un projet et un studio) plutôt qu'au projet directement :
-/// c'est la tâche qu'on travaille, l'agrégation par projet se fait à la
-/// lecture (voir src/lib/data/time-entries.ts). Démarrer un nouveau
+/// manuelle (les deux bornes posées d'un coup). Le rattachement à une Task
+/// reste possible (`taskId` facultatif) mais n'est plus obligatoire : la
+/// nomenclature de suivi de temps a besoin de logger du travail sans tâche
+/// planifiée ("suivi emails", "aide à un collègue"…) — Studio, Projet
+/// (nul = "AGENCE"/hors-projet) et Catégorie sont donc portés directement
+/// par l'écriture plutôt que déduits d'une tâche. Démarrer un nouveau
 /// minuteur arrête automatiquement celui en cours pour la même personne —
 /// un seul actif à la fois, comme Clockify.
 model TimeEntry {
-  id        String    @id @default(cuid())
-  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  taskId    String    @map("task_id")
-  person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
-  personId  String    @map("person_id")
-  startedAt DateTime  @map("started_at")
-  endedAt   DateTime? @map("ended_at")
-  note      String?
-  createdAt DateTime  @default(now()) @map("created_at")
+  id         String        @id @default(cuid())
+  task       Task?         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId     String?       @map("task_id")
+  project    Project?      @relation(fields: [projectId], references: [id])
+  projectId  String?       @map("project_id")
+  studio     Studio        @relation(fields: [studioId], references: [id])
+  studioId   String        @map("studio_id")
+  category   TaskCategory? @relation(fields: [categoryId], references: [id])
+  categoryId String?       @map("category_id")
+  person     Person        @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId   String        @map("person_id")
+  startedAt  DateTime      @map("started_at")
+  endedAt    DateTime?     @map("ended_at")
+  note       String?
+  createdAt  DateTime      @default(now()) @map("created_at")
 
   @@index([taskId])
   @@index([personId, endedAt])
+  @@index([projectId])
   @@map("time_entries")
 }
 
@@ -408,28 +457,28 @@ model Absence {
 /// même comportement que le prototype (la demande ne laisse pas de trace une
 /// fois planifiée ; le journal, lui, garde l'écriture de création de tâche).
 model Request {
-  id           String   @id @default(cuid())
-  subject      String
-  requester    String?
-  studio       Studio   @relation(fields: [studioId], references: [id])
-  studioId     String   @map("studio_id")
-  wantedFor    DateTime? @map("wanted_for") @db.Date
-  detail       String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  createdBy    String? // nom affiché au dépôt, pas de FK : peut être "Anonyme"
+  id        String    @id @default(cuid())
+  subject   String
+  requester String?
+  studio    Studio    @relation(fields: [studioId], references: [id])
+  studioId  String    @map("studio_id")
+  wantedFor DateTime? @map("wanted_for") @db.Date
+  detail    String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String? // nom affiché au dépôt, pas de FK : peut être "Anonyme"
 
   @@map("requests")
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  taskId    String   @map("task_id")
-  author    Person?  @relation(fields: [authorId], references: [id])
-  authorId  String?  @map("author_id")
-  authorName String  @map("author_name") // figé à la publication, même si la personne est retirée plus tard
-  body      String
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String   @id @default(cuid())
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId     String   @map("task_id")
+  author     Person?  @relation(fields: [authorId], references: [id])
+  authorId   String?  @map("author_id")
+  authorName String   @map("author_name") // figé à la publication, même si la personne est retirée plus tard
+  body       String
+  createdAt  DateTime @default(now()) @map("created_at")
 
   mentions CommentMention[]
 

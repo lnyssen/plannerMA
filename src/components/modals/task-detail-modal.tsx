@@ -234,7 +234,7 @@ export function TaskDetailModal({
     if (!task) return;
     setTimeError(null);
     startTransition(async () => {
-      const result = await startTimer(task.id);
+      const result = await startTimer({ taskId: task.id, studioId: task.studioId });
       if (result.error) {
         setTimeError(result.error);
         return;
@@ -263,6 +263,7 @@ export function TaskDetailModal({
     startTransition(async () => {
       const result = await addManualEntry({
         taskId: task.id,
+        studioId: task.studioId,
         date: manualDate,
         hours: Number(manualHours) || 0,
         minutes: Number(manualMinutes) || 0,

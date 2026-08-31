@@ -13,38 +13,78 @@ function revalidateTimeViews() {
   revalidatePath("/projets");
 }
 
-/** Le minuteur en cours de l'utilisateur connecté (n'importe quelle tâche), ou null. */
+const TIME_ENTRY_INCLUDE = {
+  task: { select: { id: true, title: true, project: { select: { name: true, client: { select: { name: true } } } } } },
+  project: { select: { id: true, name: true, code: true, client: { select: { name: true } } } },
+  studio: { select: { id: true, name: true, colorHex: true, fillHex: true } },
+  category: { select: { id: true, name: true } },
+} as const;
+
+/**
+ * Contexte d'une écriture — Studio, Projet (nul = "AGENCE"/hors-projet) et
+ * Catégorie, avec un lien facultatif vers une Task planifiée. Quand `taskId`
+ * est fourni, Studio et Projet sont toujours dérivés de la tâche côté
+ * serveur (source de vérité unique) plutôt que de faire confiance à ce que
+ * le client a pu envoyer — seule la catégorie reste éditable indépendamment
+ * dans ce cas.
+ */
+const entryContextSchema = z.object({
+  taskId: z.string().nullable().optional(),
+  projectId: z.string().nullable().optional(),
+  studioId: z.string().min(1, "Le studio est requis."),
+  categoryId: z.string().nullable().optional(),
+});
+
+async function resolveEntryContext(
+  input: z.infer<typeof entryContextSchema>,
+): Promise<{ error: string } | { taskId: string | null; projectId: string | null; studioId: string; categoryId: string | null }> {
+  if (input.taskId) {
+    const task = await db.task.findUnique({ where: { id: input.taskId }, select: { studioId: true, projectId: true } });
+    if (!task) return { error: "Cette tâche n’existe plus." };
+    return { taskId: input.taskId, projectId: task.projectId, studioId: task.studioId, categoryId: input.categoryId ?? null };
+  }
+  return { taskId: null, projectId: input.projectId ?? null, studioId: input.studioId, categoryId: input.categoryId ?? null };
+}
+
+/** Le minuteur en cours de l'utilisateur connecté (n'importe quel contexte), ou null. */
 export async function getRunningTimer() {
   const session = await auth();
   if (!session?.user?.personId) return null;
   return db.timeEntry.findFirst({
     where: { personId: session.user.personId, endedAt: null },
-    include: {
-      task: { select: { id: true, title: true, project: { select: { name: true, client: { select: { name: true } } } } } },
-    },
+    include: TIME_ENTRY_INCLUDE,
   });
 }
 
 export type RunningTimer = Awaited<ReturnType<typeof getRunningTimer>>;
 
 /**
- * Démarre un minuteur sur une tâche — arrête d'abord celui en cours pour la
- * même personne s'il y en a un (un seul actif à la fois, comme Clockify),
- * plutôt que de refuser et obliger un aller-retour.
+ * Démarre un minuteur — arrête d'abord celui en cours pour la même personne
+ * s'il y en a un (un seul actif à la fois, comme Clockify), plutôt que de
+ * refuser et obliger un aller-retour.
  */
-export async function startTimer(taskId: string): Promise<{ error?: string }> {
+export async function startTimer(input: z.infer<typeof entryContextSchema>): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
   if (!session.user.personId) return { error: "Votre compte n’est relié à aucune fiche personne." };
 
+  const parsed = entryContextSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
+  const resolved = await resolveEntryContext(parsed.data);
+  if ("error" in resolved) return resolved;
+
   const now = new Date();
   await db.$transaction([
-    db.timeEntry.updateMany({
-      where: { personId: session.user.personId, endedAt: null },
-      data: { endedAt: now },
-    }),
+    db.timeEntry.updateMany({ where: { personId: session.user.personId, endedAt: null }, data: { endedAt: now } }),
     db.timeEntry.create({
-      data: { taskId, personId: session.user.personId, startedAt: now },
+      data: {
+        personId: session.user.personId,
+        startedAt: now,
+        taskId: resolved.taskId,
+        projectId: resolved.projectId,
+        studioId: resolved.studioId,
+        categoryId: resolved.categoryId,
+      },
     }),
   ]);
 
@@ -67,9 +107,8 @@ export async function stopTimer(entryId: string): Promise<{ error?: string }> {
   return {};
 }
 
-const manualEntrySchema = z
-  .object({
-    taskId: z.string(),
+const manualEntrySchema = entryContextSchema
+  .extend({
     date: isoDate,
     hours: z.number().int().min(0).max(24),
     minutes: z.number().int().min(0).max(59),
@@ -85,22 +124,32 @@ export async function addManualEntry(input: z.infer<typeof manualEntrySchema>): 
 
   const parsed = manualEntrySchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { taskId, date, hours, minutes, note } = parsed.data;
+  const { date, hours, minutes, note } = parsed.data;
+  const resolved = await resolveEntryContext(parsed.data);
+  if ("error" in resolved) return resolved;
 
   const startedAt = new Date(`${date}T09:00:00.000Z`);
   const endedAt = new Date(startedAt.getTime() + (hours * 60 + minutes) * 60_000);
 
   await db.timeEntry.create({
-    data: { taskId, personId: session.user.personId, startedAt, endedAt, note: note || null },
+    data: {
+      personId: session.user.personId,
+      startedAt,
+      endedAt,
+      note: note || null,
+      taskId: resolved.taskId,
+      projectId: resolved.projectId,
+      studioId: resolved.studioId,
+      categoryId: resolved.categoryId,
+    },
   });
 
   revalidateTimeViews();
   return {};
 }
 
-const createAtSchema = z
-  .object({
-    taskId: z.string(),
+const createAtSchema = entryContextSchema
+  .extend({
     startedAt: z.string().datetime(),
     endedAt: z.string().datetime(),
   })
@@ -114,10 +163,20 @@ export async function createTimeEntryAt(input: z.infer<typeof createAtSchema>): 
 
   const parsed = createAtSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Créneau invalide." };
-  const { taskId, startedAt, endedAt } = parsed.data;
+  const { startedAt, endedAt } = parsed.data;
+  const resolved = await resolveEntryContext(parsed.data);
+  if ("error" in resolved) return resolved;
 
   await db.timeEntry.create({
-    data: { taskId, personId: session.user.personId, startedAt: new Date(startedAt), endedAt: new Date(endedAt) },
+    data: {
+      personId: session.user.personId,
+      startedAt: new Date(startedAt),
+      endedAt: new Date(endedAt),
+      taskId: resolved.taskId,
+      projectId: resolved.projectId,
+      studioId: resolved.studioId,
+      categoryId: resolved.categoryId,
+    },
   });
 
   revalidateTimeViews();
@@ -129,10 +188,14 @@ const moveEntrySchema = z
     entryId: z.string(),
     startedAt: z.string().datetime(),
     endedAt: z.string().datetime(),
-    // Facultatif — présent quand l'édition vient du popover "Modifier le
-    // créneau" (qui permet aussi de changer la tâche), absent quand elle
-    // vient d'un simple glisser/redimensionner de bloc.
-    taskId: z.string().optional(),
+    // Contexte facultatif — présent quand l'édition vient du popover
+    // "Modifier le créneau" (qui permet aussi de changer studio/projet/
+    // catégorie/tâche), absent quand elle vient d'un simple glisser/
+    // redimensionner de bloc (seules les heures changent alors).
+    taskId: z.string().nullable().optional(),
+    projectId: z.string().nullable().optional(),
+    studioId: z.string().optional(),
+    categoryId: z.string().nullable().optional(),
   })
   .refine((v) => v.endedAt > v.startedAt, { message: "La fin doit être après le début.", path: ["endedAt"] });
 
@@ -143,7 +206,7 @@ export async function updateTimeEntryTimes(input: z.infer<typeof moveEntrySchema
 
   const parsed = moveEntrySchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Créneau invalide." };
-  const { entryId, startedAt, endedAt, taskId } = parsed.data;
+  const { entryId, startedAt, endedAt, studioId } = parsed.data;
 
   const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true, endedAt: true } });
   if (!entry) return { error: "Cette écriture n’existe plus." };
@@ -152,9 +215,16 @@ export async function updateTimeEntryTimes(input: z.infer<typeof moveEntrySchema
   }
   if (entry.endedAt === null) return { error: "Un minuteur en cours ne se déplace pas — arrêtez-le d’abord." };
 
+  let contextData: Partial<{ taskId: string | null; projectId: string | null; studioId: string; categoryId: string | null }> = {};
+  if (studioId) {
+    const resolved = await resolveEntryContext(parsed.data as z.infer<typeof entryContextSchema>);
+    if ("error" in resolved) return resolved;
+    contextData = resolved;
+  }
+
   await db.timeEntry.update({
     where: { id: entryId },
-    data: { startedAt: new Date(startedAt), endedAt: new Date(endedAt), ...(taskId ? { taskId } : {}) },
+    data: { startedAt: new Date(startedAt), endedAt: new Date(endedAt), ...contextData },
   });
   revalidateTimeViews();
   return {};

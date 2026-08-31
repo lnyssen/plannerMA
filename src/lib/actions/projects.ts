@@ -28,9 +28,13 @@ async function resolveClientId(ref: z.infer<typeof clientRefSchema>): Promise<st
   return client.id;
 }
 
+const projectTypeSchema = z.enum(["EXTERNE", "EQUIPE_EDUCATIVE", "EUROPEEN", "FONCTIONNEMENT"]);
+
 const createProjectSchema = z.object({
   name: z.string().trim().min(1, "Le nom du projet est requis."),
+  code: z.string().trim().nullable(),
   type: z.enum(["INTERNAL", "EXTERNAL"]),
+  projectType: projectTypeSchema,
   studioIds: z.array(z.string()).min(1, "Choisissez au moins un studio."),
 }).and(clientRefSchema);
 
@@ -42,14 +46,16 @@ export async function createProject(input: CreateProjectInput): Promise<{ error?
 
   const parsed = createProjectSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { name, type, studioIds } = parsed.data;
+  const { name, code, type, projectType, studioIds } = parsed.data;
   const clientId = await resolveClientId(parsed.data);
 
   const project = await db.project.create({
     data: {
       name,
+      code: code || null,
       clientId,
       type,
+      projectType,
       studios: { create: studioIds.map((studioId) => ({ studioId })) },
     },
   });
@@ -75,6 +81,10 @@ export async function getProjectDetail(projectId: string) {
       client: true,
       studios: { include: { studio: true } },
       milestones: { orderBy: { dueDate: "asc" } },
+      // Écritures rattachées directement au projet ("AGENCE"/hors-tâche
+      // n'existe pas ici puisque c'est justement un vrai projet) — voir
+      // src/lib/data/time-entries.ts pour la même logique côté budget global.
+      timeEntries: { select: { startedAt: true, endedAt: true } },
       tasks: {
         where: { trashedAt: null },
         orderBy: { startDate: "asc" },
@@ -98,7 +108,9 @@ export type ProjectDetail = NonNullable<Awaited<ReturnType<typeof getProjectDeta
 const updateProjectSchema = z.object({
   projectId: z.string(),
   name: z.string().trim().min(1, "Le nom du projet est requis."),
+  code: z.string().trim().nullable(),
   type: z.enum(["INTERNAL", "EXTERNAL"]),
+  projectType: projectTypeSchema,
   studioIds: z.array(z.string()).min(1, "Choisissez au moins un studio."),
   budgetHours: z.number().int().positive().nullable(),
 }).and(clientRefSchema);
@@ -111,7 +123,7 @@ export async function updateProject(input: UpdateProjectInput): Promise<{ error?
 
   const parsed = updateProjectSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { projectId, name, type, studioIds, budgetHours } = parsed.data;
+  const { projectId, name, code, type, projectType, studioIds, budgetHours } = parsed.data;
   const clientId = await resolveClientId(parsed.data);
 
   await db.$transaction([
@@ -120,8 +132,10 @@ export async function updateProject(input: UpdateProjectInput): Promise<{ error?
       where: { id: projectId },
       data: {
         name,
+        code: code || null,
         clientId,
         type,
+        projectType,
         budgetHours,
         studios: { create: studioIds.map((studioId) => ({ studioId })) },
       },

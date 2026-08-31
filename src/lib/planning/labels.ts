@@ -1,3 +1,5 @@
+import type { ProjectType } from "@prisma/client";
+
 // Nomenclature unique pour identifier une tâche avec son contexte, utilisée
 // partout où une tâche apparaît hors d'un tableau à colonnes séparées
 // (select, carte, bulle, bloc de calendrier) — toujours dans l'ordre
@@ -11,6 +13,19 @@ interface TaskWithContext {
 export function taskContextLabel(task: TaskWithContext): string {
   if (!task.project) return task.title;
   return `${task.project.client.name} — ${task.project.name} — ${task.title}`;
+}
+
+interface EntryWithContext {
+  task: { title: string } | null;
+  project: { name: string; client: { name: string } } | null;
+  category: { name: string } | null;
+}
+
+/** Équivalent texte brut de EntryContextLabelParts (voir components/ui/task-context-label.tsx) — pour un attribut `title`. */
+export function entryContextLabel(entry: EntryWithContext): string {
+  const tail = entry.task ? entry.task.title : (entry.category?.name ?? "Sans catégorie");
+  if (!entry.project) return `AGENCE — ${tail}`;
+  return `${entry.project.client.name} — ${entry.project.name} — ${tail}`;
 }
 
 /**
@@ -33,6 +48,14 @@ export function sortByTaskContext<T extends TaskWithContext>(tasks: T[]): T[] {
     );
   });
 }
+
+/** Libellés FR de ProjectType (nomenclature de suivi de temps) — voir prisma/schema.prisma. */
+export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  EXTERNE: "Externe",
+  EQUIPE_EDUCATIVE: "Équipe éducative",
+  EUROPEEN: "Européen",
+  FONCTIONNEMENT: "Fonctionnement",
+};
 
 /** Heure locale-affichage (le stockage reste UTC, voir dates.ts) au format "9h05". */
 export function formatHourMinute(d: Date): string {
