@@ -1,7 +1,7 @@
 "use client";
 
 import type { Role } from "@prisma/client";
-import { Menu, Plus, X } from "lucide-react";
+import { ArrowUpDown, Bell, LogOut, Menu, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -142,9 +142,9 @@ export function AppShell({
             setModal("request");
             setDrawerOpen(false);
           }}
-          className={`text-center text-xs font-semibold text-white/80 ${textButtonClass}`}
+          className={`flex items-center justify-center gap-1.5 text-xs font-semibold text-white/80 ${textButtonClass}`}
         >
-          + Nouvelle demande
+          <Plus size={13} aria-hidden="true" /> Nouvelle demande
         </button>
       </div>
 
@@ -154,23 +154,23 @@ export function AppShell({
         <button
           type="button"
           onClick={() => setModal("notifications")}
-          className={`mb-2 block text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline ${textButtonClass}`}
+          className={`mb-2 flex items-center gap-1.5 text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline ${textButtonClass}`}
         >
-          Mes notifications
+          <Bell size={13} aria-hidden="true" /> Mes notifications
         </button>
         <button
           type="button"
           onClick={() => setModal("navOrder")}
-          className={`mb-2 block text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline ${textButtonClass}`}
+          className={`mb-2 flex items-center gap-1.5 text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline ${textButtonClass}`}
         >
-          Réorganiser le menu
+          <ArrowUpDown size={13} aria-hidden="true" /> Réorganiser le menu
         </button>
         <form action={signOutAction}>
           <button
             type="submit"
-            className="text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline"
+            className="flex items-center gap-1.5 text-left text-xs font-medium text-white/80 underline-offset-2 hover:underline"
           >
-            Se déconnecter
+            <LogOut size={13} aria-hidden="true" /> Se déconnecter
           </button>
         </form>
       </div>

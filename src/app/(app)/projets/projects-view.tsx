@@ -187,15 +187,15 @@ export function ProjectsView({
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Projets
         </h1>
-        <div className="flex" role="group" aria-label="Présentation">
+        <div className="flex border-[1.5px] border-heading" role="group" aria-label="Présentation">
           <button
             type="button"
             onClick={() => changeView("cards")}
             aria-pressed={view === "cards"}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
+            className="flex items-center gap-1.5 border-r-[1.5px] border-heading px-2.5 py-1 text-xs font-semibold"
             style={{
-              border: `1.5px solid ${view === "cards" ? "var(--color-heading)" : "var(--color-line)"}`,
-              color: view === "cards" ? "var(--color-heading)" : "var(--color-ink-muted)",
+              background: view === "cards" ? "var(--color-heading)" : "transparent",
+              color: view === "cards" ? "var(--color-paper)" : "var(--color-ink-muted)",
             }}
           >
             <LayoutGrid size={13} /> Cartes
@@ -204,10 +204,10 @@ export function ProjectsView({
             type="button"
             onClick={() => changeView("table")}
             aria-pressed={view === "table"}
-            className="-ml-px flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
             style={{
-              border: `1.5px solid ${view === "table" ? "var(--color-heading)" : "var(--color-line)"}`,
-              color: view === "table" ? "var(--color-heading)" : "var(--color-ink-muted)",
+              background: view === "table" ? "var(--color-heading)" : "transparent",
+              color: view === "table" ? "var(--color-paper)" : "var(--color-ink-muted)",
             }}
           >
             <Table2 size={13} /> Tableau
