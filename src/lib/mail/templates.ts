@@ -92,6 +92,24 @@ export function requestEmail(personName: string, info: RequestInfo) {
   };
 }
 
+/** Compte créé pour une personne déjà dans l'équipe (fiche existante) — voir invitePerson dans src/lib/actions/people.ts. */
+export function inviteEmail(personName: string, email: string, temporaryPassword: string) {
+  const subject = "Votre accès à Studio planner";
+  const lines = [
+    `Bonjour ${personName},`,
+    `Un compte de connexion a été créé pour vous sur Studio planner, l'outil de planification de Média Animation.`,
+    `Identifiant : ${email}`,
+    `Mot de passe temporaire : ${temporaryPassword}`,
+    `Connexion : ${APP_URL}/connexion`,
+    `Ce mot de passe est généré automatiquement — changez-le dès votre première connexion (Réglages → Mon compte).`,
+  ];
+  return {
+    subject,
+    text: lines.join("\n\n"),
+    html: wrapHtml(subject, lines),
+  };
+}
+
 export interface DigestTaskInfo {
   title: string;
   projectName: string | null;

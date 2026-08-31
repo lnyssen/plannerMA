@@ -1,9 +1,14 @@
 "use server";
 
+import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
+import type { Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { inviteEmail } from "@/lib/mail/templates";
+import { sendMail } from "@/lib/mail/transport";
 
 const personSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis."),
@@ -154,6 +159,115 @@ export async function removeUserAccess(personId: string): Promise<{ error?: stri
       actorId: session.user.personId,
       actorName: session.user.name ?? session.user.email ?? "Anonyme",
       action: `Accès retiré pour ${user.email}`,
+    },
+  });
+
+  revalidatePeopleViews();
+  return {};
+}
+
+function generateTemporaryPassword(): string {
+  // Lisible/copiable à la main si besoin (l'invitation par courriel reste
+  // le chemin normal) — alphabet sans caractères ambigus (0/O, 1/l/I).
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const bytes = randomBytes(14);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
+
+const inviteSchema = z.object({
+  email: z.string().trim().email("Courriel invalide."),
+  role: z.enum(["ADMIN", "STUDIO_LEAD", "COLLABORATOR"]),
+});
+
+/**
+ * Crée un compte de connexion pour une personne déjà dans l'équipe, avec un
+ * mot de passe généré automatiquement envoyé par courriel — répond à la
+ * question ouverte de l'audit ("aucun moyen d'inviter"), symétrique de
+ * removeUserAccess.
+ */
+export async function invitePerson(personId: string, input: z.infer<typeof inviteSchema>): Promise<{ error?: string }> {
+  const auth_ = await requireAdmin();
+  if ("error" in auth_) return auth_;
+  const { session } = auth_;
+  const parsed = inviteSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
+  const { email, role } = parsed.data;
+
+  const person = await db.person.findUnique({ where: { id: personId }, include: { user: true } });
+  if (!person) return { error: "Cette personne n’existe plus." };
+  if (person.user) return { error: "Cette personne a déjà un compte de connexion." };
+
+  const existingUser = await db.user.findUnique({ where: { email } });
+  if (existingUser) return { error: "Cette adresse courriel est déjà utilisée par un autre compte." };
+
+  const temporaryPassword = generateTemporaryPassword();
+  const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+
+  await db.$transaction([
+    db.user.create({ data: { email, passwordHash, role: role as Role, personId } }),
+    ...(person.email !== email ? [db.person.update({ where: { id: personId }, data: { email } })] : []),
+  ]);
+
+  await db.journalEntry.create({
+    data: {
+      actorId: session.user.personId,
+      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      action: `Accès de connexion créé pour ${person.name} (${email})`,
+    },
+  });
+
+  try {
+    const { subject, text, html } = inviteEmail(person.name, email, temporaryPassword);
+    await sendMail({ to: email, subject, text, html });
+  } catch (err) {
+    console.error("[mail] échec de l'envoi de l'invitation :", err);
+    revalidatePeopleViews();
+    return { error: "Compte créé, mais l'envoi du courriel a échoué — communiquez le mot de passe autrement." };
+  }
+
+  revalidatePeopleViews();
+  return {};
+}
+
+/**
+ * Suppression réelle — réservée aux personnes sans historique qui serait
+ * perdu (le temps enregistré et les absences sont liés en cascade). Avec un
+ * historique existant, orienter vers setPersonActive (désactivation) plutôt
+ * que perdre des données de suivi de temps utilisées pour le reporting.
+ */
+export async function deletePerson(personId: string): Promise<{ error?: string }> {
+  const auth_ = await requireAdmin();
+  if ("error" in auth_) return auth_;
+  const { session } = auth_;
+
+  const person = await db.person.findUnique({ where: { id: personId }, include: { user: true } });
+  if (!person) return {};
+
+  const [timeEntryCount, absenceCount] = await Promise.all([
+    db.timeEntry.count({ where: { personId } }),
+    db.absence.count({ where: { personId } }),
+  ]);
+  if (timeEntryCount > 0 || absenceCount > 0) {
+    return {
+      error: `Impossible : ${timeEntryCount} écriture${timeEntryCount === 1 ? "" : "s"} de temps et ${absenceCount} absence${absenceCount === 1 ? "" : "s"} seraient perdues. Désactivez plutôt cette personne (conserve l’historique).`,
+    };
+  }
+
+  if (person.user?.role === "ADMIN") {
+    const adminCount = await db.user.count({ where: { role: "ADMIN" } });
+    if (adminCount <= 1) return { error: "Impossible : ce serait le dernier compte administrateur." };
+  }
+
+  await db.$transaction([
+    ...(person.user ? [db.user.delete({ where: { id: person.user.id } })] : []),
+    db.person.delete({ where: { id: personId } }),
+  ]);
+
+  await db.journalEntry.create({
+    data: {
+      actorId: session.user.personId,
+      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      action: `${person.name} supprimé·e de l’équipe`,
     },
   });
 

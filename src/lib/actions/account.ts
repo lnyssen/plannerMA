@@ -1,10 +1,34 @@
 "use server";
 
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { runDailyDigest } from "@/lib/mail/notify";
+
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1, "Le mot de passe actuel est requis."),
+  newPassword: z.string().min(8, "Le nouveau mot de passe doit compter au moins 8 caractères."),
+});
+
+/** Change son propre mot de passe — notamment après une invitation par mot de passe généré automatiquement (voir invitePerson dans people.ts). */
+export async function changePassword(input: z.infer<typeof passwordSchema>): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  const parsed = passwordSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
+
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { passwordHash: true } });
+  if (!user?.passwordHash) return { error: "Ce compte n’a pas de mot de passe (connexion par un autre moyen)." };
+
+  const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
+  if (!valid) return { error: "Mot de passe actuel incorrect." };
+
+  const passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
+  await db.user.update({ where: { id: session.user.id }, data: { passwordHash } });
+  return {};
+}
 
 const prefsSchema = z.object({
   notifyOnAssignment: z.boolean(),

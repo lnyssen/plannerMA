@@ -7,6 +7,7 @@ import {
   Bell,
   ClipboardPlus,
   FolderPlus,
+  KeyRound,
   ListPlus,
   LogOut,
   Menu,
@@ -20,6 +21,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { updateThemePreference } from "@/lib/actions/account";
+import { ChangePasswordModal } from "@/components/modals/change-password-modal";
 import { CreateProjectModal } from "@/components/modals/create-project-modal";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
 import { NavOrderModal } from "@/components/modals/nav-order-modal";
@@ -85,7 +87,7 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | "navOrder" | null>(null);
+  const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | "navOrder" | "password" | null>(null);
   const [collapsed, setCollapsedState] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<ThemePreference>(theme);
 
@@ -276,6 +278,14 @@ export function AppShell({
           >
             <ArrowUpDown size={13} aria-hidden="true" /> {!isCollapsed && "Réorganiser le menu"}
           </button>
+          <button
+            type="button"
+            onClick={() => setModal("password")}
+            title="Changer mon mot de passe"
+            className={`flex items-center gap-1.5 text-xs font-medium text-white/80 ${isCollapsed ? "justify-center rounded-md p-1.5 hover:bg-white/10" : "mb-2 text-left underline-offset-2 hover:underline"} ${textButtonClass}`}
+          >
+            <KeyRound size={13} aria-hidden="true" /> {!isCollapsed && "Mon mot de passe"}
+          </button>
           <form action={signOutAction}>
             <button
               type="submit"
@@ -370,6 +380,7 @@ export function AppShell({
         />
       )}
       {modal === "navOrder" && <NavOrderModal role={role} initialOrder={navOrder} onClose={() => setModal(null)} />}
+      {modal === "password" && <ChangePasswordModal onClose={() => setModal(null)} />}
     </div>
     </CreateModalsProvider>
   );
