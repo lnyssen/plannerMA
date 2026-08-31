@@ -59,14 +59,16 @@
  * inversion : fonds proches du noir teintés violet (cohérents avec la
  * marque) plutôt qu'un gris neutre générique. Contrastes vérifiés AA sur
  * fond --color-paper : --color-heading ≈ 8.5:1, --color-ink ≈ 14.8:1,
- * --color-alert ≈ 6.2:1. La barre latérale (--color-rail) ne change pas :
- * déjà sombre dans les deux thèmes.
+ * --color-alert ≈ 6.2:1. La barre latérale (--color-rail) s'assombrit aussi
+ * (#2D1592, l'ancienne teinte de marque avant l'unification sur #612DFA) —
+ * contraste texte blanc ≈ 12.9:1, encore meilleur qu'en clair.
  */
 :root[data-theme="dark"] {
   --color-paper: #17131f;
   --color-ink: #e8e6ee;
   --color-ink-muted: rgba(232, 230, 238, 0.62);
   --color-heading: #b9a3ff;
+  --color-rail: #2d1592;
   --color-line: #322b45;
   --color-wash: #1f1a2b;
   --color-alert: #ff5c86;

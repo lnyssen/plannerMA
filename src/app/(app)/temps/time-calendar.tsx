@@ -41,12 +41,19 @@ interface DragState {
 }
 
 interface QuickAdd {
-  dayIndex: number;
   dayStart: Date;
   startMinutes: number; // minutes depuis minuit, calé sur SNAP_MINUTES
   taskId: string;
   durationMinutes: number;
+  // Coordonnées viewport du double-clic — le popover est positionné en
+  // `fixed` à partir d'elles plutôt que niché dans la colonne du jour
+  // (~110px de large, bien trop étroite pour un select + deux boutons ;
+  // ça débordait hors de la grille, voir capture jointe par l'utilisateur).
+  clientX: number;
+  clientY: number;
 }
+
+const QUICK_ADD_WIDTH = 240;
 
 /**
  * Vue calendrier de "Mon temps" — semaine en cours, une colonne par jour,
@@ -145,9 +152,10 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
     setDrag(state);
   }
 
-  function openQuickAdd(day: Date, dayIndex: number, clientY: number, gridTop: number) {
+  function openQuickAdd(day: Date, ev: React.MouseEvent<HTMLDivElement>) {
     if (tasks.length === 0) return;
-    const offsetY = clientY - gridTop;
+    const gridTop = ev.currentTarget.getBoundingClientRect().top;
+    const offsetY = ev.clientY - gridTop;
     const rawMinutes = (offsetY / HOUR_HEIGHT) * 60 + GRID_START_HOUR * 60;
     const snapped = Math.max(
       GRID_START_HOUR * 60,
@@ -155,7 +163,14 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
     );
     const dayStart = new Date(day);
     dayStart.setUTCHours(0, 0, 0, 0);
-    setQuickAdd({ dayIndex, dayStart, startMinutes: snapped, taskId: tasks[0].id, durationMinutes: 30 });
+    setQuickAdd({
+      dayStart,
+      startMinutes: snapped,
+      taskId: tasks[0].id,
+      durationMinutes: 30,
+      clientX: ev.clientX,
+      clientY: ev.clientY,
+    });
   }
 
   function confirmQuickAdd() {
@@ -217,7 +232,7 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
               <div
                 className="relative cursor-cell"
                 style={{ height: GRID_HEIGHT }}
-                onDoubleClick={(ev) => openQuickAdd(day, dayIndex, ev.clientY, ev.currentTarget.getBoundingClientRect().top)}
+                onDoubleClick={(ev) => openQuickAdd(day, ev)}
               >
                 {Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, i) => (
                   <div key={i} style={{ position: "absolute", top: i * HOUR_HEIGHT, width: "100%", height: HOUR_HEIGHT }} className="border-b border-line" />
@@ -253,54 +268,6 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
                     </div>
                   );
                 })}
-                {quickAdd && quickAdd.dayIndex === dayIndex && (
-                  <div
-                    onMouseDown={(ev) => ev.stopPropagation()}
-                    onDoubleClick={(ev) => ev.stopPropagation()}
-                    className="absolute left-0.5 right-0.5 z-10 flex flex-col gap-1.5 rounded-md border border-heading bg-paper p-1.5 shadow-none"
-                    style={{ top: ((quickAdd.startMinutes - GRID_START_HOUR * 60) / 60) * HOUR_HEIGHT }}
-                  >
-                    <select
-                      value={quickAdd.taskId}
-                      onChange={(ev) => setQuickAdd((q) => (q ? { ...q, taskId: ev.target.value } : q))}
-                      className={`${fieldInputClass} text-2xs`}
-                    >
-                      {tasks.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.title}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min={SNAP_MINUTES}
-                        step={SNAP_MINUTES}
-                        value={quickAdd.durationMinutes}
-                        onChange={(ev) =>
-                          setQuickAdd((q) => (q ? { ...q, durationMinutes: Number(ev.target.value) || SNAP_MINUTES } : q))
-                        }
-                        className={`${fieldInputClass} w-14 text-2xs`}
-                      />
-                      <span className="text-2xs text-ink-muted">min</span>
-                      <span className="flex-1" />
-                      <button
-                        type="button"
-                        onClick={() => setQuickAdd(null)}
-                        className={`px-1.5 py-0.5 text-2xs font-semibold ${secondaryButtonClass}`}
-                      >
-                        Annuler
-                      </button>
-                      <button
-                        type="button"
-                        onClick={confirmQuickAdd}
-                        className={`px-1.5 py-0.5 text-2xs font-semibold ${primaryButtonClass}`}
-                      >
-                        Ajouter
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           );
@@ -310,6 +277,62 @@ export function TimeCalendar({ entries, tasks }: { entries: TimeEntryWithTask[];
         Double-cliquer une case pour ajouter une écriture ; glisser un bloc pour changer son heure ; glisser son bord
         bas pour changer sa durée (pas de 15 min).
       </p>
+
+      {quickAdd && (
+        <>
+          {/* Voile invisible pour fermer le popover au clic extérieur, sans intercepter le reste de la page. */}
+          <div className="fixed inset-0 z-40" onClick={() => setQuickAdd(null)} />
+          <div
+            className="fixed z-50 flex flex-col gap-2 rounded-lg border border-heading bg-paper p-2 shadow-none"
+            style={{
+              top: Math.min(quickAdd.clientY, window.innerHeight - 140),
+              left: Math.min(quickAdd.clientX, window.innerWidth - QUICK_ADD_WIDTH - 8),
+              width: QUICK_ADD_WIDTH,
+            }}
+          >
+            <select
+              value={quickAdd.taskId}
+              onChange={(ev) => setQuickAdd((q) => (q ? { ...q, taskId: ev.target.value } : q))}
+              className={`${fieldInputClass} text-xs`}
+            >
+              {tasks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                  {t.project ? ` — ${t.project.name}` : ""}
+                </option>
+              ))}
+            </select>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                min={SNAP_MINUTES}
+                step={SNAP_MINUTES}
+                value={quickAdd.durationMinutes}
+                onChange={(ev) =>
+                  setQuickAdd((q) => (q ? { ...q, durationMinutes: Number(ev.target.value) || SNAP_MINUTES } : q))
+                }
+                className={`${fieldInputClass} w-16 text-xs`}
+              />
+              <span className="text-xs text-ink-muted">min</span>
+              <span className="flex-1" />
+              <button
+                type="button"
+                onClick={() => setQuickAdd(null)}
+                className={`px-2 py-1 text-xs font-semibold ${secondaryButtonClass}`}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmQuickAdd}
+                className={`px-2 py-1 text-xs font-semibold ${primaryButtonClass}`}
+              >
+                Ajouter
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
