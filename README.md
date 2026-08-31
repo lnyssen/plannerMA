@@ -112,6 +112,20 @@ fonctionne aujourd'hui, avec de vraies données en base :
   estimation, l'ancien comportement binaire reste inchangé. Résout la
   limitation « pas encore une estimation de charge réelle » signalée dans
   `docs/plan-architecture.md`.
+- **Jalons et vue Portefeuille** : chaque projet peut porter des jalons datés
+  (fiche projet, section « Jalons » — titre, échéance, coché une fois
+  atteint). Le nouvel écran **Portefeuille** (nav, entre Planning et Clients)
+  liste tous les projets actifs triés par urgence (jalons en retard d'abord,
+  puis avancement le plus faible), avec avancement moyen, studios concernés,
+  prochain jalon à venir et compteur de jalons en retard — une vue d'ensemble
+  que la vue Projets (par carte) ne donne pas.
+- **Tâches récurrentes** (fiche de tâche, section « Récurrence » — chaque
+  semaine ou chaque mois, tous les N, jusqu'à une date facultative) : quand
+  une tâche récurrente passe à un statut « Terminé », l'occurrence suivante
+  est créée automatiquement (dates décalées, repart au premier statut), sans
+  job planifié ni file d'attente — déclenché directement par le changement de
+  statut. Un garde-fou (`Task.recurrenceParentId`) empêche de générer deux
+  fois la même suite si le statut repasse par « Terminé ».
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav à
 6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/

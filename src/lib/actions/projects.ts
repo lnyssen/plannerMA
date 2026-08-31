@@ -74,6 +74,7 @@ export async function getProjectDetail(projectId: string) {
     include: {
       client: true,
       studios: { include: { studio: true } },
+      milestones: { orderBy: { dueDate: "asc" } },
       _count: { select: { tasks: { where: { trashedAt: null } } } },
     },
   });

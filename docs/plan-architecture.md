@@ -49,13 +49,18 @@ Chaque palier se termine par une démo concrète, pas par un bloc final.
 8. **Accessibilité** — clavier complet (dont Gantt), ARIA, contraste vérifié
    en CI.
 
-Puis, dans l'ordre de priorité du brief : jalons + vue portefeuille, portail
-client en lecture seule, import Outlook des absences, sélecteur
-SharePoint/Drive, tâches récurrentes.
+Puis, dans l'ordre de priorité du brief : portail client en lecture seule,
+import Outlook des absences, sélecteur SharePoint/Drive.
 
 Déjà livrés depuis, hors plan initial : estimation de charge en
 demi-journées, historique par tâche (+ journal global admin), suppression
-d'un statut personnalisé, détection de dépendance circulaire.
+d'un statut personnalisé, détection de dépendance circulaire, jalons + vue
+Portefeuille, tâches récurrentes.
+
+Portail client et import Outlook restent en attente : le premier nécessite
+une décision d'authentification (lien secret par projet ? lien magique par
+courriel ?) que l'utilisateur a choisi de reporter, le second des
+identifiants Microsoft Graph (Azure AD) qu'on n'a pas — voir README.
 
 ## Points ouverts
 

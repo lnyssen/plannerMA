@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { belgianHolidays, easterSunday, formatRangeFr, isBusinessDay, mondayOf, toIsoDate } from "../dates";
+import { addMonthsIso, belgianHolidays, easterSunday, formatRangeFr, isBusinessDay, mondayOf, toIsoDate } from "../dates";
 
 describe("easterSunday", () => {
   // Dates de référence publiques du dimanche de Pâques (calendrier grégorien).
@@ -55,6 +55,25 @@ describe("mondayOf", () => {
     expect(toIsoDate(mondayOf(new Date("2026-08-29T00:00:00.000Z")))).toBe("2026-08-24");
     // Le lundi lui-même reste inchangé
     expect(toIsoDate(mondayOf(new Date("2026-08-24T00:00:00.000Z")))).toBe("2026-08-24");
+  });
+});
+
+describe("addMonthsIso", () => {
+  it("avance d'un mois en gardant le même jour", () => {
+    expect(addMonthsIso("2026-03-15", 1)).toBe("2026-04-15");
+  });
+
+  it("cale sur le dernier jour du mois cible quand le jour d'origine n'existe pas", () => {
+    // 31 janvier + 1 mois : février 2026 n'a que 28 jours
+    expect(addMonthsIso("2026-01-31", 1)).toBe("2026-02-28");
+  });
+
+  it("gère un changement d'année", () => {
+    expect(addMonthsIso("2026-12-05", 1)).toBe("2027-01-05");
+  });
+
+  it("gère un intervalle de plusieurs mois", () => {
+    expect(addMonthsIso("2026-01-31", 3)).toBe("2026-04-30");
   });
 });
 

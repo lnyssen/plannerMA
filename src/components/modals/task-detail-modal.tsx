@@ -66,6 +66,9 @@ export function TaskDetailModal({
           statusId: t.statusId,
           dependsOnId: t.dependsOnId ?? "",
           estimatedHalfDays: t.estimatedHalfDays != null ? String(t.estimatedHalfDays) : "",
+          recurrenceFrequency: t.recurrenceFrequency ?? "",
+          recurrenceInterval: t.recurrenceInterval != null ? String(t.recurrenceInterval) : "1",
+          recurrenceUntil: t.recurrenceUntil ? toIsoDate(t.recurrenceUntil) : "",
         });
       }
       setLoading(false);
@@ -101,6 +104,9 @@ export function TaskDetailModal({
         statusId: values.statusId,
         dependsOnId: values.dependsOnId || null,
         estimatedHalfDays: values.estimatedHalfDays ? Number(values.estimatedHalfDays) : null,
+        recurrenceFrequency: values.recurrenceFrequency ? (values.recurrenceFrequency as "WEEKLY" | "MONTHLY") : null,
+        recurrenceInterval: values.recurrenceFrequency ? Number(values.recurrenceInterval) || 1 : null,
+        recurrenceUntil: values.recurrenceFrequency && values.recurrenceUntil ? values.recurrenceUntil : null,
         expectedVersion: task.version,
       });
       if (result.error) {

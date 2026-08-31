@@ -1,11 +1,13 @@
 "use client";
 
-import { Archive, RotateCcw } from "lucide-react";
+import { Archive, Flag, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
 import { getProjectDetail, setProjectArchived, updateProject, type ProjectDetail } from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
+import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
 import { ClientPicker } from "./client-picker";
 import { primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
@@ -31,6 +33,21 @@ export function EditProjectModal({
   const [type, setType] = useState<"INTERNAL" | "EXTERNAL">("EXTERNAL");
   const [studioIds, setStudioIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
+  const [newMilestoneDue, setNewMilestoneDue] = useState(today());
+  const [milestoneError, setMilestoneError] = useState<string | null>(null);
+
+  async function loadProject() {
+    const p = await getProjectDetail(projectId);
+    if (p) {
+      setProject(p);
+      setName(p.name);
+      setClientId(p.clientId);
+      setType(p.type);
+      setStudioIds(p.studios.map((s) => s.studioId));
+    }
+    return p;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +69,37 @@ export function EditProjectModal({
 
   function toggleStudio(id: string) {
     setStudioIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function addMilestone() {
+    if (!newMilestoneTitle.trim()) return;
+    setMilestoneError(null);
+    startTransition(async () => {
+      const result = await createMilestone({ projectId, title: newMilestoneTitle.trim(), dueDate: newMilestoneDue });
+      if (result.error) {
+        setMilestoneError(result.error);
+        return;
+      }
+      setNewMilestoneTitle("");
+      await loadProject();
+      router.refresh();
+    });
+  }
+
+  function toggleMilestone(id: string, isDone: boolean) {
+    startTransition(async () => {
+      await setMilestoneDone(id, isDone);
+      await loadProject();
+      router.refresh();
+    });
+  }
+
+  function removeMilestone(id: string) {
+    startTransition(async () => {
+      await deleteMilestone(id);
+      await loadProject();
+      router.refresh();
+    });
   }
 
   function save() {
@@ -127,6 +175,62 @@ export function EditProjectModal({
               );
             })}
           </div>
+
+          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
+            <Flag size={13} /> Jalons ({project.milestones.length})
+          </h3>
+          <div className="mb-3 flex flex-col gap-1.5">
+            {project.milestones.length === 0 && <p className="text-xs text-ink-muted">Aucun jalon.</p>}
+            {project.milestones.map((m) => (
+              <div key={m.id} className="flex items-center gap-2 border border-line px-2.5 py-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={m.isDone}
+                  onChange={(e) => toggleMilestone(m.id, e.target.checked)}
+                  aria-label={`${m.title} — ${m.isDone ? "atteint" : "à venir"}`}
+                />
+                <span className={`flex-1 ${m.isDone ? "text-ink-muted line-through" : "text-ink"}`}>{m.title}</span>
+                <span className="text-2xs text-ink-muted tabular-nums">{formatShortFr(toIsoDate(m.dueDate))}</span>
+                <button
+                  type="button"
+                  onClick={() => removeMilestone(m.id)}
+                  aria-label={`Retirer ${m.title}`}
+                  className={`flex-shrink-0 p-0.5 text-ink-muted hover:text-alert ${textButtonClass}`}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <input
+              type="text"
+              placeholder="Nouveau jalon"
+              value={newMilestoneTitle}
+              onChange={(e) => setNewMilestoneTitle(e.target.value)}
+              className={`${fieldInputClass} min-w-[160px] flex-1`}
+            />
+            <input
+              type="date"
+              value={newMilestoneDue}
+              onChange={(e) => setNewMilestoneDue(e.target.value)}
+              aria-label="Échéance du jalon"
+              className={fieldInputClass}
+            />
+            <button
+              type="button"
+              disabled={!newMilestoneTitle.trim()}
+              onClick={addMilestone}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+            >
+              <Plus size={14} /> Ajouter
+            </button>
+          </div>
+          {milestoneError && (
+            <p role="alert" className="mb-3 text-xs font-semibold text-alert">
+              {milestoneError}
+            </p>
+          )}
 
           {project.archived && (
             <p className="mb-3 border border-line bg-wash px-3 py-2 text-xs text-ink-muted">Ce projet est archivé.</p>

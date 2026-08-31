@@ -176,8 +176,9 @@ model Project {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
-  studios ProjectStudio[]
-  tasks   Task[]
+  studios    ProjectStudio[]
+  tasks      Task[]
+  milestones Milestone[]
 
   @@map("projects")
 }
@@ -191,6 +192,23 @@ model ProjectStudio {
 
   @@id([projectId, studioId])
   @@map("project_studios")
+}
+
+/// Étape clé d'un projet ("BAT validé", "livraison finale"…), datée mais sans
+/// tâche ni personne assignée — sert de repère dans la vue Portefeuille et
+/// sur la fiche projet, distinct des tâches qui portent le travail réel.
+model Milestone {
+  id        String   @id @default(cuid())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String   @map("project_id")
+  title     String
+  dueDate   DateTime @map("due_date") @db.Date
+  isDone    Boolean  @default(false) @map("is_done")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@map("milestones")
 }
 
 /// Statuts de tâche personnalisables (Réglages → Statuts), sur le même
@@ -213,6 +231,15 @@ model TaskStatus {
   tasks Task[]
 
   @@map("task_statuses")
+}
+
+/// Fréquence d'une tâche récurrente — volontairement limité à deux options
+/// simples (pas de RRULE complet à la Outlook) : couvre les cas réels d'une
+/// petite équipe (réunion hebdomadaire, rapport mensuel) sans la complexité
+/// d'un moteur de règles générique.
+enum RecurrenceFrequency {
+  WEEKLY
+  MONTHLY
 }
 
 /// Une tâche appartient à un seul studio (contrairement au projet). La
@@ -254,6 +281,19 @@ model Task {
   dependsOn         Task?      @relation("TaskDependency", fields: [dependsOnId], references: [id])
   dependsOnId       String?    @map("depends_on_id")
   dependents        Task[]     @relation("TaskDependency")
+  /// Récurrence facultative : quand la tâche passe à un statut "Terminé"
+  /// (isDone), l'occurrence suivante est générée automatiquement (dates
+  /// décalées de `recurrenceInterval` semaines/mois) — voir
+  /// maybeGenerateNextOccurrence dans src/lib/actions/tasks.ts.
+  /// `recurrenceParentId` détache l'occurrence de la tâche qui l'a générée
+  /// (elle-même récurrente ou non) : sert uniquement de garde-fou pour ne
+  /// générer la suite qu'une seule fois par tâche.
+  recurrenceFrequency RecurrenceFrequency? @map("recurrence_frequency")
+  recurrenceInterval  Int?                 @map("recurrence_interval")
+  recurrenceUntil     DateTime?            @map("recurrence_until") @db.Date
+  recurrenceParent    Task?                @relation("TaskRecurrence", fields: [recurrenceParentId], references: [id], onDelete: SetNull)
+  recurrenceParentId  String?              @map("recurrence_parent_id")
+  recurrenceChildren  Task[]               @relation("TaskRecurrence")
   validationRounds  Int        @default(0) @map("validation_rounds")
   version           Int        @default(0)
   trashedAt         DateTime?  @map("trashed_at")
@@ -270,6 +310,7 @@ model Task {
   @@index([assigneeId])
   @@index([statusId])
   @@index([startDate, endDate])
+  @@index([recurrenceParentId])
   @@map("tasks")
 }
 

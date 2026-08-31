@@ -21,6 +21,7 @@ export function listProjectsWithCounts(archived = false) {
       // d'avancement moyenne de la vue Projets, qui reste au niveau tâche —
       // voir taskProgress dans src/lib/planning/tasks.ts.
       tasks: { where: { trashedAt: null }, select: { status: { select: { position: true, isDone: true } } } },
+      milestones: { orderBy: { dueDate: "asc" } },
       _count: { select: { tasks: { where: { trashedAt: null } } } },
     },
   });

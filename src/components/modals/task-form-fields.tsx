@@ -19,6 +19,9 @@ export interface TaskFormValues {
   statusId: string;
   dependsOnId: string; // chaîne vide = aucune dépendance
   estimatedHalfDays: string; // chaîne vide = pas d'estimation (calcul de charge en tout-ou-rien, voir availability.ts)
+  recurrenceFrequency: string; // "" | "WEEKLY" | "MONTHLY"
+  recurrenceInterval: string; // "tous les N" semaines/mois — ignoré si recurrenceFrequency est vide
+  recurrenceUntil: string; // chaîne vide = pas de fin
 }
 
 export function TaskFormFields({
@@ -206,6 +209,54 @@ export function TaskFormFields({
           />
         </div>
       </div>
+
+      <div className="sm:col-span-2">
+        <FieldLabel htmlFor="task-recurrence">Récurrence</FieldLabel>
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            id="task-recurrence"
+            className={`${fieldInputClass} max-w-[180px]`}
+            value={values.recurrenceFrequency}
+            onChange={(e) => onChange({ recurrenceFrequency: e.target.value })}
+          >
+            <option value="">Aucune</option>
+            <option value="WEEKLY">Chaque semaine</option>
+            <option value="MONTHLY">Chaque mois</option>
+          </select>
+          {values.recurrenceFrequency && (
+            <>
+              <label className="flex items-center gap-1.5 text-sm text-ink" htmlFor="task-recurrence-interval">
+                Tous les
+                <input
+                  id="task-recurrence-interval"
+                  type="number"
+                  min={1}
+                  step={1}
+                  className={`${fieldInputClass} w-16`}
+                  value={values.recurrenceInterval}
+                  onChange={(e) => onChange({ recurrenceInterval: e.target.value })}
+                />
+                {values.recurrenceFrequency === "WEEKLY" ? "semaine(s)" : "mois"}
+              </label>
+              <label className="flex items-center gap-1.5 text-sm text-ink" htmlFor="task-recurrence-until">
+                Jusqu’au
+                <input
+                  id="task-recurrence-until"
+                  type="date"
+                  className={fieldInputClass}
+                  value={values.recurrenceUntil}
+                  onChange={(e) => onChange({ recurrenceUntil: e.target.value })}
+                />
+              </label>
+            </>
+          )}
+        </div>
+        {values.recurrenceFrequency && (
+          <p className="mt-1.5 text-2xs text-ink-muted">
+            L’occurrence suivante est créée automatiquement quand cette tâche passe à un statut « Terminé ».
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -222,4 +273,7 @@ export const EMPTY_TASK_FORM: TaskFormValues = {
   statusId: "",
   dependsOnId: "",
   estimatedHalfDays: "",
+  recurrenceFrequency: "",
+  recurrenceInterval: "1",
+  recurrenceUntil: "",
 };

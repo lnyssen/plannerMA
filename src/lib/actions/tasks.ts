@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { RecurrenceFrequency } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { notifyAssignment } from "@/lib/mail/notify";
-import { daysBetween, toIsoDate } from "@/lib/planning/dates";
+import { addDaysIso, addMonthsIso, daysBetween, toIsoDate } from "@/lib/planning/dates";
 import { createNotification } from "./notifications";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
@@ -35,6 +36,8 @@ interface DurationFields {
   startDate: string;
   endDate: string;
   maxDurationDays: number | null;
+  recurrenceFrequency: "WEEKLY" | "MONTHLY" | null;
+  recurrenceUntil: string | null;
 }
 
 function withDurationChecks<T extends z.ZodType<DurationFields>>(schema: T) {
@@ -48,6 +51,13 @@ function withDurationChecks<T extends z.ZodType<DurationFields>>(schema: T) {
         code: "custom",
         message: `La tâche dépasse la durée maximale fixée (${v.maxDurationDays} jour${v.maxDurationDays === 1 ? "" : "s"}).`,
         path: ["endDate"],
+      });
+    }
+    if (v.recurrenceFrequency && v.recurrenceUntil && v.recurrenceUntil < v.startDate) {
+      ctx.addIssue({
+        code: "custom",
+        message: "La récurrence ne peut pas se terminer avant le début de la tâche.",
+        path: ["recurrenceUntil"],
       });
     }
   });
@@ -64,6 +74,9 @@ const taskFieldsSchema = z.object({
   maxDurationDays: z.number().int().positive().nullable(),
   dependsOnId: z.string().nullable(),
   estimatedHalfDays: z.number().int().min(0).nullable(),
+  recurrenceFrequency: z.enum(["WEEKLY", "MONTHLY"]).nullable(),
+  recurrenceInterval: z.number().int().min(1).nullable(),
+  recurrenceUntil: isoDate.nullable(),
 });
 
 const createTaskSchema = withDurationChecks(taskFieldsSchema);
@@ -87,6 +100,9 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
     maxDurationDays,
     dependsOnId,
     estimatedHalfDays,
+    recurrenceFrequency,
+    recurrenceInterval,
+    recurrenceUntil,
   } = parsed.data;
 
   // Une tâche démarre toujours dans le premier statut (Réglages → Statuts,
@@ -108,6 +124,9 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
       statusId: defaultStatus.id,
       dependsOnId: dependsOnId || null,
       estimatedHalfDays,
+      recurrenceFrequency,
+      recurrenceInterval: recurrenceFrequency ? recurrenceInterval : null,
+      recurrenceUntil: recurrenceFrequency && recurrenceUntil ? new Date(recurrenceUntil) : null,
     },
     include: { project: true },
   });
@@ -173,6 +192,104 @@ async function wouldCreateDependencyCycle(taskId: string, proposedDependsOnId: s
   return false;
 }
 
+function shiftRecurrenceDates(
+  startDate: string,
+  endDate: string,
+  frequency: RecurrenceFrequency,
+  interval: number,
+): { startDate: string; endDate: string } {
+  if (frequency === "WEEKLY") {
+    return { startDate: addDaysIso(startDate, 7 * interval), endDate: addDaysIso(endDate, 7 * interval) };
+  }
+  return { startDate: addMonthsIso(startDate, interval), endDate: addMonthsIso(endDate, interval) };
+}
+
+interface RecurringTaskSource {
+  id: string;
+  title: string;
+  description: string | null;
+  studioId: string;
+  projectId: string | null;
+  assigneeId: string | null;
+  startDate: Date;
+  endDate: Date;
+  maxDurationDays: number | null;
+  estimatedHalfDays: number | null;
+  recurrenceFrequency: RecurrenceFrequency | null;
+  recurrenceInterval: number | null;
+  recurrenceUntil: Date | null;
+  status: { isDone: boolean };
+}
+
+/**
+ * Génère l'occurrence suivante d'une tâche récurrente quand elle passe à un
+ * statut "Terminé". `recurrenceParentId` sert de garde-fou : si une
+ * occurrence a déjà été générée à partir de cette tâche (ex. le statut
+ * repasse par "Terminé" une seconde fois), on ne la duplique pas. La
+ * dépendance (`dependsOnId`) n'est volontairement pas reportée sur la
+ * nouvelle occurrence — chaque occurrence redémarre indépendante plutôt que
+ * d'hériter d'une chaîne de dépendances qui n'a plus de sens une fois
+ * décalée dans le temps.
+ */
+async function maybeGenerateNextOccurrence(
+  task: RecurringTaskSource,
+  actor: { personId?: string | null; name?: string | null; email?: string | null },
+): Promise<void> {
+  if (!task.status.isDone || !task.recurrenceFrequency) return;
+
+  const alreadyGenerated = await db.task.findFirst({
+    where: { recurrenceParentId: task.id },
+    select: { id: true },
+  });
+  if (alreadyGenerated) return;
+
+  const interval = task.recurrenceInterval ?? 1;
+  const next = shiftRecurrenceDates(toIsoDate(task.startDate), toIsoDate(task.endDate), task.recurrenceFrequency, interval);
+  if (task.recurrenceUntil && next.startDate > toIsoDate(task.recurrenceUntil)) return;
+
+  const defaultStatus = await db.taskStatus.findFirst({ orderBy: { position: "asc" } });
+  if (!defaultStatus) return;
+
+  const created = await db.task.create({
+    data: {
+      title: task.title,
+      description: task.description,
+      studioId: task.studioId,
+      projectId: task.projectId,
+      assigneeId: task.assigneeId,
+      startDate: new Date(next.startDate),
+      endDate: new Date(next.endDate),
+      maxDurationDays: task.maxDurationDays,
+      estimatedHalfDays: task.estimatedHalfDays,
+      statusId: defaultStatus.id,
+      recurrenceFrequency: task.recurrenceFrequency,
+      recurrenceInterval: task.recurrenceInterval,
+      recurrenceUntil: task.recurrenceUntil,
+      recurrenceParentId: task.id,
+    },
+    include: { project: true },
+  });
+
+  await db.journalEntry.create({
+    data: {
+      actorId: actor.personId,
+      actorName: actor.name ?? actor.email ?? "Anonyme",
+      action: `Tâche « ${created.title} » générée automatiquement (récurrence)`,
+      taskId: created.id,
+    },
+  });
+
+  if (created.assigneeId) {
+    void notifyAssignee(created.assigneeId, {
+      id: created.id,
+      title: created.title,
+      projectName: created.project?.name ?? null,
+      startDate: next.startDate,
+      endDate: next.endDate,
+    });
+  }
+}
+
 const updateTaskSchema = withDurationChecks(
   taskFieldsSchema.extend({
     taskId: z.string(),
@@ -202,6 +319,9 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     statusId,
     dependsOnId,
     estimatedHalfDays,
+    recurrenceFrequency,
+    recurrenceInterval,
+    recurrenceUntil,
     expectedVersion,
   } = parsed.data;
 
@@ -228,6 +348,9 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
       statusId,
       dependsOnId: dependsOnId || null,
       estimatedHalfDays,
+      recurrenceFrequency,
+      recurrenceInterval: recurrenceFrequency ? recurrenceInterval : null,
+      recurrenceUntil: recurrenceFrequency && recurrenceUntil ? new Date(recurrenceUntil) : null,
       version: { increment: 1 },
     },
   });
@@ -236,7 +359,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     return { error: "Cette tâche a été modifiée entre-temps par quelqu’un d’autre. Rechargez la page." };
   }
 
-  const task = await db.task.findUniqueOrThrow({ where: { id: taskId }, include: { project: true } });
+  const task = await db.task.findUniqueOrThrow({ where: { id: taskId }, include: { project: true, status: true } });
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
@@ -255,6 +378,8 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
       endDate: toIsoDate(task.endDate),
     });
   }
+
+  await maybeGenerateNextOccurrence(task, session.user);
 
   revalidateTaskViews();
   return { version: task.version };
@@ -292,6 +417,8 @@ export async function updateTaskStatus(
       taskId: task.id,
     },
   });
+
+  await maybeGenerateNextOccurrence(task, session.user);
 
   revalidateTaskViews();
   return { version: task.version };

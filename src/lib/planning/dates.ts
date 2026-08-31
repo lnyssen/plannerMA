@@ -33,6 +33,21 @@ export function addDaysIso(s: IsoDate, n: number): IsoDate {
   return toIsoDate(addDays(fromIsoDate(s), n));
 }
 
+/**
+ * Ajoute `n` mois à une date ISO, en calant sur le dernier jour du mois cible
+ * si le jour d'origine n'existe pas (ex. 31 janvier + 1 mois = 28/29
+ * février). Utilisé pour décaler les tâches récurrentes mensuelles.
+ */
+export function addMonthsIso(s: IsoDate, n: number): IsoDate {
+  const d = fromIsoDate(s);
+  const targetMonthStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1));
+  const daysInTargetMonth = new Date(
+    Date.UTC(targetMonthStart.getUTCFullYear(), targetMonthStart.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  targetMonthStart.setUTCDate(Math.min(d.getUTCDate(), daysInTargetMonth));
+  return toIsoDate(targetMonthStart);
+}
+
 /** Lundi de la semaine contenant `d` (semaine ISO, du lundi au dimanche). */
 export function mondayOf(d: Date): Date {
   const dow = (d.getUTCDay() + 6) % 7; // 0 = lundi ... 6 = dimanche

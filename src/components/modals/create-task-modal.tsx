@@ -60,6 +60,9 @@ export function CreateTaskModal({
         maxDurationDays: values.maxDurationDays ? Number(values.maxDurationDays) : null,
         dependsOnId: values.dependsOnId || null,
         estimatedHalfDays: values.estimatedHalfDays ? Number(values.estimatedHalfDays) : null,
+        recurrenceFrequency: values.recurrenceFrequency ? (values.recurrenceFrequency as "WEEKLY" | "MONTHLY") : null,
+        recurrenceInterval: values.recurrenceFrequency ? Number(values.recurrenceInterval) || 1 : null,
+        recurrenceUntil: values.recurrenceFrequency && values.recurrenceUntil ? values.recurrenceUntil : null,
       });
       if (result.error) {
         setError(result.error);
