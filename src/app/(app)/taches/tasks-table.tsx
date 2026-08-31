@@ -178,7 +178,7 @@ export function TasksTable({
                 className="rounded-lg border border-line p-3 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
               >
                 <div className="mb-1.5 flex items-start justify-between gap-2">
-                  <span className="text-sm font-semibold text-rail">{t.title}</span>
+                  <span className="text-sm font-semibold text-heading">{t.title}</span>
                   <StatusBadge status={t.status} />
                 </div>
                 <div className="mb-2 text-xs text-ink-muted">
@@ -229,7 +229,7 @@ export function TasksTable({
                   className="cursor-pointer transition-colors duration-100 hover:bg-wash active:bg-tint"
                   title="Ouvrir la fiche"
                 >
-                  <td className="border-b border-line px-3 py-2.5 text-sm font-semibold text-rail">{t.title}</td>
+                  <td className="border-b border-line px-3 py-2.5 text-sm font-semibold text-heading">{t.title}</td>
                   <td className="border-b border-line px-3 py-2.5 text-sm text-ink">{t.project?.name ?? "—"}</td>
                   <td className="border-b border-line px-3 py-2.5 text-sm text-ink">
                     {t.project ? (

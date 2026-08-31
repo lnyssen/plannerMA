@@ -102,7 +102,7 @@ export function EquipeView({
                       className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3 transition-colors duration-100 hover:border-heading"
                     >
                       <div className="min-w-[130px]">
-                        <span className="font-[family-name:var(--font-body)] text-base font-bold text-rail">{p.name}</span>
+                        <span className="font-[family-name:var(--font-body)] text-base font-bold text-heading">{p.name}</span>
                         {p.external && <span className="ml-2 text-2xs font-bold text-alert">Invité</span>}
                       </div>
                       <div className="flex flex-1 flex-wrap gap-1.5">
@@ -138,7 +138,7 @@ export function EquipeView({
                 className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3 transition-colors duration-100 hover:border-heading"
               >
                 <Umbrella size={16} className="flex-shrink-0 text-heading" aria-hidden="true" />
-                <span className="min-w-[130px] font-[family-name:var(--font-body)] text-base font-bold text-rail">
+                <span className="min-w-[130px] font-[family-name:var(--font-body)] text-base font-bold text-heading">
                   {a.personName}
                 </span>
                 <span className="flex-1 text-sm text-ink">

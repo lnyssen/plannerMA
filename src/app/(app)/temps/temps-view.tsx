@@ -176,7 +176,7 @@ export function TempsView({
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-heading bg-wash px-4 py-3">
               <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-alert" aria-hidden="true" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-rail">{runningTimer.task.title}</p>
+                <p className="text-sm font-semibold text-heading">{runningTimer.task.title}</p>
                 {runningTimer.task.project && <p className="text-xs text-ink-muted">{runningTimer.task.project.name}</p>}
               </div>
               <span className="font-[family-name:var(--font-display)] text-lg font-semibold text-heading tabular-nums">
@@ -385,7 +385,7 @@ export function TempsView({
             <div className="flex flex-col gap-1.5">
               {allEntries.map((e) => (
                 <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
-                  <span className="w-32 flex-shrink-0 truncate font-semibold text-rail">{e.person.name}</span>
+                  <span className="w-32 flex-shrink-0 truncate font-semibold text-heading">{e.person.name}</span>
                   <div className="flex-1">
                     <span className="text-ink">{e.task.title}</span>
                     {e.task.project && <span className="text-ink-muted"> — {e.task.project.name}</span>}

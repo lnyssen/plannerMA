@@ -62,7 +62,7 @@ export function GlobalSearch() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Recherche"
-        className={`p-1 ${iconButtonOnRailClass}`}
+        className={`flex h-7 w-7 items-center justify-center ${iconButtonOnRailClass}`}
       >
         <Search size={20} />
       </button>

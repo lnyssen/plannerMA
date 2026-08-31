@@ -103,7 +103,7 @@ export function SemaineView({
                 <div className="font-[family-name:var(--font-display)] text-sm font-medium tracking-[-0.1px] text-heading">
                   {JOUR_LABEL[d.getUTCDay() - 1]}
                 </div>
-                <div className="font-[family-name:var(--font-display)] text-lg leading-6 font-semibold text-rail">
+                <div className="font-[family-name:var(--font-display)] text-lg leading-6 font-semibold text-heading">
                   {d.getUTCDate()}
                 </div>
               </div>

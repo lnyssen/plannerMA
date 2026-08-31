@@ -104,7 +104,7 @@ export function NotificationBell() {
         type="button"
         onClick={toggle}
         aria-label="Notifications"
-        className={`relative p-1 ${iconButtonOnRailClass}`}
+        className={`relative flex h-7 w-7 items-center justify-center ${iconButtonOnRailClass}`}
       >
         <Bell size={20} />
         {count > 0 && (

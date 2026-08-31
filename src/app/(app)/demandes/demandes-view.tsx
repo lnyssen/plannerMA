@@ -75,7 +75,7 @@ export function DemandesView({
             <div key={r.id} className="rounded-lg border border-line p-4">
               <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="font-[family-name:var(--font-body)] text-base font-bold text-rail">{r.subject}</p>
+                  <p className="font-[family-name:var(--font-body)] text-base font-bold text-heading">{r.subject}</p>
                   <p className="text-xs text-ink-muted">
                     {r.createdBy ?? "Anonyme"} · {quandFr(r.createdAt)}
                     {r.requester ? ` · pour ${r.requester}` : ""}

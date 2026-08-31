@@ -42,7 +42,7 @@ export function NotificationPrefsModal({
           className="mt-0.5"
         />
         <span>
-          <span className="font-semibold text-rail">Alerte d’attribution</span>
+          <span className="font-semibold text-heading">Alerte d’attribution</span>
           <br />
           Un courriel quand une tâche vous est attribuée.
         </span>
@@ -55,7 +55,7 @@ export function NotificationPrefsModal({
           className="mt-0.5"
         />
         <span>
-          <span className="font-semibold text-rail">Récap quotidien</span>
+          <span className="font-semibold text-heading">Récap quotidien</span>
           <br />
           Vos tâches en cours ou à venir sous sept jours, chaque jour ouvré.
         </span>

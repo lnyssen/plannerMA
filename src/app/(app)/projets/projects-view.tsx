@@ -56,7 +56,7 @@ function ProjectCard({
       title="Modifier le projet"
     >
       <div className="mb-1 flex items-start justify-between gap-2">
-        <div className="font-[family-name:var(--font-body)] text-base font-bold text-rail">{project.name}</div>
+        <div className="font-[family-name:var(--font-body)] text-base font-bold text-heading">{project.name}</div>
         <span className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
           {project.type === "INTERNAL" ? "Interne" : "Externe"}
         </span>
@@ -96,7 +96,7 @@ function ProjectGroup({
   if (projects.length === 0) return null;
   return (
     <section className="mb-10">
-      <p className="mb-3 font-[family-name:var(--font-display)] text-sm font-medium tracking-[-0.1px] text-rail">
+      <p className="mb-3 font-[family-name:var(--font-display)] text-sm font-medium tracking-[-0.1px] text-heading">
         {title}
       </p>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
@@ -329,7 +329,7 @@ export function ProjectsView({
                     <button
                       type="button"
                       onClick={() => setOpenProjectId(project.id)}
-                      className="text-left text-sm font-bold text-rail underline-offset-2 hover:underline"
+                      className="text-left text-sm font-bold text-heading underline-offset-2 hover:underline"
                     >
                       {project.name}
                     </button>

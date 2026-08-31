@@ -599,7 +599,7 @@ export function TaskDetailModal({
             {task.comments.map((c) => (
               <div key={c.id} className="rounded-lg border border-line p-2.5 text-sm">
                 <div className="mb-0.5 flex items-baseline gap-2">
-                  <span className="font-semibold text-rail">{c.authorName}</span>
+                  <span className="font-semibold text-heading">{c.authorName}</span>
                   <span className="text-2xs text-ink-muted">{quandFr(c.createdAt)}</span>
                 </div>
                 <p className="whitespace-pre-wrap text-ink">{c.body}</p>

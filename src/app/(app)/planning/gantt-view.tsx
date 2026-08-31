@@ -350,7 +350,7 @@ export function GanttView({
               </option>
             ))}
           </select>
-          <span className="text-sm font-semibold text-rail">{rangeLabel}</span>
+          <span className="text-sm font-semibold text-heading">{rangeLabel}</span>
         </div>
         <span className="flex-1" />
         <div className="flex items-center gap-2">
@@ -411,7 +411,7 @@ export function GanttView({
                 key={i}
                 style={{ height: ROW_HEIGHT }}
                 className={`flex items-center overflow-hidden border-b border-line px-3 text-sm text-ellipsis whitespace-nowrap ${
-                  r.type === "projet" ? "bg-wash font-bold text-rail" : "pl-6 text-ink"
+                  r.type === "projet" ? "bg-wash font-bold text-heading" : "pl-6 text-ink"
                 }`}
               >
                 {r.label}

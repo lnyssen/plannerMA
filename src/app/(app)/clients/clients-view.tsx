@@ -17,7 +17,7 @@ function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id:
       className="rounded-lg border border-line p-4 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
       title="Modifier le client"
     >
-      <div className="mb-1 font-[family-name:var(--font-body)] text-base font-bold text-rail">{client.name}</div>
+      <div className="mb-1 font-[family-name:var(--font-body)] text-base font-bold text-heading">{client.name}</div>
       <div className="mb-3 text-sm font-semibold text-ink">
         {count} projet{count === 1 ? "" : "s"}
       </div>

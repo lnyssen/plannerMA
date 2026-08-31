@@ -179,7 +179,7 @@ export function AppShell({
                 onClick={() => setCollapsed(!isCollapsed)}
                 aria-label={isCollapsed ? "Déplier le menu" : "Replier le menu"}
                 title={isCollapsed ? "Déplier le menu" : "Replier le menu"}
-                className={`hidden p-1 md:block ${iconButtonOnRailClass}`}
+                className={`hidden h-7 w-7 items-center justify-center md:flex ${iconButtonOnRailClass}`}
               >
                 {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
               </button>

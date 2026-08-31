@@ -279,7 +279,7 @@ export function ReglagesView({
           <div className="flex flex-col gap-2">
             {trashedTasks.map((t) => (
               <div key={t.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3">
-                <span className="min-w-[160px] flex-1 text-sm font-semibold text-rail">{t.title}</span>
+                <span className="min-w-[160px] flex-1 text-sm font-semibold text-heading">{t.title}</span>
                 <span className="text-xs text-ink-muted">{t.trashedAt ? quandFr(t.trashedAt) : ""}</span>
                 <button
                   type="button"

@@ -216,7 +216,7 @@ export function ChargeView({
             <tbody>
               {grid.map(({ person, weeks: cells, average }) => (
                 <tr key={person.id}>
-                  <td className="sticky left-0 z-10 flex items-center gap-1.5 whitespace-nowrap bg-paper px-3 py-2 text-sm text-rail">
+                  <td className="sticky left-0 z-10 flex items-center gap-1.5 whitespace-nowrap bg-paper px-3 py-2 text-sm text-heading">
                     {person.name}
                     {overlapping.has(person.id) && (
                       <span
@@ -241,7 +241,7 @@ export function ChargeView({
                       </div>
                     </td>
                   ))}
-                  <td className="border-l border-line px-1 py-2 text-center text-sm font-semibold text-rail tabular-nums">
+                  <td className="border-l border-line px-1 py-2 text-center text-sm font-semibold text-heading tabular-nums">
                     {Math.round(average * 100)}%
                   </td>
                   <td className="px-1 py-2 text-center text-xs text-ink-muted tabular-nums">
