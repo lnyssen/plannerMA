@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, type LucideIcon } from "lucide-react";
 
 const SIZE_CLASS = {
   md: "max-w-xl",
@@ -42,9 +42,9 @@ export function ModalShell({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="text-ink-muted hover:text-ink"
+            className="-mt-1.5 -mr-1.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors duration-100 hover:bg-wash hover:text-ink active:bg-tint/40"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
         {/* Le contenu défile si trop long pour l'écran plutôt que de déborder la fenêtre (fenêtre tâche notamment). */}
@@ -60,6 +60,39 @@ export function FieldLabel({ children, htmlFor }: { children: React.ReactNode; h
     <label htmlFor={htmlFor} className="mb-1 block text-xs font-semibold text-ink">
       {children}
     </label>
+  );
+}
+
+/**
+ * Regroupe un bloc de champs sous un intitulé net, avec un peu d'air et un
+ * filet — pour que les fiches denses (projet, tâche) se scannent en blocs
+ * plutôt qu'en une seule colonne continue de labels de même poids.
+ */
+export function FieldSection({
+  title,
+  icon: Icon,
+  action,
+  children,
+  first = false,
+}: {
+  title: string;
+  icon?: LucideIcon;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  /** Le tout premier bloc n'a pas besoin du filet du dessus. */
+  first?: boolean;
+}) {
+  return (
+    <section className={first ? "mb-5" : "mt-6 mb-5 border-t border-line pt-5"}>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h3 className="flex items-center gap-1.5 text-2xs font-bold tracking-wide text-ink-muted uppercase">
+          {Icon && <Icon size={13} className="flex-shrink-0" aria-hidden="true" />}
+          {title}
+        </h3>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
 

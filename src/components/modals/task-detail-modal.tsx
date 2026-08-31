@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, AtSign, ExternalLink, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
+import { AlertTriangle, AtSign, ExternalLink, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { addLinkAttachment, deleteAttachment, uploadFileAttachment } from "@/lib/actions/attachments";
@@ -17,7 +17,7 @@ import { quandFr, toIsoDate, today } from "@/lib/planning/dates";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { DetailSkeleton } from "@/components/ui/skeleton";
-import { fieldInputClass, ModalShell } from "./modal-shell";
+import { fieldInputClass, FieldSection, ModalShell } from "./modal-shell";
 import { EMPTY_TASK_FORM, TaskFormFields, type TaskFormValues } from "./task-form-fields";
 
 export function TaskDetailModal({
@@ -409,9 +409,10 @@ export function TaskDetailModal({
             </p>
           )}
 
-          <h3 className="mb-2 text-xs font-semibold text-ink">
-            Sous-tâches ({task.subtasks.filter((s) => s.done).length}/{task.subtasks.length})
-          </h3>
+          <FieldSection
+            title={`Sous-tâches (${task.subtasks.filter((s) => s.done).length}/${task.subtasks.length})`}
+            icon={ListChecks}
+          >
           <div className="mb-3 flex flex-col gap-1.5">
             {task.subtasks.length === 0 && <p className="text-xs text-ink-muted">Aucune sous-tâche.</p>}
             {task.subtasks.map((s) => (
@@ -466,10 +467,9 @@ export function TaskDetailModal({
               {subtaskError}
             </p>
           )}
+          </FieldSection>
 
-          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
-            <Timer size={13} /> Temps ({formatDurationFr(sumDurationMinutes(task.timeEntries))})
-          </h3>
+          <FieldSection title={`Temps (${formatDurationFr(sumDurationMinutes(task.timeEntries))})`} icon={Timer}>
           <div className="mb-3 flex flex-col gap-1.5">
             {task.timeEntries.length === 0 && <p className="text-xs text-ink-muted">Aucune écriture.</p>}
             {task.timeEntries.map((e) => (
@@ -561,8 +561,9 @@ export function TaskDetailModal({
               {timeError}
             </p>
           )}
+          </FieldSection>
 
-          <h3 className="mb-2 text-xs font-semibold text-ink">Pièces jointes ({task.attachments.length})</h3>
+          <FieldSection title={`Pièces jointes (${task.attachments.length})`} icon={Paperclip}>
           <div className="mb-3 flex flex-col gap-1.5">
             {task.attachments.length === 0 && <p className="text-xs text-ink-muted">Aucune pièce jointe.</p>}
             {task.attachments.map((a) => (
@@ -620,8 +621,9 @@ export function TaskDetailModal({
               <input type="file" className="hidden" onChange={onFileChange} />
             </label>
           </div>
+          </FieldSection>
 
-          <h3 className="mb-2 text-xs font-semibold text-ink">Commentaires ({task.comments.length})</h3>
+          <FieldSection title={`Commentaires (${task.comments.length})`} icon={MessageSquare}>
           <div className="mb-3 flex max-h-40 flex-col gap-2 overflow-y-auto">
             {task.comments.length === 0 && <p className="text-xs text-ink-muted">Aucun commentaire.</p>}
             {task.comments.map((c) => (
@@ -668,6 +670,7 @@ export function TaskDetailModal({
               Commenter
             </button>
           </div>
+          </FieldSection>
 
           <details className="mb-4">
             <summary className="cursor-pointer text-xs font-semibold text-ink-muted select-none">

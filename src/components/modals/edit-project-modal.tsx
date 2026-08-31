@@ -7,25 +7,32 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
 import { getProjectDetail, setProjectArchived, updateProject, type ProjectDetail } from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
+import type { PersonSummary } from "@/lib/data/people";
+import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
 import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { ClientPicker } from "./client-picker";
+import { CreateTaskModal } from "./create-task-modal";
 import { primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { DetailSkeleton } from "@/components/ui/skeleton";
-import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
+import { FieldLabel, FieldSection, fieldInputClass, ModalShell } from "./modal-shell";
 
 export function EditProjectModal({
   projectId,
   studios,
   clients,
+  people,
+  activeProjects,
   isAdmin,
   onClose,
 }: {
   projectId: string;
   studios: StudioSummary[];
   clients: ClientSummary[];
+  people: PersonSummary[];
+  activeProjects: ProjectOption[];
   /** La répartition du temps par personne n'est montrée qu'aux administrateurs (voir getProjectDetail) — le total reste visible à tous. */
   isAdmin: boolean;
   onClose: () => void;
@@ -46,6 +53,7 @@ export function EditProjectModal({
   const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
   const [newMilestoneDue, setNewMilestoneDue] = useState(today());
   const [milestoneError, setMilestoneError] = useState<string | null>(null);
+  const [creatingTask, setCreatingTask] = useState(false);
 
   async function loadProject() {
     const p = await getProjectDetail(projectId);
@@ -173,6 +181,7 @@ export function EditProjectModal({
   }
 
   return (
+    <>
     <ModalShell title={loading ? "Chargement…" : (project?.name ?? "Projet introuvable")} onClose={onClose}>
       {loading && <DetailSkeleton />}
       {!loading && !project && <p className="text-sm text-ink-muted">Ce projet n’existe plus.</p>}
@@ -189,6 +198,7 @@ export function EditProjectModal({
             </div>
           )}
 
+          <FieldSection title="Informations" first>
           <FieldLabel htmlFor="edit-project-name">Nom du projet</FieldLabel>
           <input
             id="edit-project-name"
@@ -284,11 +294,22 @@ export function EditProjectModal({
               ))}
             </div>
           )}
+          </FieldSection>
 
-          <h3 className="mt-4 mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
-            <ListChecks size={13} /> Tâches ({project.tasks.length})
-          </h3>
-          <div className="mb-4 flex flex-col gap-1.5">
+          <FieldSection
+            title={`Tâches (${project.tasks.length})`}
+            icon={ListChecks}
+            action={
+              <button
+                type="button"
+                onClick={() => setCreatingTask(true)}
+                className={`flex items-center gap-1 px-2 py-1 text-2xs font-semibold ${secondaryButtonClass}`}
+              >
+                <Plus size={12} /> Nouvelle tâche
+              </button>
+            }
+          >
+          <div className="flex flex-col gap-1.5">
             {project.tasks.length === 0 && <p className="text-xs text-ink-muted">Aucune tâche.</p>}
             {project.tasks.map((t) => (
               <a
@@ -310,10 +331,9 @@ export function EditProjectModal({
               </a>
             ))}
           </div>
+          </FieldSection>
 
-          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink">
-            <Flag size={13} /> Jalons ({project.milestones.length})
-          </h3>
+          <FieldSection title={`Jalons (${project.milestones.length})`} icon={Flag}>
           <div className="mb-3 flex flex-col gap-1.5">
             {project.milestones.length === 0 && <p className="text-xs text-ink-muted">Aucun jalon.</p>}
             {project.milestones.map((m) => (
@@ -366,6 +386,7 @@ export function EditProjectModal({
               {milestoneError}
             </p>
           )}
+          </FieldSection>
 
           {project.archived && (
             <p className="mb-3 rounded-lg border border-line bg-wash px-3 py-2 text-xs text-ink-muted">Ce projet est archivé.</p>
@@ -418,5 +439,19 @@ export function EditProjectModal({
         </>
       )}
     </ModalShell>
+    {creatingTask && project && (
+      <CreateTaskModal
+        studios={studios}
+        projects={activeProjects}
+        people={people}
+        initialValues={{ projectId: project.id, studioId: project.studios[0]?.studioId ?? studios[0]?.id ?? "" }}
+        onClose={() => setCreatingTask(false)}
+        onCreated={() => {
+          setCreatingTask(false);
+          loadProject();
+        }}
+      />
+    )}
+    </>
   );
 }

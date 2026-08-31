@@ -9,7 +9,8 @@ import { CreateButton } from "@/components/shell/create-button";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { ClientSummary } from "@/lib/data/clients";
-import type { ProjectWithCounts } from "@/lib/data/projects";
+import type { PersonSummary } from "@/lib/data/people";
+import type { ProjectOption, ProjectWithCounts } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
@@ -139,6 +140,8 @@ export function ProjectsView({
   studios,
   clients,
   statuses,
+  people,
+  activeProjects,
   showArchived,
   isAdmin,
   initialOpenProjectId = null,
@@ -147,6 +150,8 @@ export function ProjectsView({
   studios: StudioSummary[];
   clients: ClientSummary[];
   statuses: TaskStatusSummary[];
+  people: PersonSummary[];
+  activeProjects: ProjectOption[];
   showArchived: boolean;
   isAdmin: boolean;
   initialOpenProjectId?: string | null;
@@ -433,6 +438,8 @@ export function ProjectsView({
           projectId={openProjectId}
           studios={studios}
           clients={clients}
+          people={people}
+          activeProjects={activeProjects}
           isAdmin={isAdmin}
           onClose={() => setOpenProjectId(null)}
         />
