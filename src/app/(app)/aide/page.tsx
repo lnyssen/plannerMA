@@ -215,7 +215,7 @@ export default function AidePage() {
 
         <section className="mb-8">
           <H2 id="projets">Projets</H2>
-          <Shot src="/docs/projets.png" alt="Liste des projets en vue Cartes, regroupés par client" />
+          <Shot src="/docs/projets.png" alt="Liste des projets en vue Tableau" />
           <P>Vue Cartes (regroupées par client) ou Tableau, avec un onglet Archives séparé.</P>
           <H3>Fiche projet</H3>
           <Ul>
