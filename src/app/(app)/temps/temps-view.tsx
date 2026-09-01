@@ -53,7 +53,7 @@ export function TempsView({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [tab, setTab] = useState<"mine" | "team">("mine");
-  const [mineView, setMineView] = useState<"list" | "calendar" | "summary">("list");
+  const [mineView, setMineView] = useState<"list" | "calendar" | "summary">("calendar");
   const [context, setContext] = useState<EntryContextValue>({
     taskId: tasks[0]?.id ?? null,
     studioId: tasks[0]?.studioId ?? studios[0]?.id ?? "",
@@ -328,19 +328,19 @@ export function TempsView({
             <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setMineView("list")}
-              aria-pressed={mineView === "list"}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "list" ? primaryButtonClass : secondaryButtonClass}`}
-            >
-              <List size={13} /> Liste
-            </button>
-            <button
-              type="button"
               onClick={() => setMineView("calendar")}
               aria-pressed={mineView === "calendar"}
               className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "calendar" ? primaryButtonClass : secondaryButtonClass}`}
             >
               <CalendarDays size={13} /> Calendrier
+            </button>
+            <button
+              type="button"
+              onClick={() => setMineView("list")}
+              aria-pressed={mineView === "list"}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "list" ? primaryButtonClass : secondaryButtonClass}`}
+            >
+              <List size={13} /> Liste
             </button>
             <button
               type="button"
