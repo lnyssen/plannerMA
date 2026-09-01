@@ -372,7 +372,7 @@ export function GanttView({
           <select
             value={weeks}
             onChange={(e) => setWeeks(Number(e.target.value))}
-            className="rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+            className="h-10 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink"
           >
             {[2, 4, 8, 12, 16].map((n) => (
               <option key={n} value={n}>
@@ -384,7 +384,7 @@ export function GanttView({
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as "project" | "person")}
             aria-label="Grouper par"
-            className="rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+            className="h-10 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink"
           >
             <option value="project">Par projet</option>
             <option value="person">Par personne</option>
@@ -398,7 +398,7 @@ export function GanttView({
             value={startIsoOfView}
             onChange={(e) => e.target.value && setWeekStart(mondayOf(fromIsoDate(e.target.value)))}
             aria-label="Aller à une date"
-            className="rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
+            className="h-10 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink"
           />
           <button
             type="button"
@@ -556,11 +556,11 @@ export function GanttView({
                     <path
                       d={`M ${l.x1} ${l.y1} H ${l.x1 + 8} V ${l.y2} H ${l.x2}`}
                       fill="none"
-                      stroke={l.conflict ? "#ff175e" : "#444444"}
+                      stroke={l.conflict ? "var(--color-alert)" : "var(--color-ink)"}
                       strokeWidth={l.conflict ? 2 : 1.5}
                       strokeDasharray={l.conflict ? "4 3" : "0"}
                     />
-                    <circle cx={l.x2} cy={l.y2} r={3} fill={l.conflict ? "#ff175e" : "#444444"} />
+                    <circle cx={l.x2} cy={l.y2} r={3} fill={l.conflict ? "var(--color-alert)" : "var(--color-ink)"} />
                   </g>
                 ))}
               </svg>
@@ -587,7 +587,7 @@ export function GanttView({
                       cursor: canDrag ? (drag ? "grabbing" : "grab") : "default",
                       outlineColor: overlapping ? "var(--color-alert)" : undefined,
                     }}
-                    className={`flex items-center gap-1.5 overflow-hidden px-2 outline-2 -outline-offset-2 transition-[outline-color] duration-100 hover:outline-current focus-visible:outline-heading ${
+                    className={`flex items-center gap-1.5 overflow-hidden rounded-md px-2 outline-2 -outline-offset-2 transition-[outline-color,filter] duration-150 hover:brightness-95 hover:outline-current focus-visible:outline-heading ${
                       overlapping ? "" : "outline-transparent"
                     }`}
                     onKeyDown={(e) => onBarKeyDown(e, t)}
