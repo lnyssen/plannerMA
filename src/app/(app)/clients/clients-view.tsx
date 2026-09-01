@@ -27,7 +27,10 @@ function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id:
       className="rounded-lg border border-line p-4 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
       title="Modifier le client"
     >
-      <div className="mb-1 font-[family-name:var(--font-body)] text-base font-bold text-heading">{client.name}</div>
+      {/* min-h réserve la place de deux lignes : un nom court ne doit pas
+          remonter "N projets" plus haut qu'un nom qui retourne à la ligne —
+          sinon cette ligne (et tout ce qui suit) ne s'aligne plus d'une carte à l'autre. */}
+      <div className="mb-1 min-h-12 font-[family-name:var(--font-body)] text-base font-bold text-heading">{client.name}</div>
       <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-ink">
         <span>
           {count} projet{count === 1 ? "" : "s"}
