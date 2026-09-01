@@ -3,6 +3,7 @@
 import { AlertTriangle, MessageSquare, Paperclip, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { checkBulkReassignCapacity } from "@/lib/actions/capacity";
 import { bulkUpdateTasks } from "@/lib/actions/tasks";
 import { textButtonClass } from "@/components/ui/buttons";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
@@ -15,7 +16,7 @@ import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskListItem } from "@/lib/data/tasks";
-import { toIsoDate, today } from "@/lib/planning/dates";
+import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
 import { EmptyState } from "@/components/ui/empty-state";
 
 /** En retard : échéance dépassée, pas encore terminée — même règle que la puce de nav "Tâches" (voir (app)/layout.tsx). */
@@ -109,8 +110,35 @@ export function TasksTable({
     });
   }
 
-  function applyBulkAssignee(newAssigneeId: string) {
+  async function applyBulkAssignee(newAssigneeId: string) {
     if (!newAssigneeId || selectedIds.length === 0) return;
+
+    // Réattribuer à "Non attribué" ne peut jamais surcharger personne — le
+    // contrôle ne vaut la peine que pour une vraie personne. Comme le
+    // formulaire (task-form-fields.tsx), un avertissement non bloquant,
+    // juste confirmé ici plutôt qu'affiché en direct : pas de champ dates à
+    // observer, l'action est immédiate au choix dans le menu.
+    if (newAssigneeId !== "__none") {
+      const selectedTasks = tasks.filter((t) => selectedIds.includes(t.id));
+      const warning = await checkBulkReassignCapacity({
+        personId: newAssigneeId,
+        tasks: selectedTasks.map((t) => ({
+          taskId: t.id,
+          startDate: toIsoDate(t.startDate),
+          endDate: toIsoDate(t.endDate),
+          estimatedHalfDays: t.estimatedHalfDays,
+        })),
+      });
+      if (
+        warning &&
+        !window.confirm(
+          `${warning.personName} sera chargé·e à ${warning.ratioPercent}% la semaine du ${formatShortFr(warning.weekStart)} avec ces tâches incluses. Continuer ?`,
+        )
+      ) {
+        return;
+      }
+    }
+
     startBulkTransition(async () => {
       await bulkUpdateTasks({ taskIds: selectedIds, assigneeId: newAssigneeId === "__none" ? null : newAssigneeId });
       setSelectedIds([]);
