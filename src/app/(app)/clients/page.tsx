@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { listClientsWithCounts } from "@/lib/data/clients";
 import { ClientsView } from "./clients-view";
 
@@ -6,6 +7,6 @@ export default async function ClientsPage({
 }: {
   searchParams: Promise<{ open?: string }>;
 }) {
-  const [clients, { open }] = await Promise.all([listClientsWithCounts(), searchParams]);
-  return <ClientsView clients={clients} initialOpenClientId={open ?? null} />;
+  const [session, clients, { open }] = await Promise.all([auth(), listClientsWithCounts(), searchParams]);
+  return <ClientsView clients={clients} initialOpenClientId={open ?? null} isAdmin={session?.user.role === "ADMIN"} />;
 }

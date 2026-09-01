@@ -52,9 +52,12 @@ function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id:
 export function ClientsView({
   clients,
   initialOpenClientId = null,
+  isAdmin,
 }: {
   clients: ClientWithCounts[];
   initialOpenClientId?: string | null;
+  /** Créer/modifier/supprimer un client est réservé aux administrateurs — voir src/lib/actions/clients.ts. Les autres comptes gardent une consultation en lecture seule. */
+  isAdmin: boolean;
 }) {
   const [openClientId, setOpenClientId] = useState<string | null | "new">(initialOpenClientId);
 
@@ -65,22 +68,28 @@ export function ClientsView({
           Clients
         </h1>
         <span className="flex-1" />
-        <button
-          type="button"
-          onClick={() => setOpenClientId("new")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${primaryButtonClass}`}
-        >
-          <Plus size={14} /> Nouveau client
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setOpenClientId("new")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${primaryButtonClass}`}
+          >
+            <Plus size={14} /> Nouveau client
+          </button>
+        )}
       </div>
 
       {clients.length === 0 ? (
         <EmptyState
           icon={Building2}
           title="Aucun client pour l’instant"
-          description="Créez votre premier client — vous pourrez ensuite y rattacher des projets."
-          actionLabel="Nouveau client"
-          onAction={() => setOpenClientId("new")}
+          description={
+            isAdmin
+              ? "Créez votre premier client — vous pourrez ensuite y rattacher des projets."
+              : "Aucun client n’a encore été créé."
+          }
+          actionLabel={isAdmin ? "Nouveau client" : undefined}
+          onAction={isAdmin ? () => setOpenClientId("new") : undefined}
         />
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
@@ -94,6 +103,7 @@ export function ClientsView({
         <ClientDetailModal
           clientId={openClientId === "new" ? null : openClientId}
           onClose={() => setOpenClientId(null)}
+          isAdmin={isAdmin}
         />
       )}
     </div>

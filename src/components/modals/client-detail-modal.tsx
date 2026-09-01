@@ -10,9 +10,12 @@ import { FieldLabel, fieldInputClass, ModalShell } from "./modal-shell";
 export function ClientDetailModal({
   clientId,
   onClose,
+  isAdmin,
 }: {
   clientId: string | null; // null = création
   onClose: () => void;
+  /** Créer/modifier/supprimer est réservé aux administrateurs — voir src/lib/actions/clients.ts. Les autres consultent en lecture seule. */
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -95,7 +98,8 @@ export function ClientDetailModal({
           <FieldLabel htmlFor="client-name">Nom</FieldLabel>
           <input
             id="client-name"
-            className={`${fieldInputClass} mb-3`}
+            disabled={!isAdmin}
+            className={`${fieldInputClass} mb-3 disabled:opacity-70`}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Oxfam Belgique"
@@ -107,7 +111,8 @@ export function ClientDetailModal({
               <FieldLabel htmlFor="client-contact-name">Personne de contact</FieldLabel>
               <input
                 id="client-contact-name"
-                className={fieldInputClass}
+                disabled={!isAdmin}
+                className={`${fieldInputClass} disabled:opacity-70`}
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
               />
@@ -117,7 +122,8 @@ export function ClientDetailModal({
               <input
                 id="client-contact-phone"
                 type="tel"
-                className={fieldInputClass}
+                disabled={!isAdmin}
+                className={`${fieldInputClass} disabled:opacity-70`}
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
               />
@@ -128,7 +134,8 @@ export function ClientDetailModal({
           <input
             id="client-contact-email"
             type="email"
-            className={`${fieldInputClass} mb-3`}
+            disabled={!isAdmin}
+            className={`${fieldInputClass} mb-3 disabled:opacity-70`}
             value={contactEmail}
             onChange={(e) => setContactEmail(e.target.value)}
           />
@@ -136,7 +143,8 @@ export function ClientDetailModal({
           <FieldLabel htmlFor="client-website">Site web</FieldLabel>
           <input
             id="client-website"
-            className={`${fieldInputClass} mb-3`}
+            disabled={!isAdmin}
+            className={`${fieldInputClass} mb-3 disabled:opacity-70`}
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
             placeholder="oxfam.be"
@@ -146,7 +154,8 @@ export function ClientDetailModal({
           <textarea
             id="client-notes"
             rows={3}
-            className={`${fieldInputClass} mb-3 h-auto! resize-y`}
+            disabled={!isAdmin}
+            className={`${fieldInputClass} mb-3 h-auto! resize-y disabled:opacity-70`}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Contexte, préférences, historique de la relation…"
@@ -164,38 +173,46 @@ export function ClientDetailModal({
             </p>
           )}
 
-          <div className="flex items-center justify-between gap-2.5">
-            {clientId ? (
-              <button
-                type="button"
-                onClick={remove}
-                disabled={projectCount > 0}
-                className={`px-2 py-1 text-sm font-semibold ${dangerButtonClass} disabled:opacity-40`}
-                title={projectCount > 0 ? "Utilisé par au moins un projet" : undefined}
-              >
-                Retirer
-              </button>
-            ) : (
-              <span />
-            )}
-            <div className="flex gap-2.5">
-              <button
-                type="button"
-                onClick={onClose}
-                className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                disabled={pending || !name.trim()}
-                onClick={submit}
-                className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
-              >
-                {pending ? "Enregistrement…" : clientId ? "Enregistrer" : "Créer"}
+          {isAdmin ? (
+            <div className="flex items-center justify-between gap-2.5">
+              {clientId ? (
+                <button
+                  type="button"
+                  onClick={remove}
+                  disabled={projectCount > 0}
+                  className={`px-2 py-1 text-sm font-semibold ${dangerButtonClass} disabled:opacity-40`}
+                  title={projectCount > 0 ? "Utilisé par au moins un projet" : undefined}
+                >
+                  Retirer
+                </button>
+              ) : (
+                <span />
+              )}
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={pending || !name.trim()}
+                  onClick={submit}
+                  className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
+                >
+                  {pending ? "Enregistrement…" : clientId ? "Enregistrer" : "Créer"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-end">
+              <button type="button" onClick={onClose} className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}>
+                Fermer
               </button>
             </div>
-          </div>
+          )}
         </>
       )}
     </ModalShell>

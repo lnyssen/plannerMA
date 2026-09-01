@@ -1,10 +1,11 @@
 "use client";
 
-import { Pencil, Plus, RotateCcw, UserMinus, Umbrella, Users } from "lucide-react";
+import { CalendarDays, Pencil, Plus, RotateCcw, UserMinus, Umbrella, Users } from "lucide-react";
 import { useState, useTransition } from "react";
 import { deleteAbsence } from "@/lib/actions/absences";
 import { setPersonActive } from "@/lib/actions/people";
 import { useRouter } from "next/navigation";
+import { AbsenceCalendar } from "@/components/equipe/absence-calendar";
 import { AbsenceModal } from "@/components/modals/absence-modal";
 import { PersonModal } from "@/components/modals/person-modal";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
@@ -37,32 +38,25 @@ export function EquipeView({
   absences,
   studios,
   isAdmin,
-  isStudioLead,
   currentPersonId,
 }: {
   people: PersonRow[];
   absences: AbsenceRow[];
   studios: StudioSummary[];
   isAdmin: boolean;
-  isStudioLead: boolean;
   currentPersonId: string | null;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [tab, setTab] = useState<"gens" | "absences">("gens");
+  const [tab, setTab] = useState<"gens" | "absences" | "calendrier">("gens");
   const [personModal, setPersonModal] = useState<"new" | string | null>(null);
   const [absenceModalOpen, setAbsenceModalOpen] = useState(false);
 
   const teams = [...new Set(people.map((p) => p.team || "Studios"))];
-  // Un responsable de studio gère les absences de son équipe (personnes qui
-  // partagent au moins un studio avec lui), en plus des siennes — voir
-  // canManageAbsenceFor côté serveur (src/lib/actions/absences.ts), qui
+  // Gérer l'absence de quelqu'un d'autre est réservé aux administrateurs —
+  // voir canManageAbsenceFor côté serveur (src/lib/actions/absences.ts), qui
   // applique la même règle et reste la source de vérité.
-  const myStudioIds = new Set(
-    people.find((p) => p.id === currentPersonId)?.studios.map(({ studio }) => studio.id) ?? [],
-  );
-  const canManage = (p: PersonRow) =>
-    isAdmin || p.id === currentPersonId || (isStudioLead && p.studios.some(({ studio }) => myStudioIds.has(studio.id)));
+  const canManage = (p: PersonRow) => isAdmin || p.id === currentPersonId;
   const peopleForAbsenceForm = people.filter(canManage).map((p) => ({ id: p.id, name: p.name }));
   const manageablePersonIds = new Set(peopleForAbsenceForm.map((p) => p.id));
 
@@ -87,19 +81,25 @@ export function EquipeView({
           >
             <Umbrella size={14} /> Absences
           </button>
+          <button
+            type="button"
+            onClick={() => setTab("calendrier")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${tab === "calendrier" ? primaryButtonClass : secondaryButtonClass}`}
+          >
+            <CalendarDays size={14} /> Calendrier
+          </button>
         </div>
         <span className="flex-1" />
-        {tab === "gens" ? (
-          isAdmin && (
-            <button
-              type="button"
-              onClick={() => setPersonModal("new")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${primaryButtonClass}`}
-            >
-              <Plus size={14} /> Ajouter une personne
-            </button>
-          )
-        ) : (
+        {tab === "gens" && isAdmin && (
+          <button
+            type="button"
+            onClick={() => setPersonModal("new")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${primaryButtonClass}`}
+          >
+            <Plus size={14} /> Ajouter une personne
+          </button>
+        )}
+        {tab === "absences" && (
           <button
             type="button"
             onClick={() => setAbsenceModalOpen(true)}
@@ -178,7 +178,7 @@ export function EquipeView({
             </div>
           ))}
         </>
-      ) : (
+      ) : tab === "absences" ? (
         <>
           {absences.length === 0 && (
             <EmptyState
@@ -216,6 +216,19 @@ export function EquipeView({
             ))}
           </div>
         </>
+      ) : null}
+
+      {tab === "calendrier" && (
+        <AbsenceCalendar
+          absences={absences.map((a) => ({
+            id: a.id,
+            personId: a.personId,
+            personName: a.personName,
+            startDate: a.startDate,
+            endDate: a.endDate,
+            reason: a.reason,
+          }))}
+        />
       )}
 
       {personModal && (

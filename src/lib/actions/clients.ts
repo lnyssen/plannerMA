@@ -13,10 +13,17 @@ function revalidateClientViews() {
 
 const nameSchema = z.string().trim().min(1, "Le nom du client est requis.");
 
-/** Création rapide (depuis le sélecteur de client d'un formulaire projet) — nom seul. */
+/**
+ * Création explicite (fiche Clients, bouton "Nouveau client") — réservée aux
+ * administrateurs. Distincte de resolveClientId (src/lib/actions/projects.ts),
+ * qui crée un client à la volée depuis le formulaire projet et reste ouverte
+ * à tout compte : créer un projet pour un client encore inconnu ne doit pas
+ * être bloqué par cette restriction.
+ */
 export async function createClient(name: string): Promise<{ error?: string; id?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
   const parsed = nameSchema.safeParse(name);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Nom invalide." };
 
@@ -61,6 +68,7 @@ export async function updateClientDetail(
 ): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
   const parsed = clientDetailSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   const { name, contactName, contactEmail, contactPhone, website, notes } = parsed.data;

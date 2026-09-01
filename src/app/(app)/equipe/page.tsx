@@ -17,6 +17,9 @@ export default async function EquipePage() {
     listStudios(),
   ]);
 
+  const isAdmin = session?.user.role === "ADMIN";
+  const currentPersonId = session?.user.personId ?? null;
+
   return (
     <EquipeView
       people={people.map((p) => ({
@@ -34,12 +37,17 @@ export default async function EquipePage() {
         personName: a.person.name,
         startDate: a.startDate,
         endDate: a.endDate,
-        reason: a.reason,
+        // Le motif est une donnée personnelle : visible pour un admin ou pour
+        // sa propre absence, retiré côté serveur sinon — pas seulement caché
+        // côté interface (même règle que le temps par personne sur une
+        // fiche tâche/projet, voir getTaskDetail/getProjectDetail). Les
+        // dates elles-mêmes restent visibles à tous : c'est le calendrier de
+        // coordination d'équipe, son intérêt est justement d'être partagé.
+        reason: isAdmin || a.personId === currentPersonId ? a.reason : null,
       }))}
       studios={studios}
-      isAdmin={session?.user.role === "ADMIN"}
-      isStudioLead={session?.user.role === "STUDIO_LEAD"}
-      currentPersonId={session?.user.personId ?? null}
+      isAdmin={isAdmin}
+      currentPersonId={currentPersonId}
     />
   );
 }
