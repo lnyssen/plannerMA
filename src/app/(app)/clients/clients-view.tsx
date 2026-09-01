@@ -1,14 +1,23 @@
 "use client";
 
-import { Building2, Globe, Mail, Phone, Plus } from "lucide-react";
+import { Building2, Clock, Globe, Mail, Phone, Plus } from "lucide-react";
 import { useState } from "react";
 import { ClientDetailModal } from "@/components/modals/client-detail-modal";
 import { primaryButtonClass } from "@/components/ui/buttons";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { ClientWithCounts } from "@/lib/data/clients";
+import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
+
+/** Portefeuille client : temps agrégé tous projets confondus, actifs et archivés — pas seulement le nombre de projets. */
+function clientMinutes(client: ClientWithCounts): number {
+  const entries = client.projects.flatMap((p) => [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)]);
+  return sumDurationMinutes(entries);
+}
 
 function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id: string) => void }) {
   const count = client._count.projects;
+  const activeCount = client.projects.filter((p) => !p.archived).length;
+  const minutes = clientMinutes(client);
   const hasContact = client.contactName || client.contactEmail || client.contactPhone || client.website;
 
   return (
@@ -19,8 +28,16 @@ function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id:
       title="Modifier le client"
     >
       <div className="mb-1 font-[family-name:var(--font-body)] text-base font-bold text-heading">{client.name}</div>
-      <div className="mb-3 text-sm font-semibold text-ink">
-        {count} projet{count === 1 ? "" : "s"}
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-ink">
+        <span>
+          {count} projet{count === 1 ? "" : "s"}
+          {activeCount !== count && <span className="font-normal text-ink-muted"> ({activeCount} actif{activeCount === 1 ? "" : "s"})</span>}
+        </span>
+        {minutes > 0 && (
+          <span className="flex items-center gap-1 text-ink-muted">
+            <Clock size={12} className="flex-shrink-0" aria-hidden="true" /> {formatDurationFr(minutes)}
+          </span>
+        )}
       </div>
 
       {hasContact ? (
