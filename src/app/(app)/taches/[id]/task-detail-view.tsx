@@ -3,7 +3,7 @@
 import { AlertTriangle, AtSign, ExternalLink, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { addLinkAttachment, deleteAttachment, uploadFileAttachment } from "@/lib/actions/attachments";
 import { addComment } from "@/lib/actions/comments";
 import { addSubtask, deleteSubtask, toggleSubtask } from "@/lib/actions/subtasks";
@@ -17,6 +17,7 @@ import type { TaskOption } from "@/lib/data/tasks";
 import { formatFileSize } from "@/lib/format";
 import { quandFr, toIsoDate, today } from "@/lib/planning/dates";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
+import { recordRecentItem } from "@/lib/recent-items";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { SearchField } from "@/components/ui/search-field";
@@ -71,6 +72,12 @@ export function TaskDetailView({
   const [manualDate, setManualDate] = useState(today());
   const [manualHours, setManualHours] = useState("0");
   const [manualMinutes, setManualMinutes] = useState("30");
+
+  // Alimente "Récents" dans la palette de commandes (⌘K) — pur confort
+  // local, voir src/lib/recent-items.ts.
+  useEffect(() => {
+    recordRecentItem({ type: "task", id: task.id, label: task.title, href: `/taches/${task.id}` });
+  }, [task.id, task.title]);
 
   function patch(p: Partial<TaskFormValues>) {
     setValues((v) => ({ ...v, ...p }));

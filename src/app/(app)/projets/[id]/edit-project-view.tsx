@@ -4,7 +4,7 @@ import type { ProjectType } from "@prisma/client";
 import { AlertTriangle, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
 import { duplicateProject, getProjectDetail, setProjectArchived, updateProject, type ProjectDetail } from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
@@ -14,6 +14,7 @@ import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
 import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
+import { recordRecentItem } from "@/lib/recent-items";
 import { ClientPicker } from "@/components/modals/client-picker";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
 import { primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
@@ -52,6 +53,17 @@ export function EditProjectView({
   const [newMilestoneDue, setNewMilestoneDue] = useState(today());
   const [milestoneError, setMilestoneError] = useState<string | null>(null);
   const [creatingTask, setCreatingTask] = useState(false);
+
+  // Alimente "Récents" dans la palette de commandes (⌘K) — pur confort
+  // local, voir src/lib/recent-items.ts.
+  useEffect(() => {
+    recordRecentItem({
+      type: "project",
+      id: project.id,
+      label: `${project.client.name} — ${project.name}`,
+      href: `/projets/${project.id}`,
+    });
+  }, [project.id, project.name, project.client.name]);
 
   async function loadProject() {
     const p = await getProjectDetail(project.id);

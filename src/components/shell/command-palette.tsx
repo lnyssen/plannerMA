@@ -1,10 +1,11 @@
 "use client";
 
-import { Building2, ClipboardList, ClipboardPlus, FolderPlus, ListChecks, ListPlus, Search } from "lucide-react";
+import { Building2, ClipboardList, ClipboardPlus, Clock, FolderPlus, ListChecks, ListPlus, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { globalSearch, type SearchResults } from "@/lib/actions/search";
+import { getRecentItems, type RecentItem } from "@/lib/recent-items";
 import { useCreateModals } from "./create-modals-context";
 import type { NavEntry } from "./nav-entries";
 
@@ -31,6 +32,7 @@ export function CommandPalette({ navEntries }: { navEntries: NavEntry[] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>(EMPTY);
+  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
 
   function close() {
     setOpen(false);
@@ -48,6 +50,9 @@ export function CommandPalette({ navEntries }: { navEntries: NavEntry[] }) {
             setResults(EMPTY);
             return false;
           }
+          // Relu à chaque ouverture (pas une seule fois au montage) : peut
+          // avoir changé depuis la dernière fois — voir src/lib/recent-items.ts.
+          setRecentItems(getRecentItems());
           return true;
         });
       } else if (e.key === "Escape" && open) {
@@ -131,6 +136,23 @@ export function CommandPalette({ navEntries }: { navEntries: NavEntry[] }) {
                   <a.icon size={14} className="flex-shrink-0 text-heading" aria-hidden="true" />
                   {a.label}
                 </button>
+              ))}
+            </div>
+          )}
+
+          {!q && recentItems.length > 0 && (
+            <div>
+              <p className="px-3 pt-2.5 pb-1 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Récents</p>
+              {recentItems.map((r) => (
+                <Link
+                  key={r.href}
+                  href={r.href}
+                  onClick={close}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-tint"
+                >
+                  <Clock size={14} className="flex-shrink-0 text-ink-muted" aria-hidden="true" />
+                  <span className="truncate">{r.label}</span>
+                </Link>
               ))}
             </div>
           )}
