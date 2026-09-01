@@ -6,6 +6,7 @@ import type { TaskCategoryOption } from "@/lib/data/task-categories";
 import type { TaskOption } from "@/lib/data/tasks";
 import type { StudioSummary } from "@/lib/data/studios";
 import { FieldLabel, fieldInputClass } from "@/components/modals/modal-shell";
+import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { TaskCombobox } from "@/components/ui/task-combobox";
 
 export interface EntryContextValue {
@@ -60,16 +61,12 @@ export function EntryContextFields({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex overflow-hidden rounded-lg border-[1.5px] border-heading" style={{ width: "fit-content" }}>
+      <div className="flex gap-2">
         <button
           type="button"
           onClick={() => switchMode("task")}
           aria-pressed={mode === "task"}
-          className="border-r-[1.5px] border-heading px-2.5 py-1 text-xs font-semibold"
-          style={{
-            background: mode === "task" ? "var(--color-heading)" : "transparent",
-            color: mode === "task" ? "var(--color-paper)" : "var(--color-ink-muted)",
-          }}
+          className={`px-2.5 py-1 text-xs font-semibold ${mode === "task" ? primaryButtonClass : secondaryButtonClass}`}
         >
           Tâche planifiée
         </button>
@@ -77,11 +74,7 @@ export function EntryContextFields({
           type="button"
           onClick={() => switchMode("other")}
           aria-pressed={mode === "other"}
-          className="px-2.5 py-1 text-xs font-semibold"
-          style={{
-            background: mode === "other" ? "var(--color-heading)" : "transparent",
-            color: mode === "other" ? "var(--color-paper)" : "var(--color-ink-muted)",
-          }}
+          className={`px-2.5 py-1 text-xs font-semibold ${mode === "other" ? primaryButtonClass : secondaryButtonClass}`}
         >
           Autre activité
         </button>

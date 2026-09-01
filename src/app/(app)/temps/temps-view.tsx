@@ -211,6 +211,7 @@ export function TempsView({
       {tab === "mine" && (
         <>
         <div className="max-w-3xl">
+          <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Ajouter du temps</p>
           {runningTimer ? (
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-heading bg-wash px-4 py-3">
               <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-alert" aria-hidden="true" />
@@ -322,16 +323,14 @@ export function TempsView({
             </p>
           )}
 
-          <div className="mb-4 flex overflow-hidden rounded-lg border-[1.5px] border-heading" style={{ width: "fit-content" }}>
+          <div className="mt-2 mb-5 border-t border-line pt-5">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Vos écritures</p>
+            <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setMineView("list")}
               aria-pressed={mineView === "list"}
-              className="flex items-center gap-1.5 border-r-[1.5px] border-heading px-2.5 py-1 text-xs font-semibold"
-              style={{
-                background: mineView === "list" ? "var(--color-heading)" : "transparent",
-                color: mineView === "list" ? "var(--color-paper)" : "var(--color-ink-muted)",
-              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "list" ? primaryButtonClass : secondaryButtonClass}`}
             >
               <List size={13} /> Liste
             </button>
@@ -339,11 +338,7 @@ export function TempsView({
               type="button"
               onClick={() => setMineView("calendar")}
               aria-pressed={mineView === "calendar"}
-              className="flex items-center gap-1.5 border-r-[1.5px] border-heading px-2.5 py-1 text-xs font-semibold"
-              style={{
-                background: mineView === "calendar" ? "var(--color-heading)" : "transparent",
-                color: mineView === "calendar" ? "var(--color-paper)" : "var(--color-ink-muted)",
-              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "calendar" ? primaryButtonClass : secondaryButtonClass}`}
             >
               <CalendarDays size={13} /> Calendrier
             </button>
@@ -351,14 +346,11 @@ export function TempsView({
               type="button"
               onClick={() => setMineView("summary")}
               aria-pressed={mineView === "summary"}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
-              style={{
-                background: mineView === "summary" ? "var(--color-heading)" : "transparent",
-                color: mineView === "summary" ? "var(--color-paper)" : "var(--color-ink-muted)",
-              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "summary" ? primaryButtonClass : secondaryButtonClass}`}
             >
               <PieChart size={13} /> Par projet
             </button>
+            </div>
           </div>
         </div>
 
