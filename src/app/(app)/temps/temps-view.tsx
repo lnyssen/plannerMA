@@ -209,6 +209,7 @@ export function TempsView({
       </div>
 
       {tab === "mine" && (
+        <>
         <div className="max-w-3xl">
           {runningTimer ? (
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-heading bg-wash px-4 py-3">
@@ -359,10 +360,18 @@ export function TempsView({
               <PieChart size={13} /> Par projet
             </button>
           </div>
+        </div>
 
-          {mineView === "calendar" ? (
-            <TimeCalendar entries={myEntries} tasks={tasks} studios={studios} projects={projects} categories={categories} />
-          ) : mineView === "summary" ? (
+        {/* La vue Calendrier sort du cadre max-w-3xl (formulaire/liste) : une
+            grille de semaine profite de toute la largeur disponible, alors
+            que le rétrécir comme le reste de l'onglet ne fait que tasser les
+            colonnes sans raison. Liste et Par projet restent dans le même
+            gabarit étroit que le minuteur au-dessus. */}
+        {mineView === "calendar" ? (
+          <TimeCalendar entries={myEntries} tasks={tasks} studios={studios} projects={projects} categories={categories} />
+        ) : (
+          <div className="max-w-3xl">
+          {mineView === "summary" ? (
             myProjectBreakdown.rows.length === 0 ? (
               <EmptyState
                 icon={PieChart}
@@ -447,7 +456,9 @@ export function TempsView({
               ))}
             </div>
           )}
-        </div>
+          </div>
+        )}
+        </>
       )}
 
       {tab === "team" && isAdmin && (
