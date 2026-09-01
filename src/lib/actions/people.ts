@@ -9,6 +9,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { inviteEmail, passwordResetEmail } from "@/lib/mail/templates";
 import { sendMail } from "@/lib/mail/transport";
+import { currentActorName } from "./actor";
 
 const personSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis."),
@@ -59,7 +60,7 @@ export async function createPerson(input: PersonInput): Promise<{ error?: string
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `${name} ajouté${external ? "e" : ""} à l’équipe`,
     },
   });
@@ -98,7 +99,7 @@ export async function updatePerson(personId: string, input: PersonInput): Promis
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `${name} modifié·e`,
     },
   });
@@ -130,7 +131,7 @@ export async function setPersonActive(personId: string, active: boolean): Promis
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `${person.name} ${active ? "réactivé·e" : "désactivé·e"}`,
     },
   });
@@ -157,7 +158,7 @@ export async function removeUserAccess(personId: string): Promise<{ error?: stri
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Accès retiré pour ${user.email}`,
     },
   });
@@ -214,7 +215,7 @@ export async function invitePerson(
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Accès de connexion créé pour ${person.name} (${email})`,
     },
   });
@@ -264,7 +265,7 @@ export async function resetPassword(personId: string): Promise<{ error?: string;
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Mot de passe réinitialisé pour ${person.name}`,
     },
   });
@@ -323,7 +324,7 @@ export async function deletePerson(personId: string): Promise<{ error?: string }
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `${person.name} supprimé·e de l’équipe`,
     },
   });

@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { notifyAssignment } from "@/lib/mail/notify";
 import { addDaysIso, addMonthsIso, daysBetween, toIsoDate } from "@/lib/planning/dates";
+import { currentActorName } from "./actor";
 import { createNotification } from "./notifications";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
@@ -159,7 +160,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Tâche « ${title} » créée`,
       taskId: task.id,
     },
@@ -388,7 +389,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Tâche « ${title} » modifiée`,
       taskId: task.id,
     },
@@ -437,7 +438,7 @@ export async function updateTaskStatus(
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Tâche « ${task.title} » déplacée vers « ${task.status.name} »`,
       taskId: task.id,
     },
@@ -490,7 +491,7 @@ export async function bulkUpdateTasks(
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `${result.count} tâche${result.count > 1 ? "s" : ""} modifiée${result.count > 1 ? "s" : ""} en groupe (${parts.join(", ")})`,
     },
   });
@@ -532,7 +533,7 @@ export async function rescheduleTask(
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Tâche « ${task.title} » replanifiée`,
       taskId: task.id,
     },
@@ -556,7 +557,7 @@ export async function trashTask(taskId: string): Promise<{ error?: string }> {
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Tâche « ${task.title} » mise à la corbeille`,
       taskId: task.id,
     },
@@ -575,7 +576,7 @@ export async function restoreTask(taskId: string): Promise<{ error?: string }> {
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Tâche « ${task.title} » restaurée`,
       taskId: task.id,
     },
@@ -600,7 +601,7 @@ export async function destroyTask(taskId: string): Promise<{ error?: string }> {
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Tâche « ${existing.title} » supprimée définitivement`,
       taskId,
     },

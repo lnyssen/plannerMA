@@ -5,6 +5,7 @@ import type { Session } from "next-auth";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { currentActorName } from "./actor";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
 
@@ -52,7 +53,7 @@ export async function createAbsence(input: AbsenceInput): Promise<{ error?: stri
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: "Absence enregistrée",
     },
   });
@@ -75,7 +76,7 @@ export async function deleteAbsence(absenceId: string): Promise<{ error?: string
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: "Absence retirée",
     },
   });
