@@ -301,7 +301,6 @@ export function ProjectsView({
       )}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <SearchField value={search} onChange={setSearch} className="max-w-md" />
         {view === "table" && (
           <div className="flex flex-wrap gap-1.5">
             <button
@@ -331,6 +330,8 @@ export function ProjectsView({
             ))}
           </div>
         )}
+        <span className="flex-1" />
+        <SearchField value={search} onChange={setSearch} className="max-w-md" />
       </div>
 
       {projects.length === 0 ? (

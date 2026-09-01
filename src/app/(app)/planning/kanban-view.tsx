@@ -102,7 +102,6 @@ export function KanbanView({
   return (
     <div>
       <div className="mb-5 flex flex-wrap gap-3">
-        <SearchField value={search} onChange={setSearch} className="max-w-md" />
         <MultiSelectField
           label="Tous les studios"
           selected={studioFilter}
@@ -117,6 +116,8 @@ export function KanbanView({
           options={people.map((p) => ({ id: p.id, label: p.name }))}
           className="max-w-[200px]"
         />
+        <span className="flex-1" />
+        <SearchField value={search} onChange={setSearch} className="max-w-md" />
       </div>
 
       {error && (

@@ -175,11 +175,11 @@ export function TasksTable({
   return (
     <div>
       <div className="mb-5 flex flex-wrap gap-3">
-        <SearchField value={search} onChange={setSearch} className="max-w-md" />
         {/* Même ordre que les colonnes du tableau ci-dessous : Projet (donc
             Client), puis Studio, Personne, Statut — du plus général au plus
             précis, cohérent avec la nomenclature Client — Projet partout
-            ailleurs dans l'appli. */}
+            ailleurs dans l'appli. Recherche en dernier : les filtres à choix
+            (qui bornent la liste à un ensemble connu) avant le champ libre. */}
         <MultiSelectField
           label="Tous les projets"
           selected={projectFilter}
@@ -210,6 +210,8 @@ export function TasksTable({
           options={statuses.map((s) => ({ id: s.id, label: s.name }))}
           className="max-w-[180px]"
         />
+        <span className="flex-1" />
+        <SearchField value={search} onChange={setSearch} className="max-w-md" />
       </div>
 
       {selectedIds.length > 0 && (
