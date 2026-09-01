@@ -102,21 +102,6 @@ export function EntryContextFields({
         </div>
       ) : (
         <div className="flex flex-wrap gap-3">
-          <div className="min-w-[140px] flex-1">
-            <FieldLabel htmlFor="entry-studio">Studio</FieldLabel>
-            <select
-              id="entry-studio"
-              className={fieldInputClass}
-              value={value.studioId}
-              onChange={(e) => onChange({ studioId: e.target.value })}
-            >
-              {studios.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
           <div className="min-w-[200px] flex-1">
             <FieldLabel htmlFor="entry-project">Projet</FieldLabel>
             <select
@@ -130,6 +115,21 @@ export function EntryContextFields({
                 <option key={p.id} value={p.id}>
                   {p.client.name} — {p.name}
                   {p.code ? ` (${p.code})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-[140px] flex-1">
+            <FieldLabel htmlFor="entry-studio">Studio</FieldLabel>
+            <select
+              id="entry-studio"
+              className={fieldInputClass}
+              value={value.studioId}
+              onChange={(e) => onChange({ studioId: e.target.value })}
+            >
+              {studios.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>
