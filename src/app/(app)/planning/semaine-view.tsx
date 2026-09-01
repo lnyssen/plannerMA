@@ -1,12 +1,18 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
+import { useRangeDrag } from "@/components/planning/use-range-drag";
+import { useCreateModals } from "@/components/shell/create-modals-context";
 import { textButtonClass } from "@/components/ui/buttons";
 import { addDays, formatShortFr, fromIsoDate, mondayOf, toIsoDate, today, type IsoDate } from "@/lib/planning/dates";
 import { studioBarStyle } from "@/lib/planning/labels";
 
 const JOUR_LABEL = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
+
+/** Ligne « Non attribué » : une vraie ligne de la grille, mais sans personne derrière. */
+const UNASSIGNED_ROW = "__non_attribue__";
 
 export interface WeekTask {
   id: string;
@@ -28,8 +34,28 @@ export function SemaineView({
   tasks: WeekTask[];
 }) {
   const router = useRouter();
+  const openCreate = useCreateModals();
   const days = Array.from({ length: 5 }, (_, i) => addDays(fromIsoDate(monday), i));
   const covers = (t: WeekTask, dayIso: string) => toIsoDate(t.startDate) <= dayIso && dayIso <= toIsoDate(t.endDate);
+
+  // Tirer sur les jours d'une ligne crée directement la tâche pour cette
+  // personne sur ces dates : le geste porte déjà les trois informations
+  // (qui, à partir de quand, jusqu'à quand), les redemander dans le
+  // formulaire reviendrait à les saisir deux fois.
+  const drag = useRangeDrag(
+    useCallback(
+      ({ rowKey, from, to }) => {
+        openCreate("task", {
+          assigneeId: rowKey === UNASSIGNED_ROW ? "" : rowKey,
+          startDate: toIsoDate(days[from]),
+          endDate: toIsoDate(days[to]),
+        });
+      },
+      // `days` est recalculé à chaque rendu mais dépend uniquement de `monday`.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [openCreate, monday],
+    ),
+  );
 
   function goTo(iso: IsoDate) {
     router.push(`/planning?vue=semaine&debut=${toIsoDate(mondayOf(fromIsoDate(iso)))}`);
@@ -96,39 +122,50 @@ export function SemaineView({
           {people.map((p) => (
             <PersonRow
               key={p.id}
+              rowKey={p.id}
               name={p.name}
               days={days}
               tasks={tasks.filter((t) => t.assigneeId === p.id)}
               covers={covers}
+              drag={drag}
               onOpenTask={(id) => router.push(`/taches/${id}`)}
             />
           ))}
           <PersonRow
+            rowKey={UNASSIGNED_ROW}
             name="Non attribué"
             days={days}
             tasks={tasks.filter((t) => !t.assigneeId)}
             covers={covers}
+            drag={drag}
             onOpenTask={(id) => router.push(`/taches/${id}`)}
           />
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-ink-muted">Double-cliquez une tâche pour l’ouvrir.</p>
+      <p className="mt-3 text-xs text-ink-muted">
+        Double-cliquez une tâche pour l’ouvrir. Glissez sur les jours d’une ligne (ou cliquez une case vide) pour créer
+        une tâche déjà attribuée à cette personne, sur ces dates.
+      </p>
     </div>
   );
 }
 
 function PersonRow({
+  rowKey,
   name,
   days,
   tasks,
   covers,
+  drag,
   onOpenTask,
 }: {
+  rowKey: string;
   name: string;
   days: Date[];
   tasks: WeekTask[];
   covers: (t: WeekTask, dayIso: string) => boolean;
+  drag: ReturnType<typeof useRangeDrag>;
   onOpenTask: (taskId: string) => void;
 }) {
   return (
@@ -136,14 +173,39 @@ function PersonRow({
       <div className="flex items-center border-r border-b border-line px-3 py-2.5 text-sm font-semibold text-ink">
         {name}
       </div>
-      {days.map((d) => {
+      {days.map((d, dayIndex) => {
         const iso = toIsoDate(d);
         const items = tasks.filter((t) => covers(t, iso));
         const overloaded = items.length > 2;
+        const inSelection =
+          drag.selection?.rowKey === rowKey && dayIndex >= drag.selection.from && dayIndex <= drag.selection.to;
         return (
-          <div key={iso} className="relative flex min-h-[56px] flex-col gap-1 border-r border-b border-line p-1.5">
+          <div
+            key={iso}
+            {...drag.cellAttrs(rowKey, dayIndex)}
+            onPointerDown={(e) => {
+              // Le glissement ne part que du fond de la case : sur une barre
+              // de tâche, le pointeur sert déjà à l'ouvrir.
+              if ((e.target as HTMLElement).closest("button")) return;
+              drag.start(rowKey, dayIndex);
+            }}
+            title={`Créer une tâche pour ${name} le ${formatShortFr(iso)} — glissez pour couvrir plusieurs jours`}
+            className={`group relative flex min-h-[56px] cursor-cell touch-none flex-col gap-1 border-r border-b border-line p-1.5 transition-colors duration-75 ${
+              inSelection ? "bg-tint" : ""
+            }`}
+          >
             {overloaded && (
               <span title="Plus de deux tâches ce jour" className="absolute top-1 right-1 h-1.5 w-1.5 bg-alert" />
+            )}
+            {/* Repère d'amorce : sans lui, rien n'indique que le fond d'une
+                case vide est cliquable. */}
+            {items.length === 0 && !inSelection && (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 flex items-center justify-center text-ink-muted opacity-0 transition-opacity duration-100 group-hover:opacity-45"
+              >
+                <Plus size={16} />
+              </span>
             )}
             {items.map((t) => (
               <button

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useCreateModals, type CreateModalPrefill } from "@/components/shell/create-modals-context";
 import { textButtonClass } from "@/components/ui/buttons";
 import type { GanttTask } from "@/lib/data/gantt";
 import { rescheduleTask } from "@/lib/actions/tasks";
@@ -49,7 +50,12 @@ interface Row {
   type: "projet" | "tache";
   label: string;
   task?: GanttTask;
+  /** Ce que la ligne apprend sur une tâche qu'on y créerait au glisser (projet et/ou personne du groupe). */
+  prefill?: CreateModalPrefill;
 }
+
+/** Plage de dates en cours de tracé sur une zone vide, avant ouverture de la création. */
+type CreateDragState = { row: number; a: number; b: number };
 
 export function GanttView({
   initialTasks,
@@ -74,6 +80,9 @@ export function GanttView({
   const [drag, setDrag] = useState<DragState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [canDrag, setCanDrag] = useState(true);
+  const [createDrag, setCreateDrag] = useState<CreateDragState | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const openCreate = useCreateModals();
   const [labelWidth, setLabelWidth] = useState(LABEL_WIDTH_DEFAULT);
   const [resizingLabel, setResizingLabel] = useState(false);
   const labelResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
@@ -182,9 +191,10 @@ export function GanttView({
       });
       const out: Row[] = [];
       for (const list of groups) {
-        out.push({ type: "projet", label: list[0].assignee?.name ?? "Non attribué" });
+        const assigneeId = list[0].assigneeId ?? "";
+        out.push({ type: "projet", label: list[0].assignee?.name ?? "Non attribué", prefill: { assigneeId } });
         for (const t of [...list].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())) {
-          out.push({ type: "tache", label: t.title, task: t });
+          out.push({ type: "tache", label: t.title, task: t, prefill: { assigneeId, projectId: t.projectId ?? "" } });
         }
       }
       return out;
@@ -199,13 +209,63 @@ export function GanttView({
     const out: Row[] = [];
     for (const list of byProject.values()) {
       const project = list[0].project;
-      out.push({ type: "projet", label: project ? `${project.client.name} — ${project.name}` : "Sans projet" });
+      const projectId = list[0].projectId ?? "";
+      out.push({
+        type: "projet",
+        label: project ? `${project.client.name} — ${project.name}` : "Sans projet",
+        prefill: { projectId },
+      });
       for (const t of [...list].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())) {
-        out.push({ type: "tache", label: t.title, task: t });
+        out.push({ type: "tache", label: t.title, task: t, prefill: { projectId, assigneeId: t.assigneeId ?? "" } });
       }
     }
     return out;
   }, [tasks, groupBy]);
+
+  // Tracé d'une plage sur une zone vide : on suit le pointeur au niveau de
+  // la fenêtre pour que le geste survive à la sortie du cadre, et on ne
+  // change jamais de ligne — une plage s'étale sur des dates, pas sur des
+  // projets ni des personnes.
+  useEffect(() => {
+    const started = createDrag;
+    if (!started) return;
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    function dayAt(clientX: number) {
+      const rect = grid!.getBoundingClientRect();
+      return Math.max(0, Math.min(days.length - 1, Math.floor((clientX - rect.left) / dayWidth)));
+    }
+    function onMove(e: PointerEvent) {
+      e.preventDefault();
+      const day = dayAt(e.clientX);
+      setCreateDrag((c) => (c ? { ...c, b: day } : c));
+    }
+    function onUp() {
+      setCreateDrag((c) => {
+        if (c) {
+          openCreate("task", {
+            ...(rows[c.row]?.prefill ?? {}),
+            startDate: toIsoDate(days[Math.min(c.a, c.b)]),
+            endDate: toIsoDate(days[Math.max(c.a, c.b)]),
+          });
+        }
+        return null;
+      });
+    }
+    function onCancel() {
+      setCreateDrag(null);
+    }
+
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
+    };
+  }, [createDrag, days, dayWidth, rows, openCreate]);
 
   const isDragging = drag !== null;
 
@@ -527,7 +587,7 @@ export function GanttView({
                 pas élargir la zone défilable — sinon changer le nombre de
                 semaines ne "rétrécit" jamais vraiment le Gantt tant qu'une
                 tâche déborde de la fenêtre visible. */}
-            <div className="relative overflow-hidden" style={{ height }}>
+            <div ref={gridRef} className="relative overflow-hidden" style={{ height }}>
               {days.map((d, i) => (
                 <div
                   key={i}
@@ -550,6 +610,22 @@ export function GanttView({
                   }}
                 />
               ))}
+
+              {/* Zone de tracé : placée sous les barres dans l'ordre du DOM,
+                  donc un glissement qui démarre sur une barre reste un
+                  déplacement de tâche, et seul le vide crée. */}
+              <div
+                className={`absolute inset-0 ${canDrag ? "cursor-cell touch-none" : ""}`}
+                onPointerDown={(e) => {
+                  if (!canDrag) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const day = Math.floor((e.clientX - rect.left) / dayWidth);
+                  const row = Math.floor((e.clientY - rect.top) / ROW_HEIGHT);
+                  if (day < 0 || day >= days.length || row < 0 || row >= rows.length) return;
+                  e.preventDefault();
+                  setCreateDrag({ row, a: day, b: day });
+                }}
+              />
 
               <svg width={width} height={height} className="pointer-events-none absolute inset-0">
                 {links.map((l, i) => (
@@ -627,13 +703,28 @@ export function GanttView({
                   </div>
                 );
               })}
+
+              {createDrag && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute rounded-md border-[1.5px] border-heading"
+                  style={{
+                    left: Math.min(createDrag.a, createDrag.b) * dayWidth,
+                    width: (Math.abs(createDrag.b - createDrag.a) + 1) * dayWidth,
+                    top: createDrag.row * ROW_HEIGHT + 5,
+                    height: ROW_HEIGHT - 10,
+                    background: "color-mix(in srgb, var(--color-tint) 70%, transparent)",
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
       </div>
       <p className="mt-3 text-xs text-ink-muted">
         Glissez une barre pour décaler la tâche, sa poignée droite pour la durée (souris ou tactile), double-cliquez
-        pour l’ouvrir. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance. Contour
+        pour l’ouvrir. Glissez sur une zone vide pour créer une tâche sur ces dates, déjà rattachée au projet (ou à la
+        personne) de la ligne. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance. Contour
         rose ⚠ : une même personne a deux tâches qui se chevauchent.{" "}
         Au clavier : sélectionnez une barre puis Flèches pour la décaler, Maj+Flèches pour ajuster sa durée, Entrée pour l’ouvrir.
       </p>

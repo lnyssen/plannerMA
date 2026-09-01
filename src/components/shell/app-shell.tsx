@@ -38,7 +38,7 @@ import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskOption } from "@/lib/data/tasks";
 import { signOutAction } from "./actions";
 import { CommandPalette } from "./command-palette";
-import { CreateModalsProvider } from "./create-modals-context";
+import { CreateModalsProvider, type CreateModalKind, type CreateModalPrefill } from "./create-modals-context";
 import { GlobalSearch } from "./global-search";
 import { applyNavOrder, NAV_COUNT_META, NAV_ENTRIES, type NavCounts } from "./nav-entries";
 import { NotificationBell } from "./notification-bell";
@@ -112,6 +112,19 @@ export function AppShell({
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modal, setModal] = useState<"task" | "project" | "request" | "notifications" | "navOrder" | "password" | null>(null);
+  // Valeurs déjà connues par le geste qui ouvre la modale (plage de jours
+  // tirée dans Semaine ou Gantt) — voir CreateModalsProvider.
+  const [taskPrefill, setTaskPrefill] = useState<CreateModalPrefill | undefined>(undefined);
+
+  function openCreateModal(kind: CreateModalKind, prefill?: CreateModalPrefill) {
+    setTaskPrefill(prefill);
+    setModal(kind);
+  }
+
+  function closeModal() {
+    setModal(null);
+    setTaskPrefill(undefined);
+  }
   const [collapsed, setCollapsedState] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<ThemePreference>(theme);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -531,7 +544,7 @@ export function AppShell({
   }
 
   return (
-    <CreateModalsProvider open={setModal}>
+    <CreateModalsProvider open={openCreateModal}>
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside
         className={`hidden bg-rail transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:flex-shrink-0 md:flex-col md:overflow-x-hidden ${collapsed ? "md:w-[76px]" : "md:w-[260px]"}`}
@@ -594,9 +607,10 @@ export function AppShell({
           projects={projects}
           people={people}
           tasks={tasks}
-          onClose={() => setModal(null)}
+          initialValues={taskPrefill}
+          onClose={closeModal}
           onCreated={(id) => {
-            setModal(null);
+            closeModal();
             router.push(`/taches/${id}`);
           }}
         />
