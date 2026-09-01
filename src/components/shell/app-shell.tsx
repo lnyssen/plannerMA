@@ -170,7 +170,7 @@ export function AppShell({
           return (
             <div key={href}>
               {showGroupLabel && (
-                <p className={`px-3 text-2xs font-bold tracking-wide text-white/50 uppercase ${href === orderedEntries[0].href ? "pb-1.5" : "pt-3 pb-1.5"}`}>
+                <p className={`px-3 text-2xs font-bold tracking-wide text-white/50 uppercase ${href === orderedEntries[0].href ? "pb-1" : "pt-2 pb-1"}`}>
                   {group}
                 </p>
               )}
@@ -179,7 +179,7 @@ export function AppShell({
                 onClick={() => setDrawerOpen(false)}
                 aria-current={active ? "page" : undefined}
                 title={title}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20 ${isCollapsed ? "justify-center" : ""}`}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20 ${isCollapsed ? "justify-center" : ""}`}
                 style={{
                   background: active ? "rgba(255,255,255,0.18)" : "transparent",
                   color: active ? "#FFFFFF" : "rgba(255,255,255,0.85)",
