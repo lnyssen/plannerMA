@@ -1,10 +1,14 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { checkTaskCapacity, type CapacityWarning } from "@/lib/actions/capacity";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskOption } from "@/lib/data/tasks";
+import { formatShortFr } from "@/lib/planning/dates";
 import { sortByTaskContext, taskContextLabel } from "@/lib/planning/labels";
 import { FieldLabel, fieldInputClass } from "./modal-shell";
 
@@ -34,6 +38,7 @@ export function TaskFormFields({
   statuses = [],
   tasks = [],
   showStatus,
+  excludeTaskId,
 }: {
   values: TaskFormValues;
   onChange: (patch: Partial<TaskFormValues>) => void;
@@ -44,8 +49,39 @@ export function TaskFormFields({
   /** Candidates pour "Dépend de" — la tâche elle-même déjà exclue par l'appelant en édition. */
   tasks?: TaskOption[];
   showStatus?: boolean;
+  /** La tâche en cours d'édition — exclue du calcul de charge pour ne pas se compter elle-même. */
+  excludeTaskId?: string;
 }) {
   const currentStatus = statuses.find((s) => s.id === values.statusId);
+
+  // Avertissement de surcharge — recalculé après une pause de saisie plutôt
+  // qu'à chaque frappe, et seulement quand la personne + les deux dates sont
+  // renseignées (sinon la plage n'a pas de sens à vérifier).
+  const [capacityWarning, setCapacityWarning] = useState<CapacityWarning | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      if (!values.assigneeId || !values.startDate || !values.endDate) {
+        setCapacityWarning(null);
+        return;
+      }
+      checkTaskCapacity({
+        personId: values.assigneeId,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        estimatedHalfDays: values.estimatedHalfDays ? Number(values.estimatedHalfDays) : null,
+        excludeTaskId,
+      }).then((warning) => {
+        if (!cancelled) setCapacityWarning(warning);
+      });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [values.assigneeId, values.startDate, values.endDate, values.estimatedHalfDays, excludeTaskId]);
+
   return (
     <div className="mb-4 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
@@ -209,6 +245,17 @@ export function TaskFormFields({
           />
         </div>
       </div>
+
+      {capacityWarning && (
+        <div
+          className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold sm:col-span-2"
+          style={{ background: "var(--color-alert-wash)", color: "var(--color-alert)" }}
+        >
+          <AlertTriangle size={16} className="flex-shrink-0" />
+          {capacityWarning.personName} est déjà chargé·e à {capacityWarning.ratioPercent}% la semaine du{" "}
+          {formatShortFr(capacityWarning.weekStart)} avec cette tâche incluse.
+        </div>
+      )}
 
       <div className="sm:col-span-2">
         <FieldLabel htmlFor="task-recurrence">Récurrence</FieldLabel>

@@ -412,6 +412,7 @@ export function TaskDetailView({
             statuses={statuses}
             tasks={dependencyOptions}
             showStatus
+            excludeTaskId={task.id}
           />
 
           <FieldSection
