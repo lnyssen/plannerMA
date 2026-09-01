@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, AtSign, Copy, ExternalLink, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
+import { AlertTriangle, AtSign, Copy, ExternalLink, History, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -329,6 +329,36 @@ export function TaskDetailView({
     a.name.toLowerCase().includes(attachmentSearch.trim().toLowerCase()),
   );
 
+  // Fil d'activité unique — commentaires, pièces jointes et journal fusionnés
+  // par ordre chronologique, plutôt que trois cartes séparées : "que s'est-il
+  // passé sur cette tâche" se lit d'un coup, comme un fil de discussion,
+  // plutôt qu'en recoupant mentalement plusieurs sections. La table Pièces
+  // jointes plus haut reste l'endroit où déposer/retirer un fichier — ce fil
+  // ne fait qu'en rendre compte au bon moment dans la chronologie.
+  const activity = [
+    ...task.comments.map((c) => ({
+      type: "comment" as const,
+      id: c.id,
+      createdAt: c.createdAt,
+      actorName: c.authorName,
+      body: c.body,
+    })),
+    ...task.attachments.map((a) => ({
+      type: "attachment" as const,
+      id: a.id,
+      createdAt: a.createdAt,
+      actorName: a.uploadedBy?.name ?? "Quelqu’un",
+      name: a.name,
+    })),
+    ...task.journalEntries.map((j) => ({
+      type: "journal" as const,
+      id: j.id,
+      createdAt: j.createdAt,
+      actorName: j.actorName,
+      action: j.action,
+    })),
+  ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
   return (
     <div className="px-8 py-8">
       <Breadcrumb items={[{ label: "Tâches", href: "/taches" }, { label: task.title }]} />
@@ -554,17 +584,37 @@ export function TaskDetailView({
             </div>
           </FieldSection>
 
-          <FieldSection title={`Commentaires (${task.comments.length})`} icon={MessageSquare}>
-            <div className="mb-3 flex max-h-40 flex-col gap-2 overflow-y-auto">
-              {task.comments.map((c) => (
-                <div key={c.id} className="rounded-lg border border-line p-2.5 text-sm">
-                  <div className="mb-0.5 flex items-baseline gap-2">
-                    <span className="font-semibold text-heading">{c.authorName}</span>
-                    <span className="text-2xs text-ink-muted">{quandFr(c.createdAt)}</span>
-                  </div>
-                  <p className="whitespace-pre-wrap text-ink">{c.body}</p>
-                </div>
-              ))}
+          <FieldSection title={`Activité (${activity.length})`} icon={MessageSquare}>
+            <div className="mb-3 flex max-h-80 flex-col gap-2 overflow-y-auto">
+              {activity.map((item) => {
+                if (item.type === "comment") {
+                  return (
+                    <div key={`comment-${item.id}`} className="rounded-lg border border-line p-2.5 text-sm">
+                      <div className="mb-0.5 flex items-baseline gap-2">
+                        <span className="font-semibold text-heading">{item.actorName}</span>
+                        <span className="text-2xs text-ink-muted">{quandFr(item.createdAt)}</span>
+                      </div>
+                      <p className="whitespace-pre-wrap text-ink">{item.body}</p>
+                    </div>
+                  );
+                }
+                if (item.type === "attachment") {
+                  return (
+                    <p key={`attachment-${item.id}`} className="flex items-center gap-1.5 text-xs text-ink-muted">
+                      <Paperclip size={12} className="flex-shrink-0" />
+                      <span className="font-semibold text-heading">{item.actorName}</span> a joint « {item.name} »
+                      <span> — {quandFr(item.createdAt)}</span>
+                    </p>
+                  );
+                }
+                return (
+                  <p key={`journal-${item.id}`} className="flex items-center gap-1.5 text-xs text-ink-muted">
+                    <History size={12} className="flex-shrink-0" />
+                    {item.action}
+                    <span> — {item.actorName}, {quandFr(item.createdAt)}</span>
+                  </p>
+                );
+              })}
             </div>
             <div>
               <textarea
@@ -693,20 +743,6 @@ export function TaskDetailView({
                 {timeError}
               </p>
             )}
-          </div>
-
-          <div className="rounded-lg border border-line p-4">
-            <h3 className="mb-3 text-2xs font-bold tracking-wide text-ink-muted uppercase">
-              Historique ({task.journalEntries.length})
-            </h3>
-            <div className="flex flex-col gap-1.5">
-              {task.journalEntries.map((entry) => (
-                <p key={entry.id} className="text-xs text-ink">
-                  {entry.action}
-                  <span className="text-ink-muted"> — {entry.actorName}, {quandFr(entry.createdAt)}</span>
-                </p>
-              ))}
-            </div>
           </div>
         </div>
       </div>
