@@ -19,6 +19,7 @@ import { quandFr, toIsoDate, today } from "@/lib/planning/dates";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { SearchField } from "@/components/ui/search-field";
 import { fieldInputClass, FieldSection } from "@/components/modals/modal-shell";
 import { TaskFormFields, type TaskFormValues } from "@/components/modals/task-form-fields";
 
@@ -442,13 +443,9 @@ export function TaskDetailView({
 
           <FieldSection title={`Pièces jointes (${task.attachments.length})`} icon={Paperclip}>
             {task.attachments.length > 3 && (
-              <input
-                type="text"
-                placeholder="Rechercher un fichier…"
-                value={attachmentSearch}
-                onChange={(e) => setAttachmentSearch(e.target.value)}
-                className={`${fieldInputClass} mb-3 max-w-xs`}
-              />
+              <div className="mb-3">
+                <SearchField value={attachmentSearch} onChange={setAttachmentSearch} placeholder="Rechercher un fichier…" className="max-w-xs" />
+              </div>
             )}
             {task.attachments.length > 0 && (
               <div className="mb-3 overflow-x-auto rounded-lg border border-line">

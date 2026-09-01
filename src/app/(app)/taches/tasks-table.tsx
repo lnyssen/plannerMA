@@ -4,6 +4,7 @@ import { AlertTriangle, MessageSquare, Paperclip } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { SearchField } from "@/components/ui/search-field";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { PersonSummary } from "@/lib/data/people";
@@ -147,18 +148,12 @@ export function TasksTable({
   return (
     <div>
       <div className="mb-5 flex flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Rechercher…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md flex-1 rounded-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
-        />
+        <SearchField value={search} onChange={setSearch} className="max-w-md" />
         <select
           value={studioFilter}
           onChange={(e) => setStudioFilter(e.target.value)}
           aria-label="Filtrer par studio"
-          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
         >
           <option value="">Tous les studios</option>
           {studios.map((s) => (
@@ -171,7 +166,7 @@ export function TasksTable({
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           aria-label="Filtrer par statut"
-          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
         >
           <option value="">Tous les statuts</option>
           {statuses.map((s) => (
@@ -184,7 +179,7 @@ export function TasksTable({
           value={projectFilter}
           onChange={(e) => setProjectFilter(e.target.value)}
           aria-label="Filtrer par client/projet"
-          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
         >
           <option value="">Tous les projets</option>
           {projects.map((p) => (
@@ -198,7 +193,7 @@ export function TasksTable({
             value={personFilter}
             onChange={(e) => setPersonFilter(e.target.value)}
             aria-label="Filtrer par personne"
-            className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+            className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
           >
             <option value="">Toutes les personnes</option>
             {people.map((p) => (

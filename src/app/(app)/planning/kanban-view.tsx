@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { SearchField } from "@/components/ui/search-field";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import { updateTaskStatus } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
@@ -100,18 +101,12 @@ export function KanbanView({
   return (
     <div>
       <div className="mb-5 flex flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Rechercher…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md flex-1 rounded-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
-        />
+        <SearchField value={search} onChange={setSearch} className="max-w-md" />
         <select
           value={studioFilter}
           onChange={(e) => setStudioFilter(e.target.value)}
           aria-label="Filtrer par studio"
-          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
         >
           <option value="">Tous les studios</option>
           {studios.map((s) => (
@@ -124,7 +119,7 @@ export function KanbanView({
           value={personFilter}
           onChange={(e) => setPersonFilter(e.target.value)}
           aria-label="Filtrer par personne"
-          className="rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
+          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
         >
           <option value="">Toutes les personnes</option>
           {people.map((p) => (

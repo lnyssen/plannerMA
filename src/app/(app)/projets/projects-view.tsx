@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { secondaryButtonClass } from "@/components/ui/buttons";
 import { CreateButton } from "@/components/shell/create-button";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { SearchField } from "@/components/ui/search-field";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { ProjectWithCounts } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -300,13 +301,7 @@ export function ProjectsView({
       )}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          placeholder="Rechercher…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md rounded-md border-[1.5px] border-heading px-3 py-2.5 text-sm text-ink outline-none"
-        />
+        <SearchField value={search} onChange={setSearch} className="max-w-md" />
         {view === "table" && (
           <div className="flex flex-wrap gap-1.5">
             <button
