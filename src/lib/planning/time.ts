@@ -1,6 +1,8 @@
 // Calculs purs sur les écritures de temps (feuilles de temps) — même esprit
 // que src/lib/planning/tasks.ts : logique testable, indépendante de Prisma.
 
+import { taskProgress, type ProgressStatus } from "./tasks";
+
 export interface TimeEntryDuration {
   startedAt: Date;
   endedAt: Date | null;
@@ -50,4 +52,41 @@ export function projectBudgetPace(consumedRatio: number, progress: number): Budg
   if (gap > PACE_THRESHOLD) return "behind";
   if (gap < -PACE_THRESHOLD) return "ahead";
   return "onTrack";
+}
+
+export interface DashboardProjectInput {
+  id: string;
+  name: string;
+  clientName: string;
+  budgetHours: number;
+  timeEntries: TimeEntryDuration[];
+  taskStatuses: ProgressStatus[];
+}
+
+export interface DashboardProjectRow extends DashboardProjectInput {
+  budgetMinutes: number;
+  actualMinutes: number;
+  progress: number;
+  consumedRatio: number;
+  pace: BudgetPace;
+}
+
+/**
+ * Calcul partagé entre la vue Tableau de bord (dashboard-view.tsx) et son
+ * export CSV (api/export/dashboard) — une seule définition de "consommé",
+ * "avancement" et "rythme" par projet, triée du plus au moins consommé.
+ */
+export function computeDashboardRows(projects: DashboardProjectInput[], allStatuses: ProgressStatus[]): DashboardProjectRow[] {
+  return projects
+    .map((p) => {
+      const budgetMinutes = p.budgetHours * 60;
+      const actualMinutes = sumDurationMinutes(p.timeEntries);
+      const progress =
+        p.taskStatuses.length === 0
+          ? 0
+          : p.taskStatuses.reduce((sum, s) => sum + taskProgress(s, allStatuses, []), 0) / p.taskStatuses.length;
+      const consumedRatio = budgetMinutes > 0 ? actualMinutes / budgetMinutes : 0;
+      return { ...p, budgetMinutes, actualMinutes, progress, consumedRatio, pace: projectBudgetPace(consumedRatio, progress) };
+    })
+    .sort((a, b) => b.consumedRatio - a.consumedRatio);
 }

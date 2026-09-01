@@ -1,16 +1,8 @@
-import { LayoutDashboard } from "lucide-react";
+import { Download, LayoutDashboard } from "lucide-react";
+import { secondaryButtonClass } from "@/components/ui/buttons";
 import { EmptyState } from "@/components/ui/empty-state";
-import { taskProgress, type ProgressStatus } from "@/lib/planning/tasks";
-import { formatDurationFr, projectBudgetPace, sumDurationMinutes, type BudgetPace } from "@/lib/planning/time";
-
-interface DashboardProject {
-  id: string;
-  name: string;
-  clientName: string;
-  budgetHours: number;
-  timeEntries: { startedAt: Date; endedAt: Date | null }[];
-  taskStatuses: ProgressStatus[];
-}
+import type { ProgressStatus } from "@/lib/planning/tasks";
+import { computeDashboardRows, formatDurationFr, type BudgetPace, type DashboardProjectInput } from "@/lib/planning/time";
 
 const PACE_LABEL: Record<BudgetPace, string> = {
   ahead: "En avance",
@@ -43,26 +35,14 @@ function PacePill({ pace }: { pace: BudgetPace }) {
  * devienne un dépassement franc. Charge (occupation par personne) reste une
  * page séparée — celle-ci est le pendant "argent du temps", vue globale.
  */
-export function DashboardView({ projects, allStatuses }: { projects: DashboardProject[]; allStatuses: ProgressStatus[] }) {
-  const rows = projects
-    .map((p) => {
-      const budgetMinutes = p.budgetHours * 60;
-      const actualMinutes = sumDurationMinutes(p.timeEntries);
-      const progress =
-        p.taskStatuses.length === 0
-          ? 0
-          : p.taskStatuses.reduce((sum, s) => sum + taskProgress(s, allStatuses, []), 0) / p.taskStatuses.length;
-      const consumedRatio = budgetMinutes > 0 ? actualMinutes / budgetMinutes : 0;
-      return {
-        ...p,
-        budgetMinutes,
-        actualMinutes,
-        progress,
-        consumedRatio,
-        pace: projectBudgetPace(consumedRatio, progress),
-      };
-    })
-    .sort((a, b) => b.consumedRatio - a.consumedRatio);
+export function DashboardView({
+  projects,
+  allStatuses,
+}: {
+  projects: DashboardProjectInput[];
+  allStatuses: ProgressStatus[];
+}) {
+  const rows = computeDashboardRows(projects, allStatuses);
 
   const totalBudgetMinutes = rows.reduce((sum, p) => sum + p.budgetMinutes, 0);
   const totalActualMinutes = rows.reduce((sum, p) => sum + p.actualMinutes, 0);
@@ -72,9 +52,19 @@ export function DashboardView({ projects, allStatuses }: { projects: DashboardPr
 
   return (
     <div className="px-8 py-8">
-      <h1 className="mb-5 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
-        Tableau de bord
-      </h1>
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
+          Tableau de bord
+        </h1>
+        {rows.length > 0 && (
+          <a
+            href="/api/export/dashboard"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
+          >
+            <Download size={14} /> Exporter en CSV
+          </a>
+        )}
+      </div>
 
       {rows.length === 0 ? (
         <EmptyState
