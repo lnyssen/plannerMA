@@ -30,7 +30,7 @@ export function ConnexionForm({ redirectTo }: { redirectTo: string }) {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-          Courriel
+          Email
         </label>
         <input
           id="email"

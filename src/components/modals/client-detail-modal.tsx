@@ -130,7 +130,7 @@ export function ClientDetailModal({
             </div>
           </div>
 
-          <FieldLabel htmlFor="client-contact-email">Courriel</FieldLabel>
+          <FieldLabel htmlFor="client-contact-email">Email</FieldLabel>
           <input
             id="client-contact-email"
             type="email"

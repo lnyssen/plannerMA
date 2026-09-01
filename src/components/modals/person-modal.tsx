@@ -241,7 +241,7 @@ export function PersonModal({
             placeholder="Studios, Formations, agence partenaire…"
           />
 
-          <FieldLabel htmlFor="person-email">Courriel (facultatif)</FieldLabel>
+          <FieldLabel htmlFor="person-email">Email (facultatif)</FieldLabel>
           <input
             id="person-email"
             type="email"
@@ -361,7 +361,7 @@ export function PersonModal({
                 </button>
               ) : (
                 <>
-                  <FieldLabel htmlFor="invite-email">Courriel d’invitation</FieldLabel>
+                  <FieldLabel htmlFor="invite-email">Email d’invitation</FieldLabel>
                   <input
                     id="invite-email"
                     type="email"
