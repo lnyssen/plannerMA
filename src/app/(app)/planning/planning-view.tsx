@@ -3,7 +3,7 @@
 import { BarChart3, CalendarDays, Columns3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { SegmentedControl, type SegmentedOption } from "@/components/ui/segmented-control";
 import type { GanttTask } from "@/lib/data/gantt";
 import type { PersonSummary } from "@/lib/data/people";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -16,7 +16,7 @@ import { SemaineView, type WeekTask } from "./semaine-view";
 
 export type PlanningTab = "kanban" | "semaine" | "gantt";
 
-const TABS: { id: PlanningTab; label: string; icon: typeof Columns3 }[] = [
+const TABS: SegmentedOption<PlanningTab>[] = [
   { id: "gantt", label: "Gantt", icon: BarChart3 },
   { id: "kanban", label: "Kanban", icon: Columns3 },
   { id: "semaine", label: "Semaine", icon: CalendarDays },
@@ -67,20 +67,7 @@ export function PlanningView({
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Planning
         </h1>
-        <div className="flex gap-2">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => selectTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${
-                tab === t.id ? primaryButtonClass : secondaryButtonClass
-              }`}
-            >
-              <t.icon size={14} /> {t.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl ariaLabel="Vue du planning" value={tab} onChange={selectTab} options={TABS} />
       </div>
 
       {tab === "kanban" && <KanbanView tasks={boardTasks} studios={studios} people={people} statuses={statuses} />}

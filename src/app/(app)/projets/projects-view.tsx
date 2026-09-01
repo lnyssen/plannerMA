@@ -9,6 +9,7 @@ import { CreateButton } from "@/components/shell/create-button";
 import { ClientTypeBadge } from "@/components/ui/client-type-badge";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { SearchField } from "@/components/ui/search-field";
+import { SegmentedControl, type SegmentedOption } from "@/components/ui/segmented-control";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { ProjectWithCounts } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -16,6 +17,11 @@ import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
 import { taskProgress } from "@/lib/planning/tasks";
 import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
+
+const PROJECT_VIEWS: SegmentedOption<"cards" | "table">[] = [
+  { id: "table", label: "Tableau", icon: Table2 },
+  { id: "cards", label: "Cartes", icon: LayoutGrid },
+];
 
 const VIEW_STORAGE_KEY = "planning-studios:projets-view";
 
@@ -245,32 +251,7 @@ export function ProjectsView({
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Projets
         </h1>
-        <div className="flex overflow-hidden rounded-lg border-[1.5px] border-heading" role="group" aria-label="Présentation">
-          <button
-            type="button"
-            onClick={() => changeView("cards")}
-            aria-pressed={view === "cards"}
-            className="flex items-center gap-1.5 border-r-[1.5px] border-heading px-2.5 py-1 text-xs font-semibold"
-            style={{
-              background: view === "cards" ? "var(--color-heading)" : "transparent",
-              color: view === "cards" ? "var(--color-paper)" : "var(--color-ink-muted)",
-            }}
-          >
-            <LayoutGrid size={13} /> Cartes
-          </button>
-          <button
-            type="button"
-            onClick={() => changeView("table")}
-            aria-pressed={view === "table"}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
-            style={{
-              background: view === "table" ? "var(--color-heading)" : "transparent",
-              color: view === "table" ? "var(--color-paper)" : "var(--color-ink-muted)",
-            }}
-          >
-            <Table2 size={13} /> Tableau
-          </button>
-        </div>
+        <SegmentedControl ariaLabel="Présentation" size="sm" value={view} onChange={changeView} options={PROJECT_VIEWS} />
         <span className="flex-1" />
         <Link
           href={showArchived ? "/projets" : "/projets?archives=1"}

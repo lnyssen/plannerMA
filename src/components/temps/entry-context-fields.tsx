@@ -6,8 +6,13 @@ import type { TaskCategoryOption } from "@/lib/data/task-categories";
 import type { TaskOption } from "@/lib/data/tasks";
 import type { StudioSummary } from "@/lib/data/studios";
 import { FieldLabel, fieldInputClass } from "@/components/modals/modal-shell";
-import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
+import { SegmentedControl, type SegmentedOption } from "@/components/ui/segmented-control";
 import { TaskCascadeFields } from "@/components/ui/task-cascade-fields";
+
+const MODES: SegmentedOption<"task" | "other">[] = [
+  { id: "task", label: "Tâche planifiée" },
+  { id: "other", label: "Autre activité" },
+];
 
 export interface EntryContextValue {
   taskId: string | null;
@@ -62,24 +67,13 @@ export function EntryContextFields({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => switchMode("task")}
-          aria-pressed={mode === "task"}
-          className={`px-2.5 py-1 text-xs font-semibold ${mode === "task" ? primaryButtonClass : secondaryButtonClass}`}
-        >
-          Tâche planifiée
-        </button>
-        <button
-          type="button"
-          onClick={() => switchMode("other")}
-          aria-pressed={mode === "other"}
-          className={`px-2.5 py-1 text-xs font-semibold ${mode === "other" ? primaryButtonClass : secondaryButtonClass}`}
-        >
-          Autre activité
-        </button>
-      </div>
+      <SegmentedControl
+        ariaLabel="Nature de l’écriture"
+        size="sm"
+        value={mode}
+        onChange={switchMode}
+        options={MODES}
+      />
 
       {mode === "task" ? (
         <>

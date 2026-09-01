@@ -17,7 +17,22 @@ import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButton
 import { EmptyState } from "@/components/ui/empty-state";
 import { EntryContextLabelParts } from "@/components/ui/task-context-label";
 import { EntryContextFields, type EntryContextValue } from "@/components/temps/entry-context-fields";
+import { SegmentedControl, type SegmentedOption } from "@/components/ui/segmented-control";
 import { TimeCalendar } from "./time-calendar";
+
+type MineView = "calendar" | "list" | "summary";
+
+// Calendrier en premier : c'est la lecture par défaut du temps déjà passé.
+const MINE_VIEWS: SegmentedOption<MineView>[] = [
+  { id: "calendar", label: "Calendrier", icon: CalendarDays },
+  { id: "list", label: "Liste", icon: List },
+  { id: "summary", label: "Par projet", icon: PieChart },
+];
+
+const SCOPES: SegmentedOption<"mine" | "team">[] = [
+  { id: "mine", label: "Mon temps" },
+  { id: "team", label: "Équipe" },
+];
 
 interface ProjectBudget {
   id: string;
@@ -53,7 +68,7 @@ export function TempsView({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [tab, setTab] = useState<"mine" | "team">("mine");
-  const [mineView, setMineView] = useState<"list" | "calendar" | "summary">("calendar");
+  const [mineView, setMineView] = useState<MineView>("calendar");
   const [context, setContext] = useState<EntryContextValue>({
     taskId: tasks[0]?.id ?? null,
     studioId: tasks[0]?.studios[0]?.studioId ?? studios[0]?.id ?? "",
@@ -188,30 +203,15 @@ export function TempsView({
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Temps
         </h1>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setTab("mine")}
-              className={`px-3 py-1.5 text-sm font-semibold ${tab === "mine" ? primaryButtonClass : secondaryButtonClass}`}
-            >
-              Mon temps
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("team")}
-              className={`px-3 py-1.5 text-sm font-semibold ${tab === "team" ? primaryButtonClass : secondaryButtonClass}`}
-            >
-              Équipe
-            </button>
-          </div>
-        )}
+        {isAdmin && <SegmentedControl ariaLabel="Périmètre" value={tab} onChange={setTab} options={SCOPES} />}
       </div>
 
       {tab === "mine" && (
         <>
         <div className="max-w-3xl">
-          <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Ajouter du temps</p>
+          <h2 className="mb-3 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px] text-heading">
+            Ajouter du temps
+          </h2>
           {runningTimer ? (
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-heading bg-wash px-4 py-3">
               <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-alert" aria-hidden="true" />
@@ -323,35 +323,30 @@ export function TempsView({
             </p>
           )}
 
-          <div className="mt-2 mb-5 border-t border-line pt-5">
-            <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Vos écritures</p>
-            <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setMineView("calendar")}
-              aria-pressed={mineView === "calendar"}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "calendar" ? primaryButtonClass : secondaryButtonClass}`}
-            >
-              <CalendarDays size={13} /> Calendrier
-            </button>
-            <button
-              type="button"
-              onClick={() => setMineView("list")}
-              aria-pressed={mineView === "list"}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "list" ? primaryButtonClass : secondaryButtonClass}`}
-            >
-              <List size={13} /> Liste
-            </button>
-            <button
-              type="button"
-              onClick={() => setMineView("summary")}
-              aria-pressed={mineView === "summary"}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${mineView === "summary" ? primaryButtonClass : secondaryButtonClass}`}
-            >
-              <PieChart size={13} /> Par projet
-            </button>
-            </div>
+        </div>
+
+        {/* Barre de section pleine largeur, alignée sur le contenu qu'elle
+            commande. Avant : un intitulé « Vos écritures » (du vocabulaire
+            comptable) posé dans la colonne étroite du formulaire, au-dessus
+            d'un contenu qui, lui, sortait de cette colonne — l'intitulé et
+            ce qu'il annonçait ne partageaient même pas un bord. Le total
+            enregistré remplace le libellé : c'est le chiffre qu'on vient
+            chercher sur cet écran. */}
+        <div className="mt-2 mb-4 flex flex-wrap items-baseline justify-between gap-3 border-t border-line pt-5">
+          <div className="flex items-baseline gap-3">
+            <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px] text-heading">
+              Votre temps
+            </h2>
+            <span className="text-sm font-semibold text-ink-muted tabular-nums">
+              {formatDurationFr(myProjectBreakdown.total)} enregistrées
+            </span>
           </div>
+          <SegmentedControl
+            ariaLabel="Affichage de votre temps"
+            value={mineView}
+            onChange={setMineView}
+            options={MINE_VIEWS}
+          />
         </div>
 
         {/* La vue Calendrier sort du cadre max-w-3xl (formulaire/liste) : une
