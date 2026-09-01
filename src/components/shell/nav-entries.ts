@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Clock,
   Columns3,
+  Home,
   LayoutDashboard,
   ListChecks,
   Settings,
@@ -70,6 +71,7 @@ export const NAV_COUNT_META: Record<NavCountKey, { describe: (count: number) => 
 // (voir NavOrderModal) ; ce tableau reste la référence pour les entrées non
 // encore réordonnées et pour filtrer par rôle.
 export const NAV_ENTRIES: NavEntry[] = [
+  { href: "/aujourdhui", label: "Aujourd’hui", icon: Home, adminOnly: false, group: "Travail" },
   { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false, countKey: "tasksLate", group: "Travail" },
   { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false, countKey: "mesTaches", group: "Travail" },
   { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false, group: "Travail" },

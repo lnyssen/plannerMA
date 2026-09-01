@@ -9,7 +9,10 @@ export default async function ConnexionPage({
   searchParams: Promise<{ depuis?: string }>;
 }) {
   const { depuis } = await searchParams;
-  const redirectTo = depuis && depuis.startsWith("/") ? depuis : "/projets";
+  // "/" (pas "/projets" en dur) : la racine redirige elle-même selon le
+  // rôle — admin vers Projets, les autres vers Aujourd'hui (voir
+  // src/app/page.tsx) — pour ne pas dupliquer cette décision ici.
+  const redirectTo = depuis && depuis.startsWith("/") ? depuis : "/";
 
   return (
     <div className="w-full max-w-sm border border-heading bg-paper p-8">

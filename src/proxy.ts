@@ -15,7 +15,9 @@ export default auth((req) => {
   }
 
   if (isLoggedIn && isPublic) {
-    return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));
+    // "/" (pas "/projets" en dur) : la racine redirige selon le rôle — voir
+    // src/app/page.tsx.
+    return NextResponse.redirect(new URL("/", req.nextUrl.origin));
   }
 
   if (
