@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowUpDown,
   Bell,
+  ChevronDown,
   ChevronUp,
   ClipboardPlus,
   FolderPlus,
@@ -52,6 +53,10 @@ const ROLE_LABEL: Record<Role, string> = {
 // synchroniser entre appareils, contrairement à navOrder (compte) — même
 // registre que la bascule Cartes/Tableau de Projets.
 const COLLAPSE_STORAGE_KEY = "planning-studios:nav-collapsed";
+// Quels groupes de menu sont repliés — distinct de COLLAPSE_STORAGE_KEY (qui
+// réduit tout le menu aux icônes) : ici chaque groupe (Travail, Projets…)
+// se replie indépendamment, liste de noms de groupe en JSON.
+const GROUP_COLLAPSE_STORAGE_KEY = "planning-studios:nav-groups-collapsed";
 
 interface AppShellProps {
   studios: StudioSummary[];
@@ -142,66 +147,129 @@ export function AppShell({
     }
   }
 
+  const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(GROUP_COLLAPSE_STORAGE_KEY);
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const names = parsed.filter((g): g is string => typeof g === "string");
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setCollapsedGroups(names);
+        }
+      }
+    } catch {
+      // localStorage indisponible ou JSON invalide — tous les groupes restent dépliés.
+    }
+  }, []);
+
+  function toggleGroup(group: string) {
+    setCollapsedGroups((prev) => {
+      const next = prev.includes(group) ? prev.filter((g) => g !== group) : [...prev, group];
+      try {
+        localStorage.setItem(GROUP_COLLAPSE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Rien à faire : la préférence ne survivra juste pas à cette session.
+      }
+      return next;
+    });
+  }
+
   const orderedEntries = applyNavOrder(
     NAV_ENTRIES.filter((e) => !e.adminOnly || role === "ADMIN"),
     navOrder,
   );
 
+  function renderNavEntry({ href, label, icon: Icon, countKey }: (typeof orderedEntries)[number], isCollapsed: boolean) {
+    const active = pathname === href || pathname.startsWith(`${href}/`);
+    const count = countKey ? counts[countKey] : 0;
+    const meta = countKey ? NAV_COUNT_META[countKey] : null;
+    const alert = meta?.alert(counts) ?? false;
+    // Toujours une infobulle qui explique le nombre (pas seulement replié) :
+    // une puce nue à côté d'un libellé ne se comprend pas d'elle-même —
+    // "1" à côté de "Tâches" pourrait vouloir dire n'importe quoi sans ce texte.
+    const title = count > 0 && meta ? `${label} — ${meta.describe(count, counts)}` : isCollapsed ? label : undefined;
+    return (
+      <Link
+        key={href}
+        href={href}
+        onClick={() => setDrawerOpen(false)}
+        aria-current={active ? "page" : undefined}
+        title={title}
+        className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20 ${isCollapsed ? "justify-center" : ""}`}
+        style={{
+          background: active ? "rgba(255,255,255,0.18)" : "transparent",
+          color: active ? "#FFFFFF" : "rgba(255,255,255,0.85)",
+          fontWeight: active ? 700 : 600,
+        }}
+      >
+        <Icon size={17} aria-hidden="true" className="flex-shrink-0" />
+        {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
+        {!isCollapsed && count > 0 && (
+          <span
+            className="flex flex-shrink-0 items-center gap-0.5 rounded-full px-2 py-0.5 text-2xs font-bold tabular-nums"
+            style={
+              alert
+                ? { background: "var(--color-alert)", color: "#FFFFFF" }
+                : { background: "rgba(255,255,255,0.25)", color: "#FFFFFF" }
+            }
+          >
+            {alert && <AlertTriangle size={10} aria-hidden="true" />}
+            {count}
+          </span>
+        )}
+      </Link>
+    );
+  }
+
   function renderNav(isCollapsed: boolean) {
-    // Les intitulés de groupe n'ont de sens que pour l'ordre par défaut : dès
+    // Les groupes repliables n'ont de sens que pour l'ordre par défaut : dès
     // qu'un ordre personnalisé existe, les entrées peuvent mélanger les
-    // groupes (voir applyNavOrder), un intitulé y serait trompeur.
+    // groupes (voir applyNavOrder), un regroupement y serait trompeur — et
+    // replié à l'icône, il n'y a de toute façon plus de place pour un
+    // intitulé de groupe : liste plate dans les deux cas.
     const showGroups = !navOrder || navOrder.length === 0;
-    let lastGroup: string | null = null;
+    if (!showGroups || isCollapsed) {
+      return (
+        <nav aria-label="Navigation principale" className="flex flex-col gap-0.5 border-b border-white/15 px-3 pb-3">
+          {orderedEntries.map((entry) => renderNavEntry(entry, isCollapsed))}
+        </nav>
+      );
+    }
+
+    const groups: { name: string; entries: typeof orderedEntries }[] = [];
+    for (const entry of orderedEntries) {
+      const current = groups[groups.length - 1];
+      if (current && current.name === entry.group) current.entries.push(entry);
+      else groups.push({ name: entry.group, entries: [entry] });
+    }
+
     return (
       <nav aria-label="Navigation principale" className="flex flex-col gap-0.5 border-b border-white/15 px-3 pb-3">
-        {orderedEntries.map(({ href, label, icon: Icon, countKey, group }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`);
-          const count = countKey ? counts[countKey] : 0;
-          const meta = countKey ? NAV_COUNT_META[countKey] : null;
-          const showGroupLabel = showGroups && !isCollapsed && group !== lastGroup;
-          lastGroup = group;
-          // Toujours une infobulle qui explique le nombre (pas seulement
-          // replié) : une puce nue à côté d'un libellé ne se comprend pas
-          // d'elle-même — "1" à côté de "Tâches" pourrait vouloir dire
-          // n'importe quoi sans ce texte.
-          const title =
-            count > 0 && meta ? `${label} — ${meta.describe(count)}` : isCollapsed ? label : undefined;
+        {groups.map((g, i) => {
+          // Un groupe replié qui contient la page en cours reste déplié —
+          // se retrouver sans savoir où on est dans le menu serait pire que
+          // le confort du repli.
+          const containsActive = g.entries.some((e) => pathname === e.href || pathname.startsWith(`${e.href}/`));
+          const collapsed = collapsedGroups.includes(g.name) && !containsActive;
           return (
-            <div key={href}>
-              {showGroupLabel && (
-                <p className={`px-3 text-2xs font-bold tracking-wide text-white/50 uppercase ${href === orderedEntries[0].href ? "pb-1" : "pt-2 pb-1"}`}>
-                  {group}
-                </p>
-              )}
-              <Link
-                href={href}
-                onClick={() => setDrawerOpen(false)}
-                aria-current={active ? "page" : undefined}
-                title={title}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20 ${isCollapsed ? "justify-center" : ""}`}
-                style={{
-                  background: active ? "rgba(255,255,255,0.18)" : "transparent",
-                  color: active ? "#FFFFFF" : "rgba(255,255,255,0.85)",
-                  fontWeight: active ? 700 : 600,
-                }}
+            <div key={g.name}>
+              <button
+                type="button"
+                onClick={() => toggleGroup(g.name)}
+                aria-expanded={!collapsed}
+                className={`flex w-full items-center justify-between gap-2 rounded-md px-3 text-2xs font-bold tracking-wide text-white/50 uppercase transition-colors duration-100 hover:text-white/85 ${i === 0 ? "pb-1" : "pt-2 pb-1"}`}
               >
-                <Icon size={17} aria-hidden="true" className="flex-shrink-0" />
-                {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
-                {!isCollapsed && count > 0 && (
-                  <span
-                    className="flex flex-shrink-0 items-center gap-0.5 rounded-full px-2 py-0.5 text-2xs font-bold tabular-nums"
-                    style={
-                      meta?.alert
-                        ? { background: "var(--color-alert)", color: "#FFFFFF" }
-                        : { background: "rgba(255,255,255,0.25)", color: "#FFFFFF" }
-                    }
-                  >
-                    {meta?.alert && <AlertTriangle size={10} aria-hidden="true" />}
-                    {count}
-                  </span>
-                )}
-              </Link>
+                {g.name}
+                <ChevronDown
+                  size={12}
+                  aria-hidden="true"
+                  className={`flex-shrink-0 transition-transform duration-150 ${collapsed ? "" : "rotate-180"}`}
+                />
+              </button>
+              {!collapsed && <div className="flex flex-col gap-0.5">{g.entries.map((entry) => renderNavEntry(entry, false))}</div>}
             </div>
           );
         })}

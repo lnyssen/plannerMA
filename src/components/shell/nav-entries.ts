@@ -17,9 +17,9 @@ import {
 } from "lucide-react";
 
 /** Clé vers un compteur calculé côté serveur (voir NavCounts) — absent = pas de puce. */
-export type NavCountKey = "mesTaches" | "demandes" | "tasksLate" | "projectsOverBudget";
+export type NavCountKey = "mesTaches" | "demandes" | "tasksActive" | "projectsActive";
 
-export type NavGroup = "Travail" | "Projets" | "Suivi" | "Équipe" | "Système";
+export type NavGroup = "Travail" | "Projets" | "Suivi" | "Équipe" | "Paramètres";
 
 export interface NavEntry {
   href: string;
@@ -35,7 +35,11 @@ export interface NavEntry {
 export interface NavCounts {
   mesTaches: number;
   demandes: number;
+  tasksActive: number;
+  /** Sous-ensemble de tasksActive (échéance dépassée) — pas sa propre puce, sert juste à colorer celle de tasksActive en alerte. */
   tasksLate: number;
+  projectsActive: number;
+  /** Sous-ensemble de projectsActive (budget de temps dépassé) — même principe que tasksLate. */
   projectsOverBudget: number;
 }
 
@@ -43,27 +47,39 @@ export interface NavCounts {
  * Ce que représente chaque puce et comment la mettre en forme — un nombre nu
  * à côté d'un libellé de menu ne se comprend pas de lui-même (relevé :
  * "à quoi correspond le numéro inscrit ?"). `describe` alimente l'infobulle
- * dans tous les états (replié ET déplié, avant seulement replié) ;
- * `alert` distingue un problème à corriger (retard, dépassement — teinte
- * alerte) d'un simple compte informatif (charge de travail, file d'attente —
- * teinte neutre), pour que la couleur porte aussi du sens.
+ * dans tous les états (replié ET déplié, avant seulement replié) ; `alert`
+ * distingue un problème à corriger (teinte alerte) d'un simple compte
+ * informatif (teinte neutre). Le nombre affiché est toujours un total
+ * informatif (tâches/projets en cours) ; `alert` s'active séparément dès
+ * qu'un sous-ensemble à problème existe dans ce total (retard, dépassement
+ * de budget) — pour ne pas avoir à choisir entre "montrer combien" et
+ * "signaler un problème", les deux se lisent d'un coup d'œil.
  */
-export const NAV_COUNT_META: Record<NavCountKey, { describe: (count: number) => string; alert: boolean }> = {
-  tasksLate: {
-    describe: (n) => `${n} tâche${n > 1 ? "s" : ""} en retard — échéance dépassée, pas encore terminée${n > 1 ? "s" : ""}`,
-    alert: true,
+export const NAV_COUNT_META: Record<
+  NavCountKey,
+  { describe: (count: number, counts: NavCounts) => string; alert: (counts: NavCounts) => boolean }
+> = {
+  tasksActive: {
+    describe: (n, counts) =>
+      `${n} tâche${n > 1 ? "s" : ""} en cours` +
+      (counts.tasksLate > 0 ? ` — dont ${counts.tasksLate} en retard` : ""),
+    alert: (counts) => counts.tasksLate > 0,
   },
-  projectsOverBudget: {
-    describe: (n) => `${n} projet${n > 1 ? "s" : ""} qui dépasse${n > 1 ? "nt" : ""} son budget de temps`,
-    alert: true,
+  projectsActive: {
+    describe: (n, counts) =>
+      `${n} projet${n > 1 ? "s" : ""} en cours` +
+      (counts.projectsOverBudget > 0
+        ? ` — dont ${counts.projectsOverBudget} qui dépasse${counts.projectsOverBudget > 1 ? "nt" : ""} son budget de temps`
+        : ""),
+    alert: (counts) => counts.projectsOverBudget > 0,
   },
   mesTaches: {
     describe: (n) => `${n} tâche${n > 1 ? "s" : ""} qui vous ${n > 1 ? "sont" : "est"} attribuée${n > 1 ? "s" : ""}, pas encore terminée${n > 1 ? "s" : ""}`,
-    alert: false,
+    alert: () => false,
   },
   demandes: {
     describe: (n) => `${n} demande${n > 1 ? "s" : ""} en attente de traitement`,
-    alert: false,
+    alert: () => false,
   },
 };
 
@@ -74,10 +90,10 @@ export const NAV_COUNT_META: Record<NavCountKey, { describe: (count: number) => 
 // encore réordonnées et pour filtrer par rôle.
 export const NAV_ENTRIES: NavEntry[] = [
   { href: "/aujourdhui", label: "Aujourd’hui", icon: Home, adminOnly: false, group: "Travail" },
-  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false, countKey: "tasksLate", group: "Travail" },
+  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false, countKey: "tasksActive", group: "Travail" },
   { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false, countKey: "mesTaches", group: "Travail" },
   { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false, group: "Travail" },
-  { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false, countKey: "projectsOverBudget", group: "Projets" },
+  { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false, countKey: "projectsActive", group: "Projets" },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false, group: "Projets" },
   { href: "/tableau-de-bord", label: "Tableau de bord", icon: LayoutDashboard, adminOnly: true, group: "Suivi" },
   { href: "/subventions", label: "Projets EP/Européens", icon: Landmark, adminOnly: true, group: "Suivi" },
@@ -85,8 +101,8 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: "/charge", label: "Charge", icon: Activity, adminOnly: true, group: "Suivi" },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false, group: "Équipe" },
   { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true, countKey: "demandes", group: "Équipe" },
-  { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true, group: "Système" },
-  { href: "/aide", label: "Documentation", icon: HelpCircle, adminOnly: false, group: "Système" },
+  { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true, group: "Paramètres" },
+  { href: "/aide", label: "Documentation", icon: HelpCircle, adminOnly: false, group: "Paramètres" },
 ];
 
 /** Décode `User.navOrder` (JSON stocké en base) — `null` si absent ou invalide. */

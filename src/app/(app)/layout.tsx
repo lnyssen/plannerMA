@@ -15,7 +15,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await auth();
   if (!session?.user) redirect("/connexion"); // filet de sécurité, le middleware couvre déjà ce cas
 
-  const [studios, people, projects, clients, tasks, account, mesTachesCount, demandesCount, tasksLateCount, projectsOverBudgetCount] = await Promise.all([
+  const [
+    studios,
+    people,
+    projects,
+    clients,
+    tasks,
+    account,
+    mesTachesCount,
+    demandesCount,
+    tasksActiveCount,
+    tasksLateCount,
+    projectsActiveCount,
+    projectsOverBudgetCount,
+  ] = await Promise.all([
     listStudios(),
     listPeople(),
     listActiveProjectsForForms(),
@@ -50,10 +63,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // été converti en tâche (voir src/lib/actions/requests.ts) — son compte
     // total est donc déjà "en attente", pas besoin d'un filtre de statut.
     session.user.role === "ADMIN" ? db.request.count() : Promise.resolve(0),
+    // Tâches en cours : hors corbeille, pas encore terminées — toute l'équipe (pas seulement "Mes tâches").
+    db.task.count({ where: { trashedAt: null, status: { isDone: false } } }),
     // Tâches en retard : échéance dépassée, pas encore terminées, hors corbeille.
     db.task.count({
       where: { trashedAt: null, status: { isDone: false }, endDate: { lt: fromIsoDate(today()) } },
     }),
+    // Projets en cours : non archivés.
+    db.project.count({ where: { archived: false } }),
     countProjectsOverBudget(),
   ]);
 
@@ -73,7 +90,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       notifyOnComment={account?.notifyOnComment ?? true}
       navOrder={parseNavOrder(account?.navOrder ?? null)}
       theme={account?.theme ?? "LIGHT"}
-      counts={{ mesTaches: mesTachesCount, demandes: demandesCount, tasksLate: tasksLateCount, projectsOverBudget: projectsOverBudgetCount }}
+      counts={{
+        mesTaches: mesTachesCount,
+        demandes: demandesCount,
+        tasksActive: tasksActiveCount,
+        tasksLate: tasksLateCount,
+        projectsActive: projectsActiveCount,
+        projectsOverBudget: projectsOverBudgetCount,
+      }}
     >
       {children}
     </AppShell>
