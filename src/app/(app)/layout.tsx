@@ -30,6 +30,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         notifyOnRequest: true,
         navOrder: true,
         theme: true,
+        // Le nom affiché ne doit jamais venir de la session JWT (figée au
+        // login) : si la fiche personne est renommée entre-temps, on veut
+        // voir le nouveau nom dès le prochain chargement de page, pas
+        // seulement après une reconnexion.
+        person: { select: { name: true } },
       },
     }),
     // "Mes tâches" en attente : hors corbeille, statut pas encore "Terminé" —
@@ -58,7 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       projects={projects}
       clients={clients}
       tasks={tasks}
-      userName={session.user.name ?? session.user.email ?? "—"}
+      userName={account?.person?.name ?? session.user.email ?? "—"}
       role={session.user.role}
       notifyOnAssignment={account?.notifyOnAssignment ?? true}
       notifyDailyDigest={account?.notifyDailyDigest ?? true}
