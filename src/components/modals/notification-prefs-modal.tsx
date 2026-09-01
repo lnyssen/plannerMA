@@ -12,6 +12,7 @@ export function NotificationPrefsModal({
   initialNotifyDailyDigest,
   initialNotifyOnMention,
   initialNotifyOnRequest,
+  initialNotifyOnComment,
   role,
   onClose,
 }: {
@@ -19,6 +20,7 @@ export function NotificationPrefsModal({
   initialNotifyDailyDigest: boolean;
   initialNotifyOnMention: boolean;
   initialNotifyOnRequest: boolean;
+  initialNotifyOnComment: boolean;
   role: Role;
   onClose: () => void;
 }) {
@@ -28,10 +30,11 @@ export function NotificationPrefsModal({
   const [notifyDailyDigest, setNotifyDailyDigest] = useState(initialNotifyDailyDigest);
   const [notifyOnMention, setNotifyOnMention] = useState(initialNotifyOnMention);
   const [notifyOnRequest, setNotifyOnRequest] = useState(initialNotifyOnRequest);
+  const [notifyOnComment, setNotifyOnComment] = useState(initialNotifyOnComment);
 
   function save() {
     startTransition(async () => {
-      await updateNotificationPrefs({ notifyOnAssignment, notifyDailyDigest, notifyOnMention, notifyOnRequest });
+      await updateNotificationPrefs({ notifyOnAssignment, notifyDailyDigest, notifyOnMention, notifyOnRequest, notifyOnComment });
       router.refresh();
       onClose();
     });
@@ -81,6 +84,19 @@ export function NotificationPrefsModal({
             <span className="font-semibold text-heading">Mention en commentaire</span>
             <br />
             Un courriel quand quelqu’un vous mentionne (« @Nom ») dans un commentaire.
+          </span>
+        </label>
+        <label className="flex items-start gap-2.5 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={notifyOnComment}
+            onChange={(e) => setNotifyOnComment(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            <span className="font-semibold text-heading">Commentaire sur une tâche attribuée</span>
+            <br />
+            Un courriel à chaque nouveau commentaire sur une tâche qui vous est attribuée, même sans mention.
           </span>
         </label>
         {role === "ADMIN" && (

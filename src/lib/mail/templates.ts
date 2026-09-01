@@ -69,6 +69,22 @@ export function mentionEmail(personName: string, info: MentionInfo) {
   };
 }
 
+export function commentEmail(personName: string, info: MentionInfo) {
+  const subject = `${info.authorName} a commenté « ${info.taskTitle} »`;
+  const lines = [
+    `Bonjour ${personName},`,
+    `${info.authorName} a ajouté un commentaire sur la tâche « ${info.taskTitle} », qui vous est attribuée :`,
+    `« ${truncate(info.commentBody, 300)} »`,
+    `Voir la tâche : ${APP_URL}/taches/${info.taskId}`,
+    `Vous recevez ce courriel car les alertes de commentaire sur vos tâches sont activées pour votre compte (Réglages → Mes notifications).`,
+  ];
+  return {
+    subject,
+    text: lines.join("\n\n"),
+    html: wrapHtml(subject, lines),
+  };
+}
+
 export interface RequestInfo {
   subject: string;
   studioName: string;

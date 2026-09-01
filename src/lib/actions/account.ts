@@ -35,16 +35,17 @@ const prefsSchema = z.object({
   notifyDailyDigest: z.boolean(),
   notifyOnMention: z.boolean(),
   notifyOnRequest: z.boolean(),
+  notifyOnComment: z.boolean(),
 });
 
 export async function updateNotificationPrefs(input: z.infer<typeof prefsSchema>): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
 
-  const { notifyOnAssignment, notifyDailyDigest, notifyOnMention, notifyOnRequest } = prefsSchema.parse(input);
+  const { notifyOnAssignment, notifyDailyDigest, notifyOnMention, notifyOnRequest, notifyOnComment } = prefsSchema.parse(input);
   await db.user.update({
     where: { id: session.user.id },
-    data: { notifyOnAssignment, notifyDailyDigest, notifyOnMention, notifyOnRequest },
+    data: { notifyOnAssignment, notifyDailyDigest, notifyOnMention, notifyOnRequest, notifyOnComment },
   });
   revalidatePath("/", "layout");
   return {};

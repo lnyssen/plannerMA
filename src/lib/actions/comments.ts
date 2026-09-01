@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { notifyMention } from "@/lib/mail/notify";
+import { notifyComment, notifyMention } from "@/lib/mail/notify";
 import { currentActorName } from "./actor";
 import { createNotification } from "./notifications";
 
@@ -43,7 +43,7 @@ export async function addComment(input: z.infer<typeof addCommentSchema>): Promi
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   const { taskId, body } = parsed.data;
 
-  const task = await db.task.findUnique({ where: { id: taskId }, select: { title: true } });
+  const task = await db.task.findUnique({ where: { id: taskId }, select: { title: true, assigneeId: true } });
   if (!task) return { error: "Cette tâche n’existe plus." };
 
   const people = await db.person.findMany({ select: { id: true, name: true } });
@@ -66,6 +66,19 @@ export async function addComment(input: z.infer<typeof addCommentSchema>): Promi
       recipientId: personId,
       type: "MENTION",
       message: `${authorName} vous a mentionné·e dans un commentaire sur « ${task.title} »`,
+      link: `/taches/${taskId}`,
+    });
+  }
+
+  // Attributaire prévenu de tout nouveau commentaire, même sans mention
+  // explicite — sauf s'il est l'auteur ou déjà notifié ci-dessus par mention
+  // (pas de double alerte pour la même écriture).
+  if (task.assigneeId && task.assigneeId !== session.user.personId && !mentionedIds.includes(task.assigneeId)) {
+    void notifyComment(task.assigneeId, { taskId, taskTitle: task.title, authorName, commentBody: body });
+    await createNotification({
+      recipientId: task.assigneeId,
+      type: "COMMENT",
+      message: `${authorName} a commenté « ${task.title} »`,
       link: `/taches/${taskId}`,
     });
   }

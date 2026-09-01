@@ -75,6 +75,11 @@ model User {
   notifyOnMention    Boolean         @default(true) @map("notify_on_mention")
   /// Alerte par courriel à une nouvelle demande — n'a d'effet que pour un compte ADMIN (seuls destinataires des demandes).
   notifyOnRequest    Boolean         @default(true) @map("notify_on_request")
+  /// Alerte par courriel à un nouveau commentaire sur une tâche qu'on nous a
+  /// attribuée — distinct de notifyOnMention (qui couvre "@Nom" n'importe où,
+  /// y compris sur une tâche qui n'est pas la sienne) : ici, être attributaire
+  /// suffit, sans avoir besoin d'être explicitement tagué.
+  notifyOnComment    Boolean         @default(true) @map("notify_on_comment")
   /// Ordre personnalisé des entrées du menu de gauche (tableau JSON de
   /// `href`, ex. `["/taches","/projets",…]`) — null tant que l'utilisateur
   /// n'a rien réordonné, auquel cas l'ordre par défaut de NAV_ENTRIES
@@ -543,6 +548,9 @@ enum NotificationType {
   MENTION
   REQUEST
   BUDGET_EXCEEDED
+  /// Nouveau commentaire sur une tâche dont on est l'attributaire — sans
+  /// mention explicite (voir MENTION pour ce cas-là, géré séparément).
+  COMMENT
   /// Consommation du budget de temps plus rapide que l'avancement des
   /// tâches (voir projectBudgetPace) — distinct de BUDGET_EXCEEDED : celui-ci
   /// alerte avant le dépassement franc, sur une dérive de rythme.

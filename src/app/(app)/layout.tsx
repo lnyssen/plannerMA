@@ -28,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         notifyDailyDigest: true,
         notifyOnMention: true,
         notifyOnRequest: true,
+        notifyOnComment: true,
         navOrder: true,
         theme: true,
         // Le nom affiché ne doit jamais venir de la session JWT (figée au
@@ -69,6 +70,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       notifyDailyDigest={account?.notifyDailyDigest ?? true}
       notifyOnMention={account?.notifyOnMention ?? true}
       notifyOnRequest={account?.notifyOnRequest ?? true}
+      notifyOnComment={account?.notifyOnComment ?? true}
       navOrder={parseNavOrder(account?.navOrder ?? null)}
       theme={account?.theme ?? "LIGHT"}
       counts={{ mesTaches: mesTachesCount, demandes: demandesCount, tasksLate: tasksLateCount, projectsOverBudget: projectsOverBudgetCount }}

@@ -13,6 +13,7 @@ import { addDaysIso, today } from "@/lib/planning/dates";
 import { computeDashboardRows } from "@/lib/planning/time";
 import {
   assignmentEmail,
+  commentEmail,
   dailyDigestEmail,
   mentionEmail,
   requestEmail,
@@ -58,6 +59,24 @@ export async function notifyMention(personId: string, info: MentionInfo): Promis
     await sendMail({ to: user.email, subject, text, html });
   } catch (err) {
     console.error("[mail] échec de l'alerte de mention :", err);
+  }
+}
+
+/**
+ * Alerte de commentaire — appelée pour l'attributaire d'une tâche à chaque
+ * nouveau commentaire dont il n'est pas l'auteur, qu'il soit mentionné ou
+ * non (voir notifyMention pour la mention explicite, gérée séparément —
+ * addComment n'appelle jamais les deux pour la même personne).
+ */
+export async function notifyComment(personId: string, info: MentionInfo): Promise<void> {
+  const user = await db.user.findUnique({ where: { personId }, include: { person: true } });
+  if (!user || !user.notifyOnComment || !user.person) return;
+
+  const { subject, text, html } = commentEmail(user.person.name, info);
+  try {
+    await sendMail({ to: user.email, subject, text, html });
+  } catch (err) {
+    console.error("[mail] échec de l'alerte de commentaire :", err);
   }
 }
 
