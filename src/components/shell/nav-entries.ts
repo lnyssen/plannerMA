@@ -15,6 +15,8 @@ import {
 /** Clé vers un compteur calculé côté serveur (voir NavCounts) — absent = pas de puce. */
 export type NavCountKey = "mesTaches" | "demandes" | "tasksLate" | "projectsOverBudget";
 
+export type NavGroup = "Travail" | "Projets" | "Suivi" | "Équipe";
+
 export interface NavEntry {
   href: string;
   label: string;
@@ -23,6 +25,8 @@ export interface NavEntry {
   /** Un responsable de studio y accède aussi (vue limitée à son studio), même si `adminOnly` est vrai. */
   studioLeadOk?: boolean;
   countKey?: NavCountKey;
+  /** Regroupement affiché dans l'ordre par défaut — masqué dès que l'utilisateur personnalise son ordre (voir applyNavOrder/renderNav), qui peut mélanger les groupes. */
+  group: NavGroup;
 }
 
 /** Compteurs affichés en puce sur les entrées correspondantes — voir (app)/layout.tsx. */
@@ -39,16 +43,16 @@ export interface NavCounts {
 // (voir NavOrderModal) ; ce tableau reste la référence pour les entrées non
 // encore réordonnées et pour filtrer par rôle.
 export const NAV_ENTRIES: NavEntry[] = [
-  { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false, countKey: "projectsOverBudget" },
-  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false, countKey: "tasksLate" },
-  { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false, countKey: "mesTaches" },
-  { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false },
-  { href: "/temps", label: "Temps", icon: Clock, adminOnly: false },
-  { href: "/clients", label: "Clients", icon: Building2, adminOnly: false },
-  { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false },
-  { href: "/charge", label: "Charge", icon: Activity, adminOnly: true, studioLeadOk: true },
-  { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true, countKey: "demandes" },
-  { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true },
+  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false, countKey: "tasksLate", group: "Travail" },
+  { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false, countKey: "mesTaches", group: "Travail" },
+  { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false, group: "Travail" },
+  { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false, countKey: "projectsOverBudget", group: "Projets" },
+  { href: "/clients", label: "Clients", icon: Building2, adminOnly: false, group: "Projets" },
+  { href: "/temps", label: "Temps", icon: Clock, adminOnly: false, group: "Suivi" },
+  { href: "/charge", label: "Charge", icon: Activity, adminOnly: true, studioLeadOk: true, group: "Suivi" },
+  { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false, group: "Équipe" },
+  { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true, countKey: "demandes", group: "Équipe" },
+  { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true, group: "Équipe" },
 ];
 
 /** Décode `User.navOrder` (JSON stocké en base) — `null` si absent ou invalide. */

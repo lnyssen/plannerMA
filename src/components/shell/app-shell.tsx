@@ -144,33 +144,46 @@ export function AppShell({
   );
 
   function renderNav(isCollapsed: boolean) {
+    // Les intitulés de groupe n'ont de sens que pour l'ordre par défaut : dès
+    // qu'un ordre personnalisé existe, les entrées peuvent mélanger les
+    // groupes (voir applyNavOrder), un intitulé y serait trompeur.
+    const showGroups = !navOrder || navOrder.length === 0;
+    let lastGroup: string | null = null;
     return (
       <nav aria-label="Navigation principale" className="flex flex-col gap-0.5 border-b border-white/15 px-3 pb-3">
-        {orderedEntries.map(({ href, label, icon: Icon, countKey }) => {
+        {orderedEntries.map(({ href, label, icon: Icon, countKey, group }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           const count = countKey ? counts[countKey] : 0;
+          const showGroupLabel = showGroups && !isCollapsed && group !== lastGroup;
+          lastGroup = group;
           return (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setDrawerOpen(false)}
-              aria-current={active ? "page" : undefined}
-              title={isCollapsed ? (count > 0 ? `${label} (${count})` : label) : undefined}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20 ${isCollapsed ? "justify-center" : ""}`}
-              style={{
-                background: active ? "rgba(255,255,255,0.18)" : "transparent",
-                color: active ? "#FFFFFF" : "rgba(255,255,255,0.85)",
-                fontWeight: active ? 700 : 600,
-              }}
-            >
-              <Icon size={17} aria-hidden="true" className="flex-shrink-0" />
-              {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
-              {!isCollapsed && count > 0 && (
-                <span className="flex-shrink-0 rounded-full bg-white/25 px-2 py-0.5 text-2xs font-bold text-white tabular-nums">
-                  {count}
-                </span>
+            <div key={href}>
+              {showGroupLabel && (
+                <p className={`px-3 text-2xs font-bold tracking-wide text-white/50 uppercase ${href === orderedEntries[0].href ? "pb-1.5" : "pt-3 pb-1.5"}`}>
+                  {group}
+                </p>
               )}
-            </Link>
+              <Link
+                href={href}
+                onClick={() => setDrawerOpen(false)}
+                aria-current={active ? "page" : undefined}
+                title={isCollapsed ? (count > 0 ? `${label} (${count})` : label) : undefined}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20 ${isCollapsed ? "justify-center" : ""}`}
+                style={{
+                  background: active ? "rgba(255,255,255,0.18)" : "transparent",
+                  color: active ? "#FFFFFF" : "rgba(255,255,255,0.85)",
+                  fontWeight: active ? 700 : 600,
+                }}
+              >
+                <Icon size={17} aria-hidden="true" className="flex-shrink-0" />
+                {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
+                {!isCollapsed && count > 0 && (
+                  <span className="flex-shrink-0 rounded-full bg-white/25 px-2 py-0.5 text-2xs font-bold text-white tabular-nums">
+                    {count}
+                  </span>
+                )}
+              </Link>
+            </div>
           );
         })}
       </nav>
@@ -180,7 +193,7 @@ export function AppShell({
   function renderRail(isCollapsed: boolean, showCollapseToggle: boolean) {
     return (
       <>
-        <div className={`flex items-start gap-2 px-5 pt-5 pb-5 ${isCollapsed ? "flex-col items-center" : "justify-between"}`}>
+        <div className={`flex flex-shrink-0 items-start gap-2 px-5 pt-5 pb-5 ${isCollapsed ? "flex-col items-center" : "justify-between"}`}>
           {!isCollapsed && (
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel, pas d'optimisation next/image nécessaire pour cette taille */}
@@ -217,11 +230,12 @@ export function AppShell({
           </div>
         </div>
 
-        {renderNav(isCollapsed)}
+        {/* Seule cette zone défile : les boutons d'action et le menu profil
+            en dessous restent toujours visibles, même si la liste de
+            navigation dépasse la hauteur de l'écran. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">{renderNav(isCollapsed)}</div>
 
-        <div className="flex-1" />
-
-        <div className={`flex flex-col gap-2.5 px-3 pt-4 pb-4 ${isCollapsed ? "items-center" : ""}`}>
+        <div className={`flex flex-shrink-0 flex-col gap-2.5 px-3 pt-4 pb-4 ${isCollapsed ? "items-center" : ""}`}>
           <button
             type="button"
             onClick={() => {
@@ -257,7 +271,7 @@ export function AppShell({
           </button>
         </div>
 
-        <div ref={userMenuRef} className={`relative px-3 pb-5 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
+        <div ref={userMenuRef} className={`relative flex-shrink-0 px-3 pb-5 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
           {userMenuOpen && (
             <div
               className={`absolute z-20 overflow-hidden rounded-lg border border-white/20 shadow-xl ${
@@ -368,7 +382,7 @@ export function AppShell({
     <CreateModalsProvider open={setModal}>
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside
-        className={`hidden bg-rail transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:flex-shrink-0 md:flex-col md:overflow-y-auto md:overflow-x-hidden ${collapsed ? "md:w-[76px]" : "md:w-[260px]"}`}
+        className={`hidden bg-rail transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:flex-shrink-0 md:flex-col md:overflow-x-hidden ${collapsed ? "md:w-[76px]" : "md:w-[260px]"}`}
       >
         {renderRail(collapsed, true)}
       </aside>
@@ -406,7 +420,7 @@ export function AppShell({
             onClick={() => setDrawerOpen(false)}
             className="absolute inset-0 bg-rail/70"
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[280px] flex-col overflow-y-auto bg-rail">
+          <aside className="absolute inset-y-0 left-0 flex w-[280px] flex-col bg-rail">
             {renderRail(false, false)}
           </aside>
         </div>
