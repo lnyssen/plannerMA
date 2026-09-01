@@ -29,6 +29,30 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   COMMENT: "Commentaire",
 };
 
+// Regroupement visuel par nature plutôt qu'une couleur par type : "quelqu'un
+// vous a écrit" (mention/commentaire) en Rose Poudré, "quelque chose arrive
+// dans votre file" (attribution/demande) en Bleu Clair — deux couleurs de la
+// charte, déjà les jetons --color-alert-wash/--color-line (voir
+// client-type-badge.tsx). Les alertes budgétaires restent en rouge alerte
+// plein, seule vraie urgence du lot.
+const TYPE_BADGE_BG: Record<NotificationType, string> = {
+  MENTION: "var(--color-alert-wash)",
+  COMMENT: "var(--color-alert-wash)",
+  ASSIGNMENT: "var(--color-line)",
+  REQUEST: "var(--color-line)",
+  BUDGET_EXCEEDED: "color-mix(in srgb, var(--color-alert) 16%, transparent)",
+  PROJECT_BEHIND: "color-mix(in srgb, var(--color-alert) 16%, transparent)",
+};
+
+const TYPE_BADGE_TEXT: Record<NotificationType, string> = {
+  MENTION: "var(--color-ink-muted)",
+  COMMENT: "var(--color-ink-muted)",
+  ASSIGNMENT: "var(--color-ink-muted)",
+  REQUEST: "var(--color-ink-muted)",
+  BUDGET_EXCEEDED: "var(--color-alert)",
+  PROJECT_BEHIND: "var(--color-alert)",
+};
+
 export function NotificationBell() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -146,8 +170,14 @@ export function NotificationBell() {
                   className="flex flex-col gap-0.5 border-b border-line px-3 py-2.5 text-left transition-colors duration-100 hover:bg-wash active:bg-tint"
                   style={{ background: n.read ? "transparent" : "var(--color-tint)" }}
                 >
-                  <span className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">
-                    {TYPE_LABEL[n.type]} · {quandFr(n.createdAt)}
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="rounded-full px-1.5 py-0.5 text-2xs font-semibold tracking-wide uppercase"
+                      style={{ background: TYPE_BADGE_BG[n.type], color: TYPE_BADGE_TEXT[n.type] }}
+                    >
+                      {TYPE_LABEL[n.type]}
+                    </span>
+                    <span className="text-2xs text-ink-muted">{quandFr(n.createdAt)}</span>
                   </span>
                   <span className="text-sm text-ink">{n.message}</span>
                 </Link>
