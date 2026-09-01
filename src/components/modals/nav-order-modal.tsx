@@ -28,7 +28,7 @@ export function NavOrderModal({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const visibleEntries = NAV_ENTRIES.filter((e) => !e.adminOnly || role === "ADMIN" || (e.studioLeadOk && role === "STUDIO_LEAD"));
+  const visibleEntries = NAV_ENTRIES.filter((e) => !e.adminOnly || role === "ADMIN");
   const [entries, setEntries] = useState<NavEntry[]>(() => applyNavOrder(visibleEntries, initialOrder));
 
   function save() {

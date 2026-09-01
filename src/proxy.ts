@@ -26,13 +26,14 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));
   }
 
-  // Charge : admin (vue complète) et responsable de studio (vue limitée à
-  // son propre studio, filtrée côté page) — voir (app)/charge/page.tsx.
+  // Charge et Tableau de bord : données d'équipe/de budget, réservées aux
+  // administrateurs — STUDIO_LEAD n'a plus de droits élargis (voir le
+  // commentaire sur Role dans prisma/schema.prisma : deux niveaux effectifs,
+  // ADMIN et le reste, plutôt que trois paliers à maintenir cohérents).
   if (
     isLoggedIn &&
-    pathname.startsWith("/charge") &&
-    req.auth?.user.role !== "ADMIN" &&
-    req.auth?.user.role !== "STUDIO_LEAD"
+    (pathname.startsWith("/charge") || pathname.startsWith("/tableau-de-bord")) &&
+    req.auth?.user.role !== "ADMIN"
   ) {
     return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));
   }

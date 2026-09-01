@@ -26,10 +26,14 @@ datasource db {
 // Comptes et rôles
 // --------------------------------------------------------------------------
 
-/// Les trois rôles définis par le brief. STUDIO_LEAD n'a aujourd'hui pas plus
-/// de droits qu'un COLLABORATOR au niveau des données (à affiner à l'usage) ;
-/// seul ADMIN débloque la vue Réglages, la corbeille et la suppression
-/// définitive.
+/// Les trois rôles définis par le brief, mais deux paliers de droits
+/// effectifs : STUDIO_LEAD n'a aujourd'hui pas plus de droits qu'un
+/// COLLABORATOR au niveau des données (décision explicite — plus simple à
+/// garder cohérent qu'un troisième palier partiel). Seul ADMIN voit les
+/// statistiques d'équipe (Charge, Tableau de bord, Temps de toute l'équipe),
+/// gère les fiches personnes/clients, débloque la vue Réglages, la corbeille
+/// et la suppression définitive. STUDIO_LEAD existe pour un usage futur si le
+/// besoin d'un palier intermédiaire se précise.
 enum Role {
   ADMIN
   STUDIO_LEAD

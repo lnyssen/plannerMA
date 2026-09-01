@@ -24,21 +24,12 @@ function revalidateAbsenceViews() {
   revalidatePath("/planning");
 }
 
-/** Un responsable de studio ne peut agir que sur les personnes qui partagent au moins un studio avec lui. */
-async function sharesStudioWith(actorPersonId: string, targetPersonId: string): Promise<boolean> {
-  const overlap = await db.personStudio.findFirst({
-    where: { personId: actorPersonId, studio: { people: { some: { personId: targetPersonId } } } },
-  });
-  return !!overlap;
-}
-
-async function canManageAbsenceFor(session: Session, targetPersonId: string): Promise<boolean> {
+// Deux paliers de droits seulement (voir le commentaire sur Role dans
+// prisma/schema.prisma) : ADMIN gère tout le monde, tout autre compte
+// (y compris STUDIO_LEAD) ne gère que sa propre absence.
+function canManageAbsenceFor(session: Session, targetPersonId: string): boolean {
   if (session.user.role === "ADMIN") return true;
-  if (targetPersonId === session.user.personId) return true;
-  if (session.user.role === "STUDIO_LEAD" && session.user.personId) {
-    return sharesStudioWith(session.user.personId, targetPersonId);
-  }
-  return false;
+  return targetPersonId === session.user.personId;
 }
 
 export async function createAbsence(input: AbsenceInput): Promise<{ error?: string }> {
@@ -49,11 +40,9 @@ export async function createAbsence(input: AbsenceInput): Promise<{ error?: stri
   const { personId, startDate, endDate, reason } = parsed.data;
 
   // Déclarer sa propre absence reste en libre-service ; déclarer celle de
-  // quelqu'un d'autre est réservé aux administrateurs et aux responsables de
-  // studio (pour les personnes de leur(s) studio(s)) — ça alimente le calcul
-  // de charge de toute l'équipe.
-  if (!(await canManageAbsenceFor(session, personId))) {
-    return { error: "Vous ne pouvez déclarer une absence que pour vous-même ou pour votre studio." };
+  // quelqu'un d'autre est réservé aux administrateurs.
+  if (!canManageAbsenceFor(session, personId)) {
+    return { error: "Vous ne pouvez déclarer une absence que pour vous-même." };
   }
 
   await db.absence.create({
@@ -78,8 +67,8 @@ export async function deleteAbsence(absenceId: string): Promise<{ error?: string
 
   const existing = await db.absence.findUnique({ where: { id: absenceId }, select: { personId: true } });
   if (!existing) return {};
-  if (!(await canManageAbsenceFor(session, existing.personId))) {
-    return { error: "Vous ne pouvez retirer que vos propres absences ou celles de votre studio." };
+  if (!canManageAbsenceFor(session, existing.personId)) {
+    return { error: "Vous ne pouvez retirer que vos propres absences." };
   }
 
   await db.absence.delete({ where: { id: absenceId } });

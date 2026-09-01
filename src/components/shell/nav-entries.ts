@@ -23,8 +23,6 @@ export interface NavEntry {
   label: string;
   icon: LucideIcon;
   adminOnly: boolean;
-  /** Un responsable de studio y accède aussi (vue limitée à son studio), même si `adminOnly` est vrai. */
-  studioLeadOk?: boolean;
   countKey?: NavCountKey;
   /** Regroupement affiché dans l'ordre par défaut — masqué dès que l'utilisateur personnalise son ordre (voir applyNavOrder/renderNav), qui peut mélanger les groupes. */
   group: NavGroup;
@@ -51,7 +49,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false, group: "Projets" },
   { href: "/tableau-de-bord", label: "Tableau de bord", icon: LayoutDashboard, adminOnly: true, group: "Suivi" },
   { href: "/temps", label: "Temps", icon: Clock, adminOnly: false, group: "Suivi" },
-  { href: "/charge", label: "Charge", icon: Activity, adminOnly: true, studioLeadOk: true, group: "Suivi" },
+  { href: "/charge", label: "Charge", icon: Activity, adminOnly: true, group: "Suivi" },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false, group: "Équipe" },
   { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true, countKey: "demandes", group: "Équipe" },
   { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true, group: "Équipe" },
