@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, ClipboardList, ClipboardPlus, Clock, FolderPlus, ListChecks, ListPlus, Search } from "lucide-react";
+import { Building2, ClipboardList, ClipboardPlus, Clock, FolderPlus, ListChecks, ListPlus, MessageSquare, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,7 +9,7 @@ import { getRecentItems, type RecentItem } from "@/lib/recent-items";
 import { useCreateModals } from "./create-modals-context";
 import type { NavEntry } from "./nav-entries";
 
-const EMPTY: SearchResults = { tasks: [], projects: [], clients: [] };
+const EMPTY: SearchResults = { tasks: [], projects: [], clients: [], comments: [] };
 const DEBOUNCE_MS = 200;
 
 interface Action {
@@ -88,7 +88,11 @@ export function CommandPalette({ navEntries }: { navEntries: NavEntry[] }) {
   const q = trimmedQuery.toLowerCase();
   const displayResults = trimmedQuery.length < 2 ? EMPTY : results;
   const matchedActions = q ? actions.filter((a) => a.label.toLowerCase().includes(q)) : actions.slice(0, 3);
-  const hasSearchResults = displayResults.tasks.length > 0 || displayResults.projects.length > 0 || displayResults.clients.length > 0;
+  const hasSearchResults =
+    displayResults.tasks.length > 0 ||
+    displayResults.projects.length > 0 ||
+    displayResults.clients.length > 0 ||
+    displayResults.comments.length > 0;
   const nothingFound = trimmedQuery.length >= 2 && matchedActions.length === 0 && !hasSearchResults;
 
   if (!open) return null;
@@ -209,6 +213,26 @@ export function CommandPalette({ navEntries }: { navEntries: NavEntry[] }) {
                 >
                   <Building2 size={14} className="flex-shrink-0 text-heading" aria-hidden="true" />
                   <span className="truncate">{c.name}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {displayResults.comments.length > 0 && (
+            <div>
+              <p className="px-3 pt-2.5 pb-1 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Commentaires</p>
+              {displayResults.comments.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/taches/${c.taskId}`}
+                  onClick={close}
+                  className="flex items-start gap-2 px-3 py-2 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-tint"
+                >
+                  <MessageSquare size={14} className="mt-0.5 flex-shrink-0 text-heading" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-ink-muted">{c.taskTitle}</span>
+                    <span className="block truncate">{c.snippet}</span>
+                  </span>
                 </Link>
               ))}
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, ClipboardList, ListChecks, Search } from "lucide-react";
+import { Building2, ClipboardList, ListChecks, MessageSquare, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { globalSearch, type SearchResults } from "@/lib/actions/search";
@@ -10,7 +10,7 @@ const PANEL_WIDTH = 360;
 const VIEWPORT_MARGIN = 12;
 const DEBOUNCE_MS = 200;
 
-const EMPTY: SearchResults = { tasks: [], projects: [], clients: [] };
+const EMPTY: SearchResults = { tasks: [], projects: [], clients: [], comments: [] };
 
 /** Même positionnement en `fixed` que NotificationBell — la barre latérale a
  * `overflow-y-auto`, qui rogne aussi l'axe horizontal (voir ce composant). */
@@ -53,7 +53,11 @@ export function GlobalSearch() {
   // d'une recherche précédente serait trompeur, mieux vaut les masquer sans
   // les jeter (évite un setState synchrone dans l'effet ci-dessus).
   const displayResults = trimmedQuery.length < 2 ? EMPTY : results;
-  const hasResults = displayResults.tasks.length > 0 || displayResults.projects.length > 0 || displayResults.clients.length > 0;
+  const hasResults =
+    displayResults.tasks.length > 0 ||
+    displayResults.projects.length > 0 ||
+    displayResults.clients.length > 0 ||
+    displayResults.comments.length > 0;
 
   return (
     <div className="relative">
@@ -143,6 +147,26 @@ export function GlobalSearch() {
                   >
                     <Building2 size={14} className="flex-shrink-0 text-heading" aria-hidden="true" />
                     <span className="truncate">{c.name}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {displayResults.comments.length > 0 && (
+              <div>
+                <p className="px-3 pt-2.5 pb-1 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Commentaires</p>
+                {displayResults.comments.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/taches/${c.taskId}`}
+                    onClick={close}
+                    className="flex items-start gap-2 px-3 py-2 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-tint"
+                  >
+                    <MessageSquare size={14} className="mt-0.5 flex-shrink-0 text-heading" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-ink-muted">{c.taskTitle}</span>
+                      <span className="block truncate">{c.snippet}</span>
+                    </span>
                   </Link>
                 ))}
               </div>
