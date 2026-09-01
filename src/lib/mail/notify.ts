@@ -5,8 +5,12 @@
 // compte (User.notifyOn*, réglables depuis « Mes notifications ») — voir le
 // garde `if (!user.notifyOnX) return` au début de chaque fonction.
 
+import { createNotification } from "@/lib/actions/notifications";
+import { listTaskStatuses } from "@/lib/data/task-statuses";
+import { listProjectsWithBudget } from "@/lib/data/time-entries";
 import { db } from "@/lib/db";
 import { addDaysIso, today } from "@/lib/planning/dates";
+import { computeDashboardRows } from "@/lib/planning/time";
 import {
   assignmentEmail,
   dailyDigestEmail,
@@ -123,4 +127,61 @@ export async function runDailyDigest(): Promise<{ sent: number; skipped: number 
   }
 
   return { sent, skipped };
+}
+
+/**
+ * Alerte les administrateurs (cloche, comme les autres notifications) quand
+ * un projet consomme son budget de temps plus vite qu'il n'avance (voir
+ * computeDashboardRows/projectBudgetPace — le tableau de bord applique le
+ * même calcul) — avant le dépassement franc, pas seulement une fois le
+ * budget déjà dépassé (voir checkAndNotifyBudget dans time-entries.ts, qui
+ * couvre ce cas-là séparément). Appelée par le même cron quotidien que le
+ * récap, pas à chaque écriture de temps : le rythme dépend aussi de
+ * l'avancement des tâches, qui peut changer sans nouvelle écriture — un
+ * contrôle quotidien couvre les deux sans multiplier les points d'appel.
+ * Un seul rappel par 24h par projet, même garde que checkAndNotifyBudget.
+ */
+export async function checkProjectPaceAlerts(): Promise<{ alerted: number }> {
+  const [projects, statuses] = await Promise.all([listProjectsWithBudget(), listTaskStatuses()]);
+  const allStatuses = statuses.map((s) => ({ position: s.position, isDone: s.isDone }));
+  const rows = computeDashboardRows(
+    projects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      clientName: p.client.name,
+      budgetHours: p.budgetHours!,
+      timeEntries: [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)],
+      taskStatuses: p.tasks.map((t) => t.status),
+    })),
+    allStatuses,
+  );
+
+  const behind = rows.filter((r) => r.pace === "behind");
+  if (behind.length === 0) return { alerted: 0 };
+
+  const admins = await db.user.findMany({ where: { role: "ADMIN", personId: { not: null } }, select: { personId: true } });
+  const adminIds = admins.map((a) => a.personId).filter((id): id is string => id !== null);
+  if (adminIds.length === 0) return { alerted: 0 };
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  let alerted = 0;
+  for (const project of behind) {
+    const link = `/projets/${project.id}`;
+    const recent = await db.notification.findFirst({ where: { type: "PROJECT_BEHIND", link, createdAt: { gte: since } } });
+    if (recent) continue;
+
+    await Promise.all(
+      adminIds.map((recipientId) =>
+        createNotification({
+          recipientId,
+          type: "PROJECT_BEHIND",
+          message: `Le projet « ${project.name} » consomme son budget de temps plus vite qu’il n’avance (${Math.round(project.consumedRatio * 100)}% consommé pour ${Math.round(project.progress * 100)}% avancé).`,
+          link,
+        }),
+      ),
+    );
+    alerted++;
+  }
+
+  return { alerted };
 }

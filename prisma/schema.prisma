@@ -516,6 +516,10 @@ enum NotificationType {
   MENTION
   REQUEST
   BUDGET_EXCEEDED
+  /// Consommation du budget de temps plus rapide que l'avancement des
+  /// tâches (voir projectBudgetPace) — distinct de BUDGET_EXCEEDED : celui-ci
+  /// alerte avant le dépassement franc, sur une dérive de rythme.
+  PROJECT_BEHIND
 }
 
 /// Notifications dans l'application (cloche de la barre latérale) — distinctes

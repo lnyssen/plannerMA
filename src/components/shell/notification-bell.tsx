@@ -25,6 +25,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   MENTION: "Mention",
   REQUEST: "Demande",
   BUDGET_EXCEEDED: "Budget dépassé",
+  PROJECT_BEHIND: "Rythme budgétaire",
 };
 
 export function NotificationBell() {
