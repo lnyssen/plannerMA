@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Clock,
   Columns3,
+  HelpCircle,
   Home,
   Landmark,
   LayoutDashboard,
@@ -85,6 +86,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false, group: "Équipe" },
   { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true, countKey: "demandes", group: "Équipe" },
   { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true, group: "Équipe" },
+  { href: "/aide", label: "Documentation", icon: HelpCircle, adminOnly: false, group: "Équipe" },
 ];
 
 /** Décode `User.navOrder` (JSON stocké en base) — `null` si absent ou invalide. */
