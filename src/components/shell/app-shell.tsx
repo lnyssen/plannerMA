@@ -38,7 +38,7 @@ import { signOutAction } from "./actions";
 import { CommandPalette } from "./command-palette";
 import { CreateModalsProvider } from "./create-modals-context";
 import { GlobalSearch } from "./global-search";
-import { applyNavOrder, NAV_ENTRIES, type NavCounts } from "./nav-entries";
+import { applyNavOrder, NAV_COUNT_META, NAV_ENTRIES, type NavCounts } from "./nav-entries";
 import { NotificationBell } from "./notification-bell";
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -155,8 +155,15 @@ export function AppShell({
         {orderedEntries.map(({ href, label, icon: Icon, countKey, group }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           const count = countKey ? counts[countKey] : 0;
+          const meta = countKey ? NAV_COUNT_META[countKey] : null;
           const showGroupLabel = showGroups && !isCollapsed && group !== lastGroup;
           lastGroup = group;
+          // Toujours une infobulle qui explique le nombre (pas seulement
+          // replié) : une puce nue à côté d'un libellé ne se comprend pas
+          // d'elle-même — "1" à côté de "Tâches" pourrait vouloir dire
+          // n'importe quoi sans ce texte.
+          const title =
+            count > 0 && meta ? `${label} — ${meta.describe(count)}` : isCollapsed ? label : undefined;
           return (
             <div key={href}>
               {showGroupLabel && (
@@ -168,7 +175,7 @@ export function AppShell({
                 href={href}
                 onClick={() => setDrawerOpen(false)}
                 aria-current={active ? "page" : undefined}
-                title={isCollapsed ? (count > 0 ? `${label} (${count})` : label) : undefined}
+                title={title}
                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20 ${isCollapsed ? "justify-center" : ""}`}
                 style={{
                   background: active ? "rgba(255,255,255,0.18)" : "transparent",
@@ -179,7 +186,14 @@ export function AppShell({
                 <Icon size={17} aria-hidden="true" className="flex-shrink-0" />
                 {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
                 {!isCollapsed && count > 0 && (
-                  <span className="flex-shrink-0 rounded-full bg-white/25 px-2 py-0.5 text-2xs font-bold text-white tabular-nums">
+                  <span
+                    className="flex-shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold tabular-nums"
+                    style={
+                      meta?.alert
+                        ? { background: "var(--color-alert)", color: "#FFFFFF" }
+                        : { background: "rgba(255,255,255,0.25)", color: "#FFFFFF" }
+                    }
+                  >
                     {count}
                   </span>
                 )}
