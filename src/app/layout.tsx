@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import "./globals.css";
@@ -6,6 +6,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Studio planner — Média Animation",
   description: "Planning et attribution de tâches pour les studios de Média Animation asbl.",
+  appleWebApp: { title: "Studio planner", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#612dfa",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
