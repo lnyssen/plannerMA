@@ -3,6 +3,7 @@
 import type { Role } from "@prisma/client";
 import type { ThemePreference } from "@prisma/client";
 import {
+  AlertTriangle,
   ArrowUpDown,
   Bell,
   ChevronUp,
@@ -187,13 +188,14 @@ export function AppShell({
                 {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
                 {!isCollapsed && count > 0 && (
                   <span
-                    className="flex-shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold tabular-nums"
+                    className="flex flex-shrink-0 items-center gap-0.5 rounded-full px-2 py-0.5 text-2xs font-bold tabular-nums"
                     style={
                       meta?.alert
                         ? { background: "var(--color-alert)", color: "#FFFFFF" }
                         : { background: "rgba(255,255,255,0.25)", color: "#FFFFFF" }
                     }
                   >
+                    {meta?.alert && <AlertTriangle size={10} aria-hidden="true" />}
                     {count}
                   </span>
                 )}
