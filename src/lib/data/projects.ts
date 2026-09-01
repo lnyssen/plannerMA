@@ -27,6 +27,7 @@ export function listProjectsWithCounts(archived = false) {
         select: {
           status: { select: { position: true, isDone: true } },
           timeEntries: { select: { startedAt: true, endedAt: true } },
+          _count: { select: { comments: true, attachments: true } },
         },
       },
       milestones: { orderBy: { dueDate: "asc" } },

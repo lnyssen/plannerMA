@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Archive, Flag, LayoutGrid, Table2 } from "lucide-react";
+import { AlertTriangle, Archive, Flag, LayoutGrid, MessageSquare, Paperclip, Table2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -53,6 +53,14 @@ function projectOverBudget(project: ProjectWithCounts): boolean {
   return budgetMinutes != null && loggedMinutes > budgetMinutes;
 }
 
+/** Commentaires/pièces jointes vivent au niveau tâche (voir schema.prisma) — un projet agrège celles de ses tâches actives. */
+function projectActivity(project: ProjectWithCounts): { comments: number; attachments: number } {
+  return project.tasks.reduce(
+    (sum, t) => ({ comments: sum.comments + t._count.comments, attachments: sum.attachments + t._count.attachments }),
+    { comments: 0, attachments: 0 },
+  );
+}
+
 function ProjectCard({
   project,
   statuses,
@@ -66,6 +74,7 @@ function ProjectCard({
   const progress = averageProgress(project, statuses);
   const { loggedMinutes, budgetMinutes } = projectHours(project);
   const overBudget = budgetMinutes != null && loggedMinutes > budgetMinutes;
+  const activity = projectActivity(project);
 
   return (
     <button
@@ -111,8 +120,24 @@ function ProjectCard({
           {budgetMinutes != null && ` · ${formatDurationFr(loggedMinutes)} / ${formatDurationFr(budgetMinutes)}`}
         </span>
       </div>
-      <div className="text-sm font-semibold text-ink">
-        {count} tâche{count === 1 ? "" : "s"}
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold text-ink">
+          {count} tâche{count === 1 ? "" : "s"}
+        </div>
+        {(activity.comments > 0 || activity.attachments > 0) && (
+          <div className="flex flex-shrink-0 items-center gap-2 text-ink-muted">
+            {activity.comments > 0 && (
+              <span className="flex items-center gap-0.5 text-2xs tabular-nums" title={`${activity.comments} commentaire${activity.comments === 1 ? "" : "s"}`}>
+                <MessageSquare size={11} /> {activity.comments}
+              </span>
+            )}
+            {activity.attachments > 0 && (
+              <span className="flex items-center gap-0.5 text-2xs tabular-nums" title={`${activity.attachments} pièce${activity.attachments === 1 ? "" : "s"} jointe${activity.attachments === 1 ? "" : "s"}`}>
+                <Paperclip size={11} /> {activity.attachments}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </button>
   );

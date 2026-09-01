@@ -9,7 +9,13 @@ const ACTIVE_PROJECT_FILTER = { OR: [{ projectId: null }, { project: { archived:
 export function listActiveTasksForListing() {
   return db.task.findMany({
     where: { trashedAt: null, ...ACTIVE_PROJECT_FILTER },
-    include: { project: { include: { client: true } }, studio: true, assignee: true, status: true },
+    include: {
+      project: { include: { client: true } },
+      studio: true,
+      assignee: true,
+      status: true,
+      _count: { select: { comments: true, attachments: true } },
+    },
     orderBy: { startDate: "asc" },
   });
 }
