@@ -249,11 +249,7 @@ export function AppShell({
     return (
       <nav aria-label="Navigation principale" className="flex flex-col gap-0.5 border-b border-white/15 px-3 pb-3">
         {groups.map((g, i) => {
-          // Un groupe replié qui contient la page en cours reste déplié —
-          // se retrouver sans savoir où on est dans le menu serait pire que
-          // le confort du repli.
-          const containsActive = g.entries.some((e) => pathname === e.href || pathname.startsWith(`${e.href}/`));
-          const collapsed = collapsedGroups.includes(g.name) && !containsActive;
+          const collapsed = collapsedGroups.includes(g.name);
           return (
             <div key={g.name}>
               <button
