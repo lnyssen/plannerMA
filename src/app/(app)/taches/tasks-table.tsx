@@ -1,8 +1,10 @@
 "use client";
 
-import { AlertTriangle, MessageSquare, Paperclip } from "lucide-react";
+import { AlertTriangle, MessageSquare, Paperclip, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { bulkUpdateTasks } from "@/lib/actions/tasks";
+import { textButtonClass } from "@/components/ui/buttons";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { SearchField } from "@/components/ui/search-field";
@@ -91,6 +93,30 @@ export function TasksTable({
   const [projectFilter, setProjectFilter] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("dates");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkPending, startBulkTransition] = useTransition();
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function applyBulkStatus(newStatusId: string) {
+    if (!newStatusId || selectedIds.length === 0) return;
+    startBulkTransition(async () => {
+      await bulkUpdateTasks({ taskIds: selectedIds, statusId: newStatusId });
+      setSelectedIds([]);
+      router.refresh();
+    });
+  }
+
+  function applyBulkAssignee(newAssigneeId: string) {
+    if (!newAssigneeId || selectedIds.length === 0) return;
+    startBulkTransition(async () => {
+      await bulkUpdateTasks({ taskIds: selectedIds, assigneeId: newAssigneeId === "__none" ? null : newAssigneeId });
+      setSelectedIds([]);
+      router.refresh();
+    });
+  }
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -186,6 +212,55 @@ export function TasksTable({
         />
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-heading bg-wash px-3 py-2">
+          <span className="text-sm font-semibold text-heading">
+            {selectedIds.length} tâche{selectedIds.length > 1 ? "s" : ""} sélectionnée{selectedIds.length > 1 ? "s" : ""}
+          </span>
+          <select
+            defaultValue=""
+            disabled={bulkPending}
+            onChange={(e) => applyBulkStatus(e.target.value)}
+            aria-label="Changer le statut des tâches sélectionnées"
+            className="h-9 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink disabled:opacity-60"
+          >
+            <option value="" disabled>
+              Changer le statut…
+            </option>
+            {statuses.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <select
+            defaultValue=""
+            disabled={bulkPending}
+            onChange={(e) => applyBulkAssignee(e.target.value)}
+            aria-label="Changer la personne des tâches sélectionnées"
+            className="h-9 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink disabled:opacity-60"
+          >
+            <option value="" disabled>
+              Changer la personne…
+            </option>
+            <option value="__none">Non attribué</option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <span className="flex-1" />
+          <button
+            type="button"
+            onClick={() => setSelectedIds([])}
+            className={`flex items-center gap-1 text-sm font-semibold text-ink-muted ${textButtonClass}`}
+          >
+            <X size={14} /> Désélectionner
+          </button>
+        </div>
+      )}
+
       {rows.length === 0 ? (
         <EmptyState title="Aucune tâche ne correspond" description="Essayez une autre recherche." />
       ) : (
@@ -244,6 +319,15 @@ export function TasksTable({
           <table className="w-full min-w-[760px] border-collapse">
             <thead>
               <tr>
+                <th className="w-8 border-b-2 border-heading px-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    aria-label="Sélectionner toutes les tâches affichées"
+                    checked={rows.length > 0 && selectedIds.length === rows.length}
+                    onChange={(e) => setSelectedIds(e.target.checked ? rows.map((t) => t.id) : [])}
+                    className="h-4 w-4 accent-heading"
+                  />
+                </th>
                 {columns.map((col) => (
                   <th
                     key={col.key}
@@ -263,6 +347,15 @@ export function TasksTable({
                   className="cursor-pointer transition-colors duration-100 hover:bg-wash active:bg-tint"
                   title="Ouvrir la fiche"
                 >
+                  <td className="border-b border-line px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Sélectionner « ${t.title} »`}
+                      checked={selectedIds.includes(t.id)}
+                      onChange={() => toggleSelected(t.id)}
+                      className="h-4 w-4 accent-heading"
+                    />
+                  </td>
                   <td className="border-b border-line px-3 py-2.5 text-sm text-ink">
                     {t.project ? (
                       <div className="flex items-center gap-1.5">

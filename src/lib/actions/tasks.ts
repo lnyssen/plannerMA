@@ -449,6 +449,56 @@ export async function updateTaskStatus(
   return { version: task.version };
 }
 
+const bulkUpdateSchema = z
+  .object({
+    taskIds: z.array(z.string()).min(1),
+    statusId: z.string().optional(),
+    // Absent = pas touché ; null = retirer l'attribution ; sinon nouvelle personne.
+    assigneeId: z.string().nullable().optional(),
+  })
+  .refine((v) => v.statusId !== undefined || v.assigneeId !== undefined, {
+    message: "Rien à modifier.",
+  });
+
+/**
+ * Modification groupée (statut et/ou personne) depuis la sélection multiple
+ * de la liste Tâches. Sans verrouillage optimiste par tâche (à la différence
+ * de updateTaskStatus/rescheduleTask) : une action groupée porte sur des
+ * lignes qu'on vient de voir à l'écran, le risque de collision est faible et
+ * un verrou par ligne rendrait l'opération inutilement fragile (une seule
+ * tâche modifiée entre-temps ferait échouer tout le lot).
+ */
+export async function bulkUpdateTasks(
+  input: z.infer<typeof bulkUpdateSchema>,
+): Promise<{ error?: string; count?: number }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  const parsed = bulkUpdateSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Requête invalide." };
+  const { taskIds, statusId, assigneeId } = parsed.data;
+
+  const data: { statusId?: string; assigneeId?: string | null; version: { increment: number } } = {
+    version: { increment: 1 },
+  };
+  if (statusId !== undefined) data.statusId = statusId;
+  if (assigneeId !== undefined) data.assigneeId = assigneeId;
+
+  const result = await db.task.updateMany({ where: { id: { in: taskIds }, trashedAt: null }, data });
+  if (result.count === 0) return { error: "Aucune tâche modifiée." };
+
+  const parts = [statusId !== undefined && "statut", assigneeId !== undefined && "personne"].filter(Boolean);
+  await db.journalEntry.create({
+    data: {
+      actorId: session.user.personId,
+      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      action: `${result.count} tâche${result.count > 1 ? "s" : ""} modifiée${result.count > 1 ? "s" : ""} en groupe (${parts.join(", ")})`,
+    },
+  });
+
+  revalidateTaskViews();
+  return { count: result.count };
+}
+
 const rescheduleSchema = z.object({
   taskId: z.string(),
   startDate: isoDate,
