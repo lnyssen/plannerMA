@@ -126,7 +126,12 @@ export function AbsenceCalendar({ absences }: { absences: AbsenceCalendarEntry[]
                     key={a.id}
                     title={a.reason ?? a.personName}
                     className="truncate rounded px-1 py-0.5 text-2xs font-semibold text-heading"
-                    style={{ background: "var(--color-tint)" }}
+                    // color-mix vers transparent (pas un aplat --color-tint) : le fond
+                    // se compose sur le paper de la page, donc reste lisible avec le
+                    // texte heading dans les deux thèmes — un aplat --color-tint fixe
+                    // tombait sous 4.5:1 de contraste en mode sombre (texte lavande sur
+                    // fond tint moyen), corrigé après une passe de vérification.
+                    style={{ background: "color-mix(in srgb, var(--color-heading) 16%, transparent)" }}
                   >
                     {a.personName}
                   </span>
