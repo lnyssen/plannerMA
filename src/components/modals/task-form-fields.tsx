@@ -9,7 +9,7 @@ import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskOption } from "@/lib/data/tasks";
 import { formatShortFr } from "@/lib/planning/dates";
-import { sortByTaskContext, taskContextLabel } from "@/lib/planning/labels";
+import { TaskCascadeFields } from "@/components/ui/task-cascade-fields";
 import { FieldLabel, fieldInputClass } from "./modal-shell";
 
 export interface TaskFormValues {
@@ -179,20 +179,15 @@ export function TaskFormFields({
 
       {tasks.length > 0 && (
         <div className="sm:col-span-2">
-          <FieldLabel htmlFor="task-depends-on">Dépend de</FieldLabel>
-          <select
-            id="task-depends-on"
-            className={fieldInputClass}
+          <FieldLabel>Dépend de</FieldLabel>
+          <TaskCascadeFields
+            tasks={tasks}
             value={values.dependsOnId}
-            onChange={(e) => onChange({ dependsOnId: e.target.value })}
-          >
-            <option value="">Aucune dépendance</option>
-            {sortByTaskContext(tasks).map((t) => (
-              <option key={t.id} value={t.id}>
-                {taskContextLabel(t)}
-              </option>
-            ))}
-          </select>
+            onChange={(dependsOnId) => onChange({ dependsOnId })}
+            allowEmpty
+            emptyLabel="Aucune dépendance"
+            idPrefix="task-depends-on"
+          />
         </div>
       )}
 

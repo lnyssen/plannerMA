@@ -31,7 +31,7 @@ export function listActiveTasksForForms() {
       id: true,
       title: true,
       studioId: true,
-      project: { select: { name: true, client: { select: { name: true } } } },
+      project: { select: { id: true, name: true, client: { select: { id: true, name: true } } } },
     },
   });
 }

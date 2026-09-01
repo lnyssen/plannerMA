@@ -7,7 +7,7 @@ import type { TaskOption } from "@/lib/data/tasks";
 import type { StudioSummary } from "@/lib/data/studios";
 import { FieldLabel, fieldInputClass } from "@/components/modals/modal-shell";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
-import { TaskCombobox } from "@/components/ui/task-combobox";
+import { TaskCascadeFields } from "@/components/ui/task-cascade-fields";
 
 export interface EntryContextValue {
   taskId: string | null;
@@ -81,18 +81,15 @@ export function EntryContextFields({
       </div>
 
       {mode === "task" ? (
-        <div>
-          <FieldLabel>Client — Projet — Tâche</FieldLabel>
-          <TaskCombobox
-            tasks={tasks}
-            value={value.taskId ?? ""}
-            onChange={(taskId) => {
-              const task = tasks.find((t) => t.id === taskId);
-              onChange({ taskId, studioId: task?.studioId ?? value.studioId });
-            }}
-            className={fieldInputClass}
-          />
-        </div>
+        <TaskCascadeFields
+          tasks={tasks}
+          value={value.taskId ?? ""}
+          onChange={(taskId) => {
+            const task = tasks.find((t) => t.id === taskId);
+            onChange({ taskId: taskId || null, studioId: task?.studioId ?? value.studioId });
+          }}
+          idPrefix="entry-task"
+        />
       ) : (
         <div className="flex flex-wrap gap-3">
           <div className="min-w-[200px] flex-1">

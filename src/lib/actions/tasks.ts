@@ -30,7 +30,7 @@ export async function getTaskDetail(taskId: string) {
       // (elle n'apparaît plus dans les options actives, voir
       // listActiveTasksForForms) alors que le lien existe toujours.
       dependsOn: {
-        select: { id: true, title: true, studioId: true, project: { select: { name: true, client: { select: { name: true } } } } },
+        select: { id: true, title: true, studioId: true, project: { select: { id: true, name: true, client: { select: { id: true, name: true } } } } },
       },
       journalEntries: { orderBy: { createdAt: "desc" } },
       timeEntries: { orderBy: { startedAt: "desc" }, include: { person: { select: { name: true } } } },
