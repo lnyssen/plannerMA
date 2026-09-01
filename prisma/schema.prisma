@@ -86,7 +86,28 @@ model User {
   /// préférence de navigateur.
   theme              ThemePreference @default(LIGHT)
 
+  passwordResetTokens PasswordResetToken[]
+
   @@map("users")
+}
+
+/// Jeton de réinitialisation de mot de passe en libre-service (écran de
+/// connexion, "Mot de passe oublié") — distinct de la réinitialisation par
+/// un administrateur (voir resetPassword dans people.ts), qui génère et
+/// affiche directement un nouveau mot de passe sans ce détour. Le jeton
+/// lui-même n'est jamais stocké en clair (tokenHash), pour qu'une fuite de
+/// la base ne suffise pas à détourner un compte via un jeton encore valide.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique @map("token_hash")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 // --------------------------------------------------------------------------

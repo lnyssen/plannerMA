@@ -6,9 +6,9 @@ export const metadata: Metadata = { title: "Connexion — Studio planner" };
 export default async function ConnexionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ depuis?: string }>;
+  searchParams: Promise<{ depuis?: string; reinitialise?: string }>;
 }) {
-  const { depuis } = await searchParams;
+  const { depuis, reinitialise } = await searchParams;
   // "/" (pas "/projets" en dur) : la racine redirige elle-même selon le
   // rôle — admin vers Projets, les autres vers Aujourd'hui (voir
   // src/app/page.tsx) — pour ne pas dupliquer cette décision ici.
@@ -21,6 +21,11 @@ export default async function ConnexionPage({
       <h1 className="mb-6 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px] text-heading">
         Studio planner
       </h1>
+      {reinitialise && (
+        <p className="mb-4 border border-heading bg-wash px-3 py-2 text-sm text-ink">
+          Mot de passe mis à jour — connectez-vous avec votre nouveau mot de passe.
+        </p>
+      )}
       <ConnexionForm redirectTo={redirectTo} />
     </div>
   );

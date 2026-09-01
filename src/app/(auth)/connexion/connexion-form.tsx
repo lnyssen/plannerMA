@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { primaryButtonClass } from "@/components/ui/buttons";
+import { primaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { authenticate, type AuthActionState } from "./actions";
 
 function SubmitButton() {
@@ -43,9 +44,14 @@ export function ConnexionForm({ redirectTo }: { redirectTo: string }) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-          Mot de passe
-        </label>
+        <div className="flex items-baseline justify-between">
+          <label htmlFor="password" className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Mot de passe
+          </label>
+          <Link href="/connexion/mot-de-passe-oublie" className={`text-xs font-semibold text-heading ${textButtonClass}`}>
+            Mot de passe oublié ?
+          </Link>
+        </div>
         <input
           id="password"
           name="password"

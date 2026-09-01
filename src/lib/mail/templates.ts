@@ -4,7 +4,7 @@
 
 import { formatShortFr } from "@/lib/planning/dates";
 
-const APP_URL = process.env.AUTH_URL || "http://localhost:3000";
+export const APP_URL = process.env.AUTH_URL || "http://localhost:3000";
 
 function wrapHtml(title: string, bodyLines: string[]): string {
   const body = bodyLines.map((l) => `<p style="margin:0 0 8px">${l}</p>`).join("\n");
@@ -120,6 +120,28 @@ export function passwordResetEmail(personName: string, email: string, temporaryP
     `Nouveau mot de passe temporaire : ${temporaryPassword}`,
     `Connexion : ${APP_URL}/connexion`,
     `Ce mot de passe est généré automatiquement — changez-le dès votre prochaine connexion (Réglages → Mon compte).`,
+  ];
+  return {
+    subject,
+    text: lines.join("\n\n"),
+    html: wrapHtml(subject, lines),
+  };
+}
+
+/**
+ * Distinct de passwordResetEmail ci-dessus : celui-ci envoie un lien à
+ * usage unique que la personne utilise pour choisir elle-même son nouveau
+ * mot de passe (libre-service, écran de connexion) — passwordResetEmail
+ * envoie un mot de passe déjà généré, choisi par un administrateur.
+ */
+export function passwordResetRequestEmail(personName: string, resetUrl: string) {
+  const subject = "Réinitialisation de votre mot de passe Studio planner";
+  const lines = [
+    `Bonjour ${personName},`,
+    `Une réinitialisation de mot de passe a été demandée pour votre compte Studio planner.`,
+    `Choisissez un nouveau mot de passe : ${resetUrl}`,
+    `Ce lien expire dans une heure et ne peut être utilisé qu'une fois.`,
+    `Si vous n'êtes pas à l'origine de cette demande, ignorez ce courriel — votre mot de passe actuel reste valide.`,
   ];
   return {
     subject,
