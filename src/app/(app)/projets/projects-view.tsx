@@ -187,7 +187,7 @@ export function ProjectsView({
   // hydration mismatch) ; le dernier choix de l'utilisateur est relu depuis
   // localStorage juste après le montage — préférence par appareil, pas une
   // donnée à synchroniser entre utilisateurs.
-  const [view, setView] = useState<"cards" | "table">("cards");
+  const [view, setView] = useState<"cards" | "table">("table");
   const referenceDate = useMemo(() => today(), []);
 
   useEffect(() => {
@@ -199,7 +199,7 @@ export function ProjectsView({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored === "cards" || stored === "table") setView(stored);
     } catch {
-      // localStorage indisponible (navigation privée, etc.) — reste sur "cards".
+      // localStorage indisponible (navigation privée, etc.) — reste sur "table".
     }
   }, []);
 
