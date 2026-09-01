@@ -96,5 +96,9 @@ export function FieldSection({
   );
 }
 
+// `h-10` aligne la hauteur des champs sur celle des boutons (voir BUTTON_BASE
+// dans buttons.ts) — un champ et un bouton côte à côte doivent arriver à la
+// même hauteur. Les `<textarea>` qui réutilisent cette classe reprennent la
+// hauteur via `rows` et doivent donc surcharger avec `h-auto!`.
 export const fieldInputClass =
-  "w-full rounded-md border-[1.5px] border-heading bg-paper px-2.5 py-2 text-sm text-ink outline-none";
+  "h-10 w-full rounded-md border-[1.5px] border-heading bg-paper px-2.5 py-2 text-sm text-ink outline-none";

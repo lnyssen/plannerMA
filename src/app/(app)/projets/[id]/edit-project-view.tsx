@@ -328,7 +328,7 @@ export function EditProjectView({
               <button
                 type="button"
                 onClick={() => setCreatingTask(true)}
-                className={`flex items-center gap-1 px-2 py-1 text-2xs font-semibold ${secondaryButtonClass}`}
+                className={`flex h-8! items-center gap-1 px-2 text-2xs font-semibold ${secondaryButtonClass}`}
               >
                 <Plus size={12} /> Nouvelle tâche
               </button>

@@ -65,7 +65,7 @@ export function TaskFormFields({
         <textarea
           id="task-description"
           rows={3}
-          className={`${fieldInputClass} resize-y`}
+          className={`${fieldInputClass} h-auto! resize-y`}
           value={values.description}
           onChange={(e) => onChange({ description: e.target.value })}
           placeholder="Précisions, contexte, consignes…"

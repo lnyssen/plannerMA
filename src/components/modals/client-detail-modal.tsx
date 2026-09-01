@@ -146,7 +146,7 @@ export function ClientDetailModal({
           <textarea
             id="client-notes"
             rows={3}
-            className={`${fieldInputClass} mb-3 resize-y`}
+            className={`${fieldInputClass} mb-3 h-auto! resize-y`}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Contexte, préférences, historique de la relation…"

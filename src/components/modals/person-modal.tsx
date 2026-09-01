@@ -315,14 +315,14 @@ export function PersonModal({
                   <button
                     type="button"
                     onClick={handleResetPassword}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${secondaryButtonClass}`}
+                    className={`flex items-center gap-1.5 h-8! px-2.5 text-xs font-semibold ${secondaryButtonClass}`}
                   >
                     <KeyRound size={13} /> Régénérer le mot de passe
                   </button>
                   <button
                     type="button"
                     onClick={removeAccess}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${dangerOutlineButtonClass}`}
+                    className={`flex items-center gap-1.5 h-8! px-2.5 text-xs font-semibold ${dangerOutlineButtonClass}`}
                   >
                     <UserX size={13} /> Retirer l’accès
                   </button>
@@ -355,7 +355,7 @@ export function PersonModal({
                 <button
                   type="button"
                   onClick={() => setShowInvite(true)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${secondaryButtonClass}`}
+                  className={`flex items-center gap-1.5 h-8! px-2.5 text-xs font-semibold ${secondaryButtonClass}`}
                 >
                   <Mail size={13} /> Inviter à se connecter
                 </button>
@@ -390,7 +390,7 @@ export function PersonModal({
                     <button
                       type="button"
                       onClick={() => setShowInvite(false)}
-                      className={`px-2.5 py-1.5 text-xs font-semibold ${secondaryButtonClass}`}
+                      className={`h-8! px-2.5 text-xs font-semibold ${secondaryButtonClass}`}
                     >
                       Annuler
                     </button>
@@ -398,7 +398,7 @@ export function PersonModal({
                       type="button"
                       disabled={pending || !inviteEmail.trim()}
                       onClick={sendInvite}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold ${primaryButtonClass}`}
+                      className={`flex items-center gap-1.5 h-8! px-2.5 text-xs font-semibold ${primaryButtonClass}`}
                     >
                       <Mail size={13} /> Envoyer l’invitation
                     </button>
