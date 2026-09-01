@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { secondaryButtonClass } from "@/components/ui/buttons";
 import { CreateButton } from "@/components/shell/create-button";
+import { ClientTypeBadge } from "@/components/ui/client-type-badge";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { SearchField } from "@/components/ui/search-field";
 import { StudioBadge } from "@/components/ui/studio-badge";
@@ -96,9 +97,7 @@ function ProjectCard({
               <AlertTriangle size={11} /> Budget
             </span>
           )}
-          <span className="rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
-            {project.type === "INTERNAL" ? "Interne" : "Externe"}
-          </span>
+          <ClientTypeBadge type={project.type} />
         </div>
       </div>
       <div className="mb-3 text-sm text-ink">{project.client.name}</div>

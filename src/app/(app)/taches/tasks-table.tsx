@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { checkBulkReassignCapacity } from "@/lib/actions/capacity";
 import { bulkUpdateTasks } from "@/lib/actions/tasks";
 import { textButtonClass } from "@/components/ui/buttons";
+import { ClientTypeBadge } from "@/components/ui/client-type-badge";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { SearchField } from "@/components/ui/search-field";
@@ -322,11 +323,7 @@ export function TasksTable({
                 </div>
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
                   <StudioBadge name={t.studio.name} fillHex={t.studio.fillHex} colorHex={t.studio.colorHex} />
-                  {t.project && (
-                    <span className="rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
-                      {t.project.type === "INTERNAL" ? "Interne" : "Externe"}
-                    </span>
-                  )}
+                  {t.project && <ClientTypeBadge type={t.project.type} />}
                 </div>
                 <div className="flex items-center justify-between gap-2 text-xs text-ink-muted">
                   {!hidePersonColumn && <span className="truncate">{t.assignee?.name ?? "Non attribué"}</span>}
@@ -390,9 +387,7 @@ export function TasksTable({
                     {t.project ? (
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-heading">{t.project.client.name}</span>
-                        <span className="flex-shrink-0 rounded-md px-1.5 py-0.5 text-2xs font-semibold text-ink-muted uppercase" style={{ background: "var(--color-wash)" }}>
-                          {t.project.type === "INTERNAL" ? "Interne" : "Externe"}
-                        </span>
+                        <ClientTypeBadge type={t.project.type} className="flex-shrink-0" />
                       </div>
                     ) : (
                       "—"
