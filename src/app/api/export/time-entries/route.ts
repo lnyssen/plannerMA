@@ -55,7 +55,12 @@ export async function GET() {
     ]);
   }
 
-  return new NextResponse(csv, {
+  // BOM UTF-8 en tête : sans lui, Excel (notamment sous Windows) ignore
+  // l'encodage déclaré dans l'en-tête HTTP et rouvre le fichier avec la page
+  // de code du système — les accents (Média, Réunion...) deviennent
+  // illisibles. Le BOM force la détection UTF-8 à l'ouverture, sans gêner
+  // les autres lecteurs de CSV.
+  return new NextResponse("\uFEFF" + csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="suivi-temps-${toIsoDate(new Date())}.csv"`,

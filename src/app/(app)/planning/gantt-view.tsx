@@ -219,6 +219,16 @@ export function GanttView({
     function onMove(e: MouseEvent) {
       setDrag((d) => (d ? { ...d, deltaDays: Math.round((e.clientX - d.startClientX) / dayWidthRef.current) } : d));
     }
+    // Tactile : mêmes deltas, sur le doigt plutôt que le curseur — `passive:
+    // false` sur touchmove est nécessaire pour pouvoir bloquer le défilement
+    // de la page pendant un glisser actif (sinon la barre bouge ET la page
+    // défile en même temps sous le doigt).
+    function onTouchMove(e: TouchEvent) {
+      const touch = e.touches[0];
+      if (!touch) return;
+      e.preventDefault();
+      setDrag((d) => (d ? { ...d, deltaDays: Math.round((touch.clientX - d.startClientX) / dayWidthRef.current) } : d));
+    }
     function onUp() {
       setDrag((current) => {
         if (current && current.deltaDays !== 0 && !committed) {
@@ -242,9 +252,15 @@ export function GanttView({
     }
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+    window.addEventListener("touchcancel", onUp);
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onUp);
+      window.removeEventListener("touchcancel", onUp);
     };
   }, [isDragging, commitReschedule]);
 
@@ -580,6 +596,11 @@ export function GanttView({
                       e.preventDefault();
                       setDrag({ taskId: t.id, mode: "move", startClientX: e.clientX, deltaDays: 0 });
                     }}
+                    onTouchStart={(e) => {
+                      const touch = e.touches[0];
+                      if (!touch) return;
+                      setDrag({ taskId: t.id, mode: "move", startClientX: touch.clientX, deltaDays: 0 });
+                    }}
                     onDoubleClick={() => router.push(`/taches/${t.id}`)}
                     title={`${t.title} · ${t.assignee?.name ?? "non attribué"}${
                       overlapping ? " · attention : chevauche une autre tâche de cette personne" : ""
@@ -587,17 +608,22 @@ export function GanttView({
                   >
                     {overlapping && <span aria-hidden="true" className="text-2xs font-bold text-alert">⚠</span>}
                     <span className="truncate text-2xs font-bold whitespace-nowrap">{t.title}</span>
-                    {canDrag && (
-                      <span
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setDrag({ taskId: t.id, mode: "resize", startClientX: e.clientX, deltaDays: 0 });
-                        }}
-                        style={{ marginLeft: "auto", width: 8, height: "100%", cursor: "ew-resize" }}
-                        className="flex-shrink-0 border-r-2"
-                      />
-                    )}
+                    <span
+                      onMouseDown={(e) => {
+                        if (!canDrag) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDrag({ taskId: t.id, mode: "resize", startClientX: e.clientX, deltaDays: 0 });
+                      }}
+                      onTouchStart={(e) => {
+                        const touch = e.touches[0];
+                        if (!touch) return;
+                        e.stopPropagation();
+                        setDrag({ taskId: t.id, mode: "resize", startClientX: touch.clientX, deltaDays: 0 });
+                      }}
+                      style={{ marginLeft: "auto", width: 12, height: "100%", cursor: "ew-resize" }}
+                      className="flex-shrink-0 border-r-2"
+                    />
                   </div>
                 );
               })}
@@ -606,9 +632,9 @@ export function GanttView({
         </div>
       </div>
       <p className="mt-3 text-xs text-ink-muted">
-        {canDrag
-          ? "Glissez une barre pour décaler la tâche, sa poignée droite pour la durée, double-cliquez pour l’ouvrir. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance. Contour rose ⚠ : une même personne a deux tâches qui se chevauchent."
-          : "Le glisser n’est actif que sur ordinateur."}{" "}
+        Glissez une barre pour décaler la tâche, sa poignée droite pour la durée (souris ou tactile), double-cliquez
+        pour l’ouvrir. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance. Contour
+        rose ⚠ : une même personne a deux tâches qui se chevauchent.{" "}
         Au clavier : sélectionnez une barre puis Flèches pour la décaler, Maj+Flèches pour ajuster sa durée, Entrée pour l’ouvrir.
       </p>
     </div>
