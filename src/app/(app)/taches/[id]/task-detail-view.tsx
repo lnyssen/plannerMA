@@ -1,13 +1,13 @@
 "use client";
 
-import { AlertTriangle, AtSign, ExternalLink, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
+import { AlertTriangle, AtSign, Copy, ExternalLink, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { addLinkAttachment, deleteAttachment, uploadFileAttachment } from "@/lib/actions/attachments";
 import { addComment } from "@/lib/actions/comments";
 import { addSubtask, deleteSubtask, toggleSubtask } from "@/lib/actions/subtasks";
-import { getTaskDetail, restoreTask, trashTask, updateTask, type TaskDetail } from "@/lib/actions/tasks";
+import { duplicateTask, getTaskDetail, restoreTask, trashTask, updateTask, type TaskDetail } from "@/lib/actions/tasks";
 import { addManualEntry, deleteTimeEntry, startTimer, stopTimer } from "@/lib/actions/time-entries";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -135,6 +135,19 @@ export function TaskDetailView({
     startTransition(async () => {
       await restoreTask(task.id);
       router.push("/taches");
+      router.refresh();
+    });
+  }
+
+  function duplicate() {
+    if (!confirm(`Dupliquer « ${task.title} » ? Décalée pour démarrer aujourd’hui.`)) return;
+    startTransition(async () => {
+      const result = await duplicateTask(task.id);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      router.push(`/taches/${result.id}`);
       router.refresh();
     });
   }
@@ -333,13 +346,23 @@ export function TaskDetailView({
             <RotateCcw size={14} /> Restaurer
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={trash}
-            className={`flex items-center gap-1.5 px-2 py-1 text-sm font-semibold ${dangerButtonClass}`}
-          >
-            <Trash2 size={14} /> Corbeille
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={trash}
+              className={`flex items-center gap-1.5 px-2 py-1 text-sm font-semibold ${dangerButtonClass}`}
+            >
+              <Trash2 size={14} /> Corbeille
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={duplicate}
+              className={`flex items-center gap-1.5 text-sm font-semibold text-heading disabled:opacity-60 ${textButtonClass}`}
+            >
+              <Copy size={14} /> Dupliquer
+            </button>
+          </div>
         )}
         <div className="flex gap-2.5">
           <Link href="/taches" className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}>

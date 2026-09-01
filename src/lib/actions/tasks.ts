@@ -6,7 +6,7 @@ import type { RecurrenceFrequency } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { notifyAssignment } from "@/lib/mail/notify";
-import { addDaysIso, addMonthsIso, daysBetween, toIsoDate } from "@/lib/planning/dates";
+import { addDays, addDaysIso, addMonthsIso, daysBetween, fromIsoDate, toIsoDate, today } from "@/lib/planning/dates";
 import { currentActorName } from "./actor";
 import { createNotification } from "./notifications";
 
@@ -541,6 +541,72 @@ export async function rescheduleTask(
 
   revalidateTaskViews();
   return { version: task.version };
+}
+
+/**
+ * Duplique une seule tâche — pendant de duplicateProject (projects.ts) à
+ * l'échelle d'une tâche, pour une activité récurrente sans dupliquer tout
+ * un projet. Dépendance conservée (le clone dépend du même prédécesseur
+ * que l'original) ; sous-tâches copiées et remises à "non fait" ; statut
+ * remis au premier de la liste — un clone démarre un nouveau cycle, pas la
+ * suite de l'original. Dates décalées pour démarrer aujourd'hui, durée
+ * conservée. Écritures de temps, commentaires, pièces jointes et
+ * récurrence ne sont pas copiés — propres à l'historique de l'original.
+ */
+export async function duplicateTask(taskId: string): Promise<{ error?: string; id?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+
+  const source = await db.task.findUnique({
+    where: { id: taskId },
+    include: { subtasks: { orderBy: { position: "asc" } } },
+  });
+  if (!source) return { error: "Cette tâche n’existe plus." };
+
+  const firstStatus = await db.taskStatus.findFirst({ orderBy: { position: "asc" } });
+  const offsetDays = Math.round((fromIsoDate(today()).getTime() - source.startDate.getTime()) / 86_400_000);
+  const shift = (d: Date) => addDays(d, offsetDays);
+
+  const clone = await db.task.create({
+    data: {
+      title: `${source.title} (copie)`,
+      description: source.description,
+      projectId: source.projectId,
+      studioId: source.studioId,
+      assigneeId: source.assigneeId,
+      startDate: shift(source.startDate),
+      endDate: shift(source.endDate),
+      maxDurationDays: source.maxDurationDays,
+      estimatedHalfDays: source.estimatedHalfDays,
+      statusId: firstStatus?.id ?? source.statusId,
+      dependsOnId: source.dependsOnId,
+    },
+  });
+
+  for (const s of source.subtasks) {
+    await db.subtask.create({
+      data: {
+        taskId: clone.id,
+        title: s.title,
+        dueDate: s.dueDate ? shift(s.dueDate) : null,
+        assigneeId: s.assigneeId,
+        done: false,
+        position: s.position,
+      },
+    });
+  }
+
+  await db.journalEntry.create({
+    data: {
+      actorId: session.user.personId,
+      actorName: await currentActorName(session),
+      action: `Tâche « ${source.title} » dupliquée`,
+      taskId: clone.id,
+    },
+  });
+
+  revalidateTaskViews();
+  return { id: clone.id };
 }
 
 export async function trashTask(taskId: string): Promise<{ error?: string }> {
