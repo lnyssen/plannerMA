@@ -24,6 +24,33 @@ export function PageDetailSkeleton() {
   );
 }
 
+/**
+ * Pour les `loading.tsx` des pages de liste (Tâches, Projets, Temps, Équipe,
+ * Tableau de bord, Aujourd'hui, Clients, Charge, Planning…) — silhouette
+ * générique titre + barre de filtres + lignes, plutôt qu'un flash de page
+ * vide le temps que les données arrivent. Chaque page reste assez proche de
+ * cette forme pour qu'une seule silhouette serve partout, sans sur-adapter
+ * à chacune.
+ */
+export function ListPageSkeleton() {
+  return (
+    <div className="px-8 py-8">
+      <Skeleton className="mb-6 h-8 w-48" />
+      <div className="mb-5 flex flex-wrap gap-3">
+        <Skeleton className="h-10 w-40" />
+        <Skeleton className="h-10 w-40" />
+        <Skeleton className="h-10 w-40" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    </div>
+  );
+}
+
 /** Approximation d'une fiche détail (titre + quelques lignes + bloc). */
 export function DetailSkeleton() {
   return (
