@@ -214,12 +214,28 @@ export default function AidePage() {
             <li><strong>Semaine</strong> — grille jour par jour, une ligne par personne.</li>
             <li><strong>Gantt</strong> — barres sur une frise, dépendances affichées en trait reliant deux tâches, nombre de semaines réglable.</li>
           </Ul>
+          <H3>Créer une tâche en tirant sur la grille</H3>
+          <Shot src="/docs/planning-semaine.png" alt="Planning en vue Semaine, une ligne par personne" />
+          <P>
+            Inutile de re-saisir ce que l’écran affiche déjà : le geste porte la personne (ou le projet) et les dates.
+          </P>
+          <Ul>
+            <li>
+              <strong>Semaine</strong> — glisser sur les jours d’une ligne (ou cliquer une case vide) ouvre la création
+              déjà attribuée à cette personne, du premier au dernier jour couvert.
+            </li>
+            <li>
+              <strong>Gantt</strong> — glisser sur une zone vide de la frise ouvre la création sur ces dates, rattachée
+              au projet de la ligne (ou à la personne, si l’affichage est regroupé par personne).
+            </li>
+            <li>Dans les deux cas, tout reste modifiable dans le formulaire avant d’enregistrer.</li>
+          </Ul>
         </section>
 
         <section className="mb-8">
           <H2 id="projets">Projets</H2>
           <Shot src="/docs/projets.png" alt="Liste des projets en vue Tableau" />
-          <P>Vue Cartes (regroupées par client) ou Tableau, avec un onglet Archives séparé.</P>
+          <P>Vue Tableau par défaut, ou Cartes (regroupées par client), avec un onglet Archives séparé.</P>
           <H3>Fiche projet</H3>
           <Ul>
             <li>Nom, code, client (existant ou créé à la volée), type de client (interne/externe), type de projet (Externe / Équipe éducative / Européen / Fonctionnement / Éducation permanente), studios concernés.</li>
@@ -284,10 +300,19 @@ export default function AidePage() {
 
         <section className="mb-8">
           <H2 id="temps">Temps</H2>
-          <Shot src="/docs/temps.png" alt="Page Temps : écritures par jour ou par semaine" />
+          <Shot src="/docs/temps.png" alt="Page Temps : ajout de temps en haut, puis votre temps déjà enregistré" />
           <P>
-            Vos écritures de temps, par jour ou par semaine. Une écriture peut être liée à une tâche précise ou
-            directement à un projet (temps non affecté à une tâche particulière).
+            La page se lit en deux temps : <strong>Ajouter du temps</strong> en haut (minuteur ou saisie manuelle),
+            puis <strong>Votre temps</strong> — ce qui est déjà enregistré, avec le total à côté du titre.
+          </P>
+          <Ul>
+            <li><strong>Calendrier</strong> — la semaine heure par heure, affichage par défaut.</li>
+            <li><strong>Liste</strong> — les écritures groupées par jour, avec le total de chaque journée.</li>
+            <li><strong>Par projet</strong> — la répartition du temps, du projet le plus consommateur au moins.</li>
+          </Ul>
+          <P>
+            Une écriture peut être liée à une tâche précise (<em>Tâche planifiée</em>) ou directement à un projet, voire
+            à aucun (<em>Autre activité</em> — réunion, suivi de courriels, aide à un collègue…).
           </P>
           <P>
             Si la tâche choisie a plusieurs studios, un champ « Studio (pour cette écriture) » apparaît pour préciser
@@ -379,8 +404,8 @@ export default function AidePage() {
           <H2 id="recherche">Recherche et palette de commandes</H2>
           <Shot src="/docs/recherche.png" alt="Résultats de recherche : tâches, commentaires, projets" />
           <P>
-            L’icône loupe (barre latérale) ouvre une recherche rapide : tâches (titre et description), commentaires
-            (avec un extrait du texte trouvé), projets (nom et code), clients.
+            Le champ « Rechercher… » (en haut de la barre latérale) ouvre une recherche rapide : tâches (titre et
+            description), commentaires (avec un extrait du texte trouvé), projets (nom et code), clients.
           </P>
           <Shot src="/docs/palette.png" alt="Palette de commandes ouverte, avec actions rapides" />
           <P>
@@ -417,6 +442,20 @@ export default function AidePage() {
             <li>Changer son mot de passe : menu du compte (en bas de la barre latérale) → Mot de passe.</li>
             <li>Thème clair/sombre : bascule dans la barre latérale.</li>
             <li>Ordre du menu de gauche : personnalisable par glisser-déposer (menu du compte → Réorganiser le menu).</li>
+          </Ul>
+          <H3>Lire les puces du menu de gauche</H3>
+          <Ul>
+            <li>
+              <strong>Puce neutre</strong> — un simple compte : tâches ou projets en cours, tâches qui vous sont
+              attribuées, demandes en attente.
+            </li>
+            <li>
+              <strong>Puce rouge ⚠</strong> — le sous-ensemble qui pose problème dans ce compte : tâches en retard,
+              projets au-delà de leur budget de temps. Les deux puces se lisent côte à côte : « 12 ⚠3 » = douze tâches
+              en cours, dont trois en retard.
+            </li>
+            <li>Replier un groupe ne masque pas ses alertes : elles remontent sur l’intitulé du groupe.</li>
+            <li>Le détail de chaque puce s’affiche en survolant l’entrée du menu.</li>
           </Ul>
           <Steps title="Mot de passe oublié">
             <li>Sur l’écran de connexion, cliquer « Mot de passe oublié ? ».</li>
