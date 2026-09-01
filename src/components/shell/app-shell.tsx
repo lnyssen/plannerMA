@@ -35,6 +35,7 @@ import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskOption } from "@/lib/data/tasks";
 import { signOutAction } from "./actions";
+import { CommandPalette } from "./command-palette";
 import { CreateModalsProvider } from "./create-modals-context";
 import { GlobalSearch } from "./global-search";
 import { applyNavOrder, NAV_ENTRIES, type NavCounts } from "./nav-entries";
@@ -465,6 +466,7 @@ export function AppShell({
       )}
       {modal === "navOrder" && <NavOrderModal role={role} initialOrder={navOrder} onClose={() => setModal(null)} />}
       {modal === "password" && <ChangePasswordModal onClose={() => setModal(null)} />}
+      <CommandPalette navEntries={orderedEntries} />
     </div>
     </CreateModalsProvider>
   );

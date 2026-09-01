@@ -62,6 +62,7 @@ export function GlobalSearch() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Recherche"
+        title="Recherche (ou ⌘K / Ctrl K depuis n'importe où)"
         className={`flex h-7 w-7 items-center justify-center ${iconButtonOnRailClass}`}
       >
         <Search size={20} />
