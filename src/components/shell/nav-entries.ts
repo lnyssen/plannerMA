@@ -36,7 +36,7 @@ export interface NavCounts {
   mesTaches: number;
   demandes: number;
   tasksActive: number;
-  /** Sous-ensemble de tasksActive (échéance dépassée) — pas sa propre puce, sert juste à colorer celle de tasksActive en alerte. */
+  /** Sous-ensemble de tasksActive (échéance dépassée) — affiché dans sa propre puce d'alerte, voir NavBadges. */
   tasksLate: number;
   projectsActive: number;
   /** Sous-ensemble de projectsActive (budget de temps dépassé) — même principe que tasksLate. */
@@ -44,43 +44,53 @@ export interface NavCounts {
 }
 
 /**
- * Ce que représente chaque puce et comment la mettre en forme — un nombre nu
- * à côté d'un libellé de menu ne se comprend pas de lui-même (relevé :
- * "à quoi correspond le numéro inscrit ?"). `describe` alimente l'infobulle
- * dans tous les états (replié ET déplié, avant seulement replié) ; `alert`
- * distingue un problème à corriger (teinte alerte) d'un simple compte
- * informatif (teinte neutre). Le nombre affiché est toujours un total
- * informatif (tâches/projets en cours) ; `alert` s'active séparément dès
- * qu'un sous-ensemble à problème existe dans ce total (retard, dépassement
- * de budget) — pour ne pas avoir à choisir entre "montrer combien" et
- * "signaler un problème", les deux se lisent d'un coup d'œil.
+ * Les deux puces que peut porter une entrée de menu, lues séparément.
+ *
+ * Avant, un seul nombre servait aux deux usages : la puce affichait le total
+ * d'éléments en cours mais virait au rouge avec un triangle collé à ce total
+ * dès qu'un seul était en retard — ce qui se lit « 4 tâches en alerte » alors
+ * que ça voulait dire « 4 en cours, dont quelques-unes en retard ». Le nombre
+ * combien et le nombre en problème sont désormais deux puces distinctes,
+ * côte à côte : `total` reste neutre et informatif, `alert` porte son propre
+ * nombre en rouge et n'apparaît que s'il y a effectivement un problème.
  */
-export const NAV_COUNT_META: Record<
-  NavCountKey,
-  { describe: (count: number, counts: NavCounts) => string; alert: (counts: NavCounts) => boolean }
-> = {
-  tasksActive: {
-    describe: (n, counts) =>
-      `${n} tâche${n > 1 ? "s" : ""} en cours` +
-      (counts.tasksLate > 0 ? ` — dont ${counts.tasksLate} en retard` : ""),
-    alert: (counts) => counts.tasksLate > 0,
-  },
-  projectsActive: {
-    describe: (n, counts) =>
-      `${n} projet${n > 1 ? "s" : ""} en cours` +
-      (counts.projectsOverBudget > 0
-        ? ` — dont ${counts.projectsOverBudget} qui dépasse${counts.projectsOverBudget > 1 ? "nt" : ""} son budget de temps`
-        : ""),
-    alert: (counts) => counts.projectsOverBudget > 0,
-  },
-  mesTaches: {
-    describe: (n) => `${n} tâche${n > 1 ? "s" : ""} qui vous ${n > 1 ? "sont" : "est"} attribuée${n > 1 ? "s" : ""}, pas encore terminée${n > 1 ? "s" : ""}`,
-    alert: () => false,
-  },
-  demandes: {
-    describe: (n) => `${n} demande${n > 1 ? "s" : ""} en attente de traitement`,
-    alert: () => false,
-  },
+export interface NavBadges {
+  total: number;
+  /** Phrase d'infobulle du total — une puce nue ne se comprend pas d'elle-même. */
+  totalLabel: string;
+  /** Sous-ensemble à problème du total ; 0 = pas de puce d'alerte. */
+  alert: number;
+  /** Phrase d'infobulle de l'alerte, formulée pour suivre `totalLabel` (« …, dont X en retard »). */
+  alertLabel: string;
+}
+
+const s = (n: number) => (n > 1 ? "s" : "");
+
+export const NAV_COUNT_META: Record<NavCountKey, (counts: NavCounts) => NavBadges> = {
+  tasksActive: (c) => ({
+    total: c.tasksActive,
+    totalLabel: `${c.tasksActive} tâche${s(c.tasksActive)} en cours`,
+    alert: c.tasksLate,
+    alertLabel: `${c.tasksLate} en retard`,
+  }),
+  projectsActive: (c) => ({
+    total: c.projectsActive,
+    totalLabel: `${c.projectsActive} projet${s(c.projectsActive)} en cours`,
+    alert: c.projectsOverBudget,
+    alertLabel: `${c.projectsOverBudget} au-delà de son budget de temps`,
+  }),
+  mesTaches: (c) => ({
+    total: c.mesTaches,
+    totalLabel: `${c.mesTaches} tâche${s(c.mesTaches)} qui vous ${c.mesTaches > 1 ? "sont" : "est"} attribuée${s(c.mesTaches)}, pas encore terminée${s(c.mesTaches)}`,
+    alert: 0,
+    alertLabel: "",
+  }),
+  demandes: (c) => ({
+    total: c.demandes,
+    totalLabel: `${c.demandes} demande${s(c.demandes)} en attente de traitement`,
+    alert: 0,
+    alertLabel: "",
+  }),
 };
 
 // Ordre par défaut, conforme à la maquette Claude Design (5 écrans conçus :
@@ -90,8 +100,11 @@ export const NAV_COUNT_META: Record<
 // encore réordonnées et pour filtrer par rôle.
 export const NAV_ENTRIES: NavEntry[] = [
   { href: "/aujourdhui", label: "Aujourd’hui", icon: Home, adminOnly: false, group: "Travail" },
-  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false, countKey: "tasksActive", group: "Travail" },
+  // Son propre travail avant celui de tout le monde : "Mes tâches" est
+  // l'écran ouvert plusieurs fois par jour, "Tâches" (tout le studio) sert
+  // surtout à chercher ou arbitrer.
   { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false, countKey: "mesTaches", group: "Travail" },
+  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false, countKey: "tasksActive", group: "Travail" },
   { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false, group: "Travail" },
   { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false, countKey: "projectsActive", group: "Projets" },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false, group: "Projets" },

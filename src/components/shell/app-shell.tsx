@@ -30,7 +30,7 @@ import { CreateTaskModal } from "@/components/modals/create-task-modal";
 import { NavOrderModal } from "@/components/modals/nav-order-modal";
 import { NotificationPrefsModal } from "@/components/modals/notification-prefs-modal";
 import { RequestModal } from "@/components/modals/request-modal";
-import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass, textButtonClass } from "@/components/ui/buttons";
+import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass } from "@/components/ui/buttons";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -42,6 +42,19 @@ import { CreateModalsProvider } from "./create-modals-context";
 import { GlobalSearch } from "./global-search";
 import { applyNavOrder, NAV_COUNT_META, NAV_ENTRIES, type NavCounts } from "./nav-entries";
 import { NotificationBell } from "./notification-bell";
+
+// Teintes propres au rail (aplat violet plein). Le système de tokens décrit
+// les couleurs du contenu sur fond papier, pas celles posées sur le rail :
+// on les nomme ici une fois plutôt que de recopier des littéraux au fil du
+// fichier.
+const ON_RAIL = {
+  /** Libellé d'une entrée au repos. */
+  text: "rgba(255,255,255,0.86)",
+  /** Texte plein contraste (puces, page courante inversée). */
+  textStrong: "#FFFFFF",
+  /** Aplat neutre d'une puce de comptage. */
+  fill: "rgba(255,255,255,0.22)",
+} as const;
 
 const ROLE_LABEL: Record<Role, string> = {
   ADMIN: "Administrateur",
@@ -182,43 +195,77 @@ export function AppShell({
     navOrder,
   );
 
+  /** Puce rouge « X en problème » — même forme sur une entrée et sur l'intitulé d'un groupe replié. */
+  function alertBadge(n: number) {
+    return (
+      <span
+        className="flex flex-shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-bold tabular-nums"
+        style={{ background: "var(--color-alert)", color: ON_RAIL.textStrong }}
+      >
+        <AlertTriangle size={10} aria-hidden="true" />
+        {n}
+      </span>
+    );
+  }
+
   function renderNavEntry({ href, label, icon: Icon, countKey }: (typeof orderedEntries)[number], isCollapsed: boolean) {
     const active = pathname === href || pathname.startsWith(`${href}/`);
-    const count = countKey ? counts[countKey] : 0;
-    const meta = countKey ? NAV_COUNT_META[countKey] : null;
-    const alert = meta?.alert(counts) ?? false;
-    // Toujours une infobulle qui explique le nombre (pas seulement replié) :
+    const badges = countKey ? NAV_COUNT_META[countKey](counts) : null;
+    const total = badges?.total ?? 0;
+    const alert = badges?.alert ?? 0;
+    // Toujours une infobulle qui explique les nombres (pas seulement replié) :
     // une puce nue à côté d'un libellé ne se comprend pas d'elle-même —
     // "1" à côté de "Tâches" pourrait vouloir dire n'importe quoi sans ce texte.
-    const title = count > 0 && meta ? `${label} — ${meta.describe(count, counts)}` : isCollapsed ? label : undefined;
+    const described =
+      badges && total > 0
+        ? `${label} — ${badges.totalLabel}${alert > 0 ? `, dont ${badges.alertLabel}` : ""}`
+        : null;
     return (
       <Link
         key={href}
         href={href}
         onClick={() => setDrawerOpen(false)}
         aria-current={active ? "page" : undefined}
-        title={title}
-        className={`flex items-center gap-2.5 rounded-lg px-3 py-1.5 font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 hover:bg-white/10 active:bg-white/20 ${isCollapsed ? "justify-center" : ""}`}
+        title={described ?? (isCollapsed ? label : undefined)}
+        className={`relative flex items-center gap-2.5 rounded-full font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 ${
+          isCollapsed ? "mx-auto h-9 w-9 justify-center" : "px-3 py-1.5"
+        } ${active ? "" : "hover:bg-white/12 active:bg-white/20"}`}
         style={{
-          background: active ? "rgba(255,255,255,0.18)" : "transparent",
-          color: active ? "#FFFFFF" : "rgba(255,255,255,0.85)",
+          // Pastille pleine pour la page courante : contraste maximal, et
+          // même vocabulaire de forme que le reste de l'appli (tout est en
+          // pilule) — l'ancien rectangle blanc à 18 % se distinguait mal.
+          background: active ? ON_RAIL.textStrong : "transparent",
+          color: active ? "var(--color-rail)" : ON_RAIL.text,
           fontWeight: active ? 700 : 600,
         }}
       >
         <Icon size={17} aria-hidden="true" className="flex-shrink-0" />
         {!isCollapsed && <span className="flex-1 truncate">{label}</span>}
-        {!isCollapsed && count > 0 && (
-          <span
-            className="flex flex-shrink-0 items-center gap-0.5 rounded-full px-2 py-0.5 text-2xs font-bold tabular-nums"
-            style={
-              alert
-                ? { background: "var(--color-alert)", color: "#FFFFFF" }
-                : { background: "rgba(255,255,255,0.25)", color: "#FFFFFF" }
-            }
-          >
-            {alert && <AlertTriangle size={10} aria-hidden="true" />}
-            {count}
+        {!isCollapsed && (total > 0 || alert > 0) && (
+          <span className="flex flex-shrink-0 items-center gap-1">
+            {total > 0 && (
+              <span
+                className="rounded-full px-1.5 py-0.5 text-2xs font-bold tabular-nums"
+                style={
+                  active
+                    ? { background: "color-mix(in srgb, var(--color-rail) 14%, transparent)", color: "var(--color-rail)" }
+                    : { background: ON_RAIL.fill, color: ON_RAIL.textStrong }
+                }
+              >
+                {total}
+              </span>
+            )}
+            {alert > 0 && alertBadge(alert)}
           </span>
+        )}
+        {/* Replié aux icônes il n'y a plus de place pour les puces : seul le
+            problème est signalé, par une pastille sur l'icône. */}
+        {isCollapsed && alert > 0 && (
+          <span
+            aria-hidden="true"
+            className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full"
+            style={{ background: "var(--color-alert)", boxShadow: "0 0 0 2px var(--color-rail)" }}
+          />
         )}
       </Link>
     );
@@ -250,20 +297,30 @@ export function AppShell({
       <nav aria-label="Navigation principale" className="flex flex-col gap-0.5 border-b border-white/15 px-3 pb-3">
         {groups.map((g, i) => {
           const collapsed = collapsedGroups.includes(g.name);
+          // Replier un groupe ne doit jamais faire disparaître un problème :
+          // les alertes de ses entrées remontent sur l'intitulé.
+          const groupAlert = g.entries.reduce(
+            (sum, e) => sum + (e.countKey ? NAV_COUNT_META[e.countKey](counts).alert : 0),
+            0,
+          );
           return (
             <div key={g.name}>
               <button
                 type="button"
                 onClick={() => toggleGroup(g.name)}
                 aria-expanded={!collapsed}
-                className={`flex w-full items-center justify-between gap-2 rounded-md px-3 text-2xs font-bold tracking-wide text-white/50 uppercase transition-colors duration-100 hover:text-white/85 ${i === 0 ? "pb-1" : "pt-2 pb-1"}`}
+                title={collapsed && groupAlert > 0 ? `${g.name} — ${groupAlert} élément(s) à traiter` : undefined}
+                className={`flex w-full items-center gap-1.5 rounded-full px-3 text-2xs font-bold tracking-wide text-white/55 uppercase transition-colors duration-100 hover:text-white ${i === 0 ? "pb-1" : "pt-2.5 pb-1"}`}
               >
-                {g.name}
+                {/* Chevron à gauche : il annonce l'imbrication du groupe, il
+                    se lit avant l'intitulé et non après. */}
                 <ChevronDown
                   size={12}
                   aria-hidden="true"
-                  className={`flex-shrink-0 transition-transform duration-150 ${collapsed ? "" : "rotate-180"}`}
+                  className={`flex-shrink-0 transition-transform duration-150 ${collapsed ? "-rotate-90" : ""}`}
                 />
+                <span className="flex-1 text-left">{g.name}</span>
+                {collapsed && groupAlert > 0 && alertBadge(groupAlert)}
               </button>
               {!collapsed && <div className="flex flex-col gap-0.5">{g.entries.map((entry) => renderNavEntry(entry, false))}</div>}
             </div>
@@ -276,7 +333,7 @@ export function AppShell({
   function renderRail(isCollapsed: boolean, showCollapseToggle: boolean) {
     return (
       <>
-        <div className={`flex flex-shrink-0 items-start gap-2 px-5 pt-5 pb-5 ${isCollapsed ? "flex-col items-center" : "justify-between"}`}>
+        <div className={`flex flex-shrink-0 items-start gap-2 px-5 pt-5 pb-4 ${isCollapsed ? "flex-col items-center" : "justify-between"}`}>
           {!isCollapsed && (
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel, pas d'optimisation next/image nécessaire pour cette taille */}
@@ -285,12 +342,8 @@ export function AppShell({
             </div>
           )}
           <div className={`flex items-center gap-1 ${isCollapsed ? "flex-col" : ""}`}>
-            {!isCollapsed && (
-              <>
-                <GlobalSearch />
-                <NotificationBell />
-              </>
-            )}
+            {isCollapsed && <GlobalSearch />}
+            <NotificationBell />
             {showCollapseToggle && (
               <button
                 type="button"
@@ -313,12 +366,26 @@ export function AppShell({
           </div>
         </div>
 
+        {/* Aligné sur les pastilles de navigation (même px-3) plutôt que sur
+            le logo, pour que le champ et les entrées partagent un seul bord
+            gauche. */}
+        {!isCollapsed && (
+          <div className="flex-shrink-0 px-3 pb-3">
+            <GlobalSearch variant="field" />
+          </div>
+        )}
+
         {/* Seule cette zone défile : les boutons d'action et le menu profil
             en dessous restent toujours visibles, même si la liste de
             navigation dépasse la hauteur de l'écran. */}
         <div className="min-h-0 flex-1 overflow-y-auto">{renderNav(isCollapsed)}</div>
 
-        <div className={`flex flex-shrink-0 flex-col gap-2.5 px-3 pt-4 pb-4 ${isCollapsed ? "items-center" : ""}`}>
+        {/* Une seule action mise en avant (créer une tâche, le geste courant)
+            et les deux autres réunies sur une ligne : la pile de trois
+            boutons pleine largeur donnait le même poids visuel à trois
+            gestes de fréquence très différente, et mangeait la hauteur utile
+            du menu. */}
+        <div className={`flex flex-shrink-0 flex-col gap-2 px-3 pt-4 pb-4 ${isCollapsed ? "items-center" : ""}`}>
           <button
             type="button"
             onClick={() => {
@@ -326,32 +393,34 @@ export function AppShell({
               setDrawerOpen(false);
             }}
             title="Nouvelle tâche"
-            className={`flex h-10 items-center justify-center gap-1.5 text-[15px] font-bold ${primaryOnRailButtonClass} ${isCollapsed ? "w-10 px-0" : "w-full"}`}
+            className={`flex items-center justify-center gap-1.5 text-sm font-bold ${primaryOnRailButtonClass} ${isCollapsed ? "w-10 px-0" : "w-full"}`}
           >
             <ListPlus size={17} /> {!isCollapsed && "Nouvelle tâche"}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setModal("project");
-              setDrawerOpen(false);
-            }}
-            title="Nouveau projet"
-            className={`flex h-10 items-center justify-center gap-1.5 text-[15px] font-bold ${secondaryOnRailButtonClass} ${isCollapsed ? "w-10 px-0" : "w-full"}`}
-          >
-            <FolderPlus size={17} /> {!isCollapsed && "Nouveau projet"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setModal("request");
-              setDrawerOpen(false);
-            }}
-            title="Nouvelle demande"
-            className={`flex items-center justify-center gap-1.5 text-xs font-semibold text-white/80 ${textButtonClass}`}
-          >
-            <ClipboardPlus size={13} aria-hidden="true" /> {!isCollapsed && "Nouvelle demande"}
-          </button>
+          <div className={isCollapsed ? "flex flex-col gap-2" : "grid grid-cols-2 gap-2"}>
+            <button
+              type="button"
+              onClick={() => {
+                setModal("project");
+                setDrawerOpen(false);
+              }}
+              title="Nouveau projet"
+              className={`flex items-center justify-center gap-1.5 text-xs font-bold ${secondaryOnRailButtonClass} ${isCollapsed ? "w-10 px-0" : ""}`}
+            >
+              <FolderPlus size={15} /> {!isCollapsed && "Projet"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setModal("request");
+                setDrawerOpen(false);
+              }}
+              title="Nouvelle demande"
+              className={`flex items-center justify-center gap-1.5 text-xs font-bold ${secondaryOnRailButtonClass} ${isCollapsed ? "w-10 px-0" : ""}`}
+            >
+              <ClipboardPlus size={15} /> {!isCollapsed && "Demande"}
+            </button>
+          </div>
         </div>
 
         <div ref={userMenuRef} className={`relative flex-shrink-0 px-3 pb-5 ${isCollapsed ? "flex flex-col items-center" : ""}`}>

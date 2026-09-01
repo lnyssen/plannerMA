@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { globalSearch, type SearchResults } from "@/lib/actions/search";
 import { iconButtonOnRailClass } from "@/components/ui/buttons";
+import { fieldInputClass } from "@/components/modals/modal-shell";
 
 const PANEL_WIDTH = 360;
 const VIEWPORT_MARGIN = 12;
@@ -12,9 +13,17 @@ const DEBOUNCE_MS = 200;
 
 const EMPTY: SearchResults = { tasks: [], projects: [], clients: [], comments: [] };
 
-/** Même positionnement en `fixed` que NotificationBell — la barre latérale a
- * `overflow-y-auto`, qui rogne aussi l'axe horizontal (voir ce composant). */
-export function GlobalSearch() {
+/**
+ * Même positionnement en `fixed` que NotificationBell — la barre latérale a
+ * `overflow-y-auto`, qui rogne aussi l'axe horizontal (voir ce composant).
+ *
+ * Deux présentations pour un même panneau : `field` est un vrai champ de
+ * recherche pleine largeur dans la barre latérale (la recherche est une des
+ * portes d'entrée principales de l'appli, une icône de 20 px la cachait), et
+ * `icon` reste l'icône seule là où la place manque — en-tête mobile et rail
+ * replié aux icônes.
+ */
+export function GlobalSearch({ variant = "icon" }: { variant?: "icon" | "field" }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -59,18 +68,36 @@ export function GlobalSearch() {
     displayResults.clients.length > 0 ||
     displayResults.comments.length > 0;
 
+  const TITLE = "Recherche (ou ⌘K / Ctrl K depuis n'importe où)";
+
   return (
     <div className="relative">
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Recherche"
-        title="Recherche (ou ⌘K / Ctrl K depuis n'importe où)"
-        className={`flex h-7 w-7 items-center justify-center ${iconButtonOnRailClass}`}
-      >
-        <Search size={20} />
-      </button>
+      {variant === "field" ? (
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          title={TITLE}
+          className="flex h-9 w-full items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 text-left text-sm font-medium text-white/70 transition-colors duration-100 hover:bg-white/20 hover:text-white"
+        >
+          <Search size={15} className="flex-shrink-0" aria-hidden="true" />
+          <span className="flex-1 truncate">Rechercher…</span>
+          <span className="flex-shrink-0 rounded-full border border-white/25 px-1.5 py-px text-2xs font-semibold text-white/60">
+            ⌘K
+          </span>
+        </button>
+      ) : (
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Recherche"
+          title={TITLE}
+          className={`flex h-7 w-7 items-center justify-center ${iconButtonOnRailClass}`}
+        >
+          <Search size={20} />
+        </button>
+      )}
 
       {open && coords && (
         <>
@@ -86,7 +113,7 @@ export function GlobalSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Rechercher…"
-                className="w-full rounded-md border-[1.5px] border-heading px-2.5 py-2 text-sm text-ink outline-none"
+                className={fieldInputClass}
               />
             </div>
 
