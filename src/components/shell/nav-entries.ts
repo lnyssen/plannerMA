@@ -19,7 +19,7 @@ import {
 /** Clé vers un compteur calculé côté serveur (voir NavCounts) — absent = pas de puce. */
 export type NavCountKey = "mesTaches" | "demandes" | "tasksLate" | "projectsOverBudget";
 
-export type NavGroup = "Travail" | "Projets" | "Suivi" | "Équipe";
+export type NavGroup = "Travail" | "Projets" | "Suivi" | "Équipe" | "Système";
 
 export interface NavEntry {
   href: string;
@@ -85,8 +85,8 @@ export const NAV_ENTRIES: NavEntry[] = [
   { href: "/charge", label: "Charge", icon: Activity, adminOnly: true, group: "Suivi" },
   { href: "/equipe", label: "Équipe", icon: Users, adminOnly: false, group: "Équipe" },
   { href: "/demandes", label: "Demandes", icon: ClipboardList, adminOnly: true, countKey: "demandes", group: "Équipe" },
-  { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true, group: "Équipe" },
-  { href: "/aide", label: "Documentation", icon: HelpCircle, adminOnly: false, group: "Équipe" },
+  { href: "/reglages", label: "Réglages", icon: Settings, adminOnly: true, group: "Système" },
+  { href: "/aide", label: "Documentation", icon: HelpCircle, adminOnly: false, group: "Système" },
 ];
 
 /** Décode `User.navOrder` (JSON stocké en base) — `null` si absent ou invalide. */
