@@ -163,7 +163,7 @@ export function SubventionsView({
       {rows.length === 0 ? (
         <EmptyState
           icon={Landmark}
-          title="Aucun projet subventionné avec budget de temps"
+          title="Aucun projet"
           description="Renseignez un budget d’heures sur un projet de type Éducation permanente ou Européen (fiche projet) pour le voir apparaître ici."
         />
       ) : (
