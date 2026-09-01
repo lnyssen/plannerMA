@@ -1,8 +1,17 @@
-import { Download, LayoutDashboard } from "lucide-react";
+import { AlertTriangle, Download, Flag, LayoutDashboard } from "lucide-react";
 import { secondaryButtonClass } from "@/components/ui/buttons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatShortFr, today } from "@/lib/planning/dates";
 import type { ProgressStatus } from "@/lib/planning/tasks";
 import { computeDashboardRows, formatDurationFr, type BudgetPace, type DashboardProjectInput } from "@/lib/planning/time";
+
+interface UpcomingMilestone {
+  id: string;
+  title: string;
+  dueDate: string;
+  projectName: string;
+  clientName: string;
+}
 
 const PACE_LABEL: Record<BudgetPace, string> = {
   ahead: "En avance",
@@ -38,11 +47,14 @@ function PacePill({ pace }: { pace: BudgetPace }) {
 export function DashboardView({
   projects,
   allStatuses,
+  milestones,
 }: {
   projects: DashboardProjectInput[];
   allStatuses: ProgressStatus[];
+  milestones: UpcomingMilestone[];
 }) {
   const rows = computeDashboardRows(projects, allStatuses);
+  const todayIso = today();
 
   const totalBudgetMinutes = rows.reduce((sum, p) => sum + p.budgetMinutes, 0);
   const totalActualMinutes = rows.reduce((sum, p) => sum + p.actualMinutes, 0);
@@ -66,6 +78,41 @@ export function DashboardView({
         )}
       </div>
 
+      <div className="mb-8">
+        <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">
+          Prochaines échéances (30 jours)
+        </p>
+        {milestones.length === 0 ? (
+          <p className="text-sm text-ink-muted">Aucun jalon en retard ou à venir sous 30 jours.</p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {milestones.map((m) => {
+              const late = m.dueDate < todayIso;
+              return (
+                <div
+                  key={m.id}
+                  className="flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 text-sm"
+                  style={{ borderColor: late ? "var(--color-alert)" : "var(--color-line)" }}
+                >
+                  <Flag size={14} className="flex-shrink-0" style={{ color: late ? "var(--color-alert)" : "var(--color-heading)" }} />
+                  <span className="min-w-0 flex-1 truncate">
+                    <span className="font-semibold text-heading">{m.title}</span>
+                    <span className="text-ink-muted"> — {m.clientName} — {m.projectName}</span>
+                  </span>
+                  <span
+                    className="flex flex-shrink-0 items-center gap-1 text-2xs font-semibold tabular-nums"
+                    style={{ color: late ? "var(--color-alert)" : "var(--color-ink-muted)" }}
+                  >
+                    {late && <AlertTriangle size={11} />}
+                    {formatShortFr(m.dueDate)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {rows.length === 0 ? (
         <EmptyState
           icon={LayoutDashboard}
@@ -74,6 +121,7 @@ export function DashboardView({
         />
       ) : (
         <>
+          <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Budget de temps</p>
           <div className="mb-6 grid grid-cols-2 gap-3 sm:max-w-2xl sm:grid-cols-4">
             <div className="rounded-lg border border-line p-3">
               <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Budget total</p>
