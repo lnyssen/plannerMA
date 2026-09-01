@@ -404,7 +404,7 @@ export function AppShell({
         {renderRail(collapsed, true)}
       </aside>
 
-      <header className="flex h-14 items-center justify-between bg-rail px-4 md:hidden">
+      <header className="relative flex h-14 items-center justify-between bg-rail px-4 md:hidden">
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
@@ -413,8 +413,16 @@ export function AppShell({
         >
           <Menu size={24} />
         </button>
+        {/* Centré sur toute la largeur de l'en-tête (pas juste entre les deux
+            groupes d'icônes, de largeurs inégales) : position absolue plutôt
+            que justify-between, qui centrerait par rapport aux bords, pas au
+            vrai milieu, dès que les deux groupes n'ont pas le même poids. */}
         {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel */}
-        <img src="/logo/media-animation-blanc.png" alt="Média Animation" className="h-6 w-auto" />
+        <img
+          src="/logo/media-animation-blanc.png"
+          alt="Média Animation"
+          className="absolute left-1/2 h-6 w-auto -translate-x-1/2"
+        />
         <div className="flex items-center gap-1">
           <GlobalSearch />
           <NotificationBell />
@@ -422,7 +430,7 @@ export function AppShell({
             type="button"
             onClick={() => setModal("task")}
             aria-label="Nouvelle tâche"
-            className={`flex h-9 w-9 items-center justify-center ${primaryOnRailButtonClass}`}
+            className={`flex w-10 items-center justify-center ${primaryOnRailButtonClass}`}
           >
             <ListPlus size={18} />
           </button>
