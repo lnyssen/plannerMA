@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { addDays, fromIsoDate, today } from "@/lib/planning/dates";
 
 /**
  * Un projet référence soit un client existant (clientId), soit un nom à
@@ -70,6 +71,123 @@ export async function createProject(input: CreateProjectInput): Promise<{ error?
 
   revalidatePath("/projets");
   return { id: project.id };
+}
+
+/**
+ * Duplique un projet — nom, client, type, budget, studios, et ses tâches
+ * actives (hors corbeille) avec leurs sous-tâches, dépendances (remappées
+ * vers les clones) et jalons. Sert de "modèle" léger pour un studio qui
+ * refait souvent le même type de projet, sans introduire de notion de
+ * modèle distincte en base — dupliquer un projet existant suffit.
+ *
+ * Statuts remis à zéro (premier statut de la liste) et sous-tâches/jalons
+ * remis à "non fait" : un clone démarre un nouveau cycle, pas la suite de
+ * l'ancien. Écritures de temps, commentaires, pièces jointes et récurrence
+ * ne sont volontairement pas copiés — propres à l'historique de l'original.
+ *
+ * Dates décalées pour que la tâche la plus tôt démarre aujourd'hui, en
+ * conservant l'espacement relatif entre tâches : c'est l'enchaînement qui
+ * fait la valeur d'un modèle, pas les dates passées elles-mêmes.
+ */
+export async function duplicateProject(projectId: string): Promise<{ error?: string; id?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+
+  const source = await db.project.findUnique({
+    where: { id: projectId },
+    include: {
+      studios: true,
+      milestones: true,
+      tasks: { where: { trashedAt: null }, include: { subtasks: { orderBy: { position: "asc" } } } },
+    },
+  });
+  if (!source) return { error: "Projet introuvable." };
+
+  const firstStatus = await db.taskStatus.findFirst({ orderBy: { position: "asc" } });
+
+  const earliestTaskStart = source.tasks.reduce<Date | null>(
+    (min, t) => (min === null || t.startDate < min ? t.startDate : min),
+    null,
+  );
+  const offsetDays = earliestTaskStart
+    ? Math.round((fromIsoDate(today()).getTime() - earliestTaskStart.getTime()) / 86_400_000)
+    : 0;
+  const shift = (d: Date) => addDays(d, offsetDays);
+
+  const newProjectId = await db.$transaction(async (tx) => {
+    const project = await tx.project.create({
+      data: {
+        name: `${source.name} (copie)`,
+        code: null,
+        clientId: source.clientId,
+        type: source.type,
+        projectType: source.projectType,
+        budgetHours: source.budgetHours,
+        studios: { create: source.studios.map((s) => ({ studioId: s.studioId })) },
+      },
+    });
+
+    const taskIdMap = new Map<string, string>();
+    for (const t of source.tasks) {
+      const clone = await tx.task.create({
+        data: {
+          title: t.title,
+          description: t.description,
+          projectId: project.id,
+          studioId: t.studioId,
+          assigneeId: t.assigneeId,
+          startDate: shift(t.startDate),
+          endDate: shift(t.endDate),
+          maxDurationDays: t.maxDurationDays,
+          estimatedHalfDays: t.estimatedHalfDays,
+          statusId: firstStatus?.id ?? t.statusId,
+        },
+      });
+      taskIdMap.set(t.id, clone.id);
+    }
+
+    // Deuxième passe : les dépendances pointent vers les tâches sources, à
+    // remapper vers leurs clones une fois que tous existent.
+    for (const t of source.tasks) {
+      if (!t.dependsOnId) continue;
+      const newDependsOnId = taskIdMap.get(t.dependsOnId);
+      if (!newDependsOnId) continue;
+      await tx.task.update({ where: { id: taskIdMap.get(t.id)! }, data: { dependsOnId: newDependsOnId } });
+    }
+
+    for (const t of source.tasks) {
+      const newTaskId = taskIdMap.get(t.id)!;
+      for (const s of t.subtasks) {
+        await tx.subtask.create({
+          data: {
+            taskId: newTaskId,
+            title: s.title,
+            dueDate: s.dueDate ? shift(s.dueDate) : null,
+            assigneeId: s.assigneeId,
+            done: false,
+            position: s.position,
+          },
+        });
+      }
+    }
+
+    for (const m of source.milestones) {
+      await tx.milestone.create({ data: { projectId: project.id, title: m.title, dueDate: shift(m.dueDate), isDone: false } });
+    }
+
+    return project.id;
+  });
+
+  await db.journalEntry.create({
+    data: {
+      actorId: session.user.personId,
+      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      action: `Projet « ${source.name} » dupliqué`,
+    },
+  });
+
+  revalidatePath("/projets");
+  return { id: newProjectId };
 }
 
 /** Sélection des écritures avec qui les a passées — voir le filtrage anti-fuite plus bas dans getProjectDetail. */

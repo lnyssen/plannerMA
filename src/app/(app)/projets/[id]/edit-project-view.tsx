@@ -1,12 +1,12 @@
 "use client";
 
 import type { ProjectType } from "@prisma/client";
-import { AlertTriangle, Archive, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
+import { AlertTriangle, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
-import { getProjectDetail, setProjectArchived, updateProject, type ProjectDetail } from "@/lib/actions/projects";
+import { duplicateProject, getProjectDetail, setProjectArchived, updateProject, type ProjectDetail } from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -156,6 +156,19 @@ export function EditProjectView({
     });
   }
 
+  function duplicate() {
+    if (!confirm(`Dupliquer « ${project.name} » ? Les tâches actives (avec sous-tâches, dépendances et jalons) sont copiées, décalées pour démarrer aujourd’hui.`)) return;
+    startTransition(async () => {
+      const result = await duplicateProject(project.id);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      router.push(`/projets/${result.id}`);
+      router.refresh();
+    });
+  }
+
   return (
     <div className="px-8 py-8">
       <Breadcrumb items={[{ label: "Projets", href: "/projets" }, { label: project.name }]} />
@@ -165,21 +178,31 @@ export function EditProjectView({
 
       <div className="sticky top-0 z-10 -mx-8 mb-6 flex items-center justify-between gap-2.5 border-b border-line bg-paper px-8 py-3">
         {isAdmin ? (
-          <button
-            type="button"
-            onClick={toggleArchived}
-            className={`flex items-center gap-1.5 text-sm font-semibold text-heading ${textButtonClass}`}
-          >
-            {project.archived ? (
-              <>
-                <RotateCcw size={14} /> Réactiver
-              </>
-            ) : (
-              <>
-                <Archive size={14} /> Archiver
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={toggleArchived}
+              className={`flex items-center gap-1.5 text-sm font-semibold text-heading ${textButtonClass}`}
+            >
+              {project.archived ? (
+                <>
+                  <RotateCcw size={14} /> Réactiver
+                </>
+              ) : (
+                <>
+                  <Archive size={14} /> Archiver
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={duplicate}
+              className={`flex items-center gap-1.5 text-sm font-semibold text-heading disabled:opacity-60 ${textButtonClass}`}
+            >
+              <Copy size={14} /> Dupliquer
+            </button>
+          </div>
         ) : (
           <span />
         )}
