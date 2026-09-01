@@ -46,6 +46,10 @@ export type TimeEntryWithPerson = Awaited<ReturnType<typeof listAllTimeEntries>>
  * ce projet directement (`projectId`) ou via une tâche qui en dépend — les
  * deux comptent, sinon une écriture "AGENCE" sur une tâche du projet mais
  * sans lien direct serait ignorée du calcul.
+ *
+ * Le statut de chaque tâche est inclus pour permettre de calculer
+ * l'avancement (taskProgress) en plus du temps consommé — voir le tableau
+ * de bord, qui compare les deux pour juger du rythme d'un projet.
  */
 export function listProjectsWithBudget() {
   return db.project.findMany({
@@ -54,8 +58,15 @@ export function listProjectsWithBudget() {
       id: true,
       name: true,
       budgetHours: true,
+      client: { select: { name: true } },
       timeEntries: { select: { startedAt: true, endedAt: true } },
-      tasks: { select: { timeEntries: { select: { startedAt: true, endedAt: true } } } },
+      tasks: {
+        where: { trashedAt: null },
+        select: {
+          status: { select: { position: true, isDone: true } },
+          timeEntries: { select: { startedAt: true, endedAt: true } },
+        },
+      },
     },
   });
 }

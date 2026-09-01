@@ -29,3 +29,25 @@ export function formatDurationFr(totalMinutes: number): string {
   if (minutes === 0) return `${hours} h`;
   return `${hours} h ${String(minutes).padStart(2, "0")}`;
 }
+
+export type BudgetPace = "ahead" | "onTrack" | "behind";
+
+// Écart (en points, 0-1) entre part du budget consommée et avancement des
+// tâches à partir duquel on considère le projet en avance ou en retard —
+// en dessous, la différence est dans le bruit normal (temps administratif,
+// tâches groupées, etc.), pas un vrai signal de rythme.
+const PACE_THRESHOLD = 0.15;
+
+/**
+ * Rythme budgétaire d'un projet : compare la part du budget de temps déjà
+ * consommée à l'avancement réel des tâches (voir taskProgress). Consommer
+ * plus vite qu'on n'avance = en retard ; l'inverse = en avance. Sert au
+ * tableau de bord pour repérer les projets qui dérivent avant qu'ils ne
+ * dépassent franchement leur budget.
+ */
+export function projectBudgetPace(consumedRatio: number, progress: number): BudgetPace {
+  const gap = consumedRatio - progress;
+  if (gap > PACE_THRESHOLD) return "behind";
+  if (gap < -PACE_THRESHOLD) return "ahead";
+  return "onTrack";
+}

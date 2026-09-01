@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "../time";
+import { entryDurationMinutes, formatDurationFr, projectBudgetPace, sumDurationMinutes } from "../time";
 
 describe("entryDurationMinutes", () => {
   it("calcule la durée entre deux horodatages", () => {
@@ -31,5 +31,20 @@ describe("formatDurationFr", () => {
     [125, "2 h 05"],
   ])("formate %i minutes en %s", (minutes, expected) => {
     expect(formatDurationFr(minutes)).toBe(expected);
+  });
+});
+
+describe("projectBudgetPace", () => {
+  it("dans les temps quand consommation et avancement sont proches", () => {
+    expect(projectBudgetPace(0.5, 0.5)).toBe("onTrack");
+    expect(projectBudgetPace(0.5, 0.4)).toBe("onTrack");
+  });
+
+  it("en retard quand le budget se consomme plus vite que l'avancement", () => {
+    expect(projectBudgetPace(0.8, 0.5)).toBe("behind");
+  });
+
+  it("en avance quand l'avancement dépasse largement la consommation", () => {
+    expect(projectBudgetPace(0.3, 0.7)).toBe("ahead");
   });
 });
