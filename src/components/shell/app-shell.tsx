@@ -260,9 +260,10 @@ export function AppShell({
         <div ref={userMenuRef} className={`relative px-3 pb-5 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
           {userMenuOpen && (
             <div
-              className={`absolute z-20 overflow-hidden rounded-lg border border-white/15 bg-rail shadow-lg ${
+              className={`absolute z-20 overflow-hidden rounded-lg border border-white/20 shadow-xl ${
                 isCollapsed ? "bottom-0 left-full ml-2 w-56" : "right-3 bottom-full left-3 mb-2"
               }`}
+              style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)", boxShadow: "0 10px 30px rgba(0,0,0,0.35)" }}
             >
               <div className="px-3 pt-3 pb-2">
                 <p className="truncate text-sm font-semibold text-white">{userName}</p>

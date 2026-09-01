@@ -37,7 +37,6 @@ export function PersonModal({
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("COLLABORATOR");
-  const [inviteSent, setInviteSent] = useState(false);
   const [passwordJustReset, setPasswordJustReset] = useState(false);
   const [inviteEmailOk, setInviteEmailOk] = useState(true);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
@@ -94,7 +93,6 @@ export function PersonModal({
       if (result.temporaryPassword) {
         setLinkedUser({ email: inviteEmail.trim() });
         setShowInvite(false);
-        setInviteSent(true);
         setInviteEmailOk(result.emailSent ?? false);
         setGeneratedPassword(result.temporaryPassword);
         router.refresh();
@@ -197,16 +195,21 @@ export function PersonModal({
             <span className="font-semibold">{name}</span> a été ajouté·e, avec un compte de connexion :{" "}
             <span className="font-semibold">{createdAccount.email}</span>.
           </p>
-          {createdAccount.emailSent ? (
-            <p className="mb-4 text-sm text-ink-muted">Le mot de passe généré a été envoyé par courriel.</p>
-          ) : createdAccount.temporaryPassword ? (
+          {createdAccount.temporaryPassword ? (
             <div className="mb-4">
-              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-alert">
-                <AlertTriangle size={14} className="flex-shrink-0" />
-                Le courriel n’a pas pu être envoyé — communiquez ce mot de passe vous-même.
-              </p>
+              {!createdAccount.emailSent && (
+                <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-alert">
+                  <AlertTriangle size={14} className="flex-shrink-0" />
+                  Le courriel n’a pas pu être envoyé — communiquez ce mot de passe vous-même.
+                </p>
+              )}
               <p className="select-all rounded-md border border-line bg-wash px-2.5 py-2 font-mono text-sm text-ink">
                 {createdAccount.temporaryPassword}
+              </p>
+              <p className="mt-1.5 text-xs text-ink-muted">
+                {createdAccount.emailSent
+                  ? "Envoyé aussi par courriel. Cette personne pourra le changer ensuite (Réglages → Mon mot de passe)."
+                  : "Cette personne pourra le changer ensuite (Réglages → Mon mot de passe)."}
               </p>
             </div>
           ) : (
@@ -325,20 +328,21 @@ export function PersonModal({
                   </button>
                 </div>
               </div>
-              {inviteSent && inviteEmailOk && (
-                <p className="mt-2 text-xs text-ink-muted">Invitation envoyée avec un mot de passe généré automatiquement.</p>
-              )}
-              {passwordJustReset && inviteEmailOk && (
-                <p className="mt-2 text-xs text-ink-muted">Nouveau mot de passe généré et envoyé par courriel.</p>
-              )}
-              {generatedPassword && !inviteEmailOk && (
+              {generatedPassword && (
                 <div className="mt-3 border-t border-line pt-3">
-                  <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-alert">
-                    <AlertTriangle size={14} className="flex-shrink-0" />
-                    Le courriel n’a pas pu être envoyé — communiquez ce mot de passe vous-même.
-                  </p>
+                  {!inviteEmailOk && (
+                    <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-alert">
+                      <AlertTriangle size={14} className="flex-shrink-0" />
+                      Le courriel n’a pas pu être envoyé — communiquez ce mot de passe vous-même.
+                    </p>
+                  )}
                   <p className="select-all rounded-md border border-line bg-wash px-2.5 py-2 font-mono text-sm text-ink">
                     {generatedPassword}
+                  </p>
+                  <p className="mt-1.5 text-xs text-ink-muted">
+                    {inviteEmailOk
+                      ? `${passwordJustReset ? "Nouveau mot de passe" : "Mot de passe"} envoyé aussi par courriel. Cette personne pourra le changer ensuite (Réglages → Mon mot de passe).`
+                      : "Cette personne pourra le changer ensuite (Réglages → Mon mot de passe)."}
                   </p>
                 </div>
               )}
