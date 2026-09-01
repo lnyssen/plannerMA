@@ -18,6 +18,7 @@ import {
   toIsoDate,
   today,
 } from "@/lib/planning/dates";
+import { studioBarStyle } from "@/lib/planning/labels";
 import { hasDependencyConflict } from "@/lib/planning/tasks";
 
 // Largeur minimale d'une colonne-jour : en dessous, le texte du jour/numéro
@@ -582,8 +583,7 @@ export function GanttView({
                       left: x,
                       width: w,
                       height: ROW_HEIGHT - 10,
-                      background: t.studio.fillHex,
-                      color: t.studio.colorHex,
+                      ...studioBarStyle(t.studios),
                       cursor: canDrag ? (drag ? "grabbing" : "grab") : "default",
                       outlineColor: overlapping ? "var(--color-alert)" : undefined,
                     }}

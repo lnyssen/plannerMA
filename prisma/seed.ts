@@ -190,7 +190,7 @@ async function main() {
         create: [
           {
             title: "Arborescence et wireframes",
-            studioId: studios.web,
+            studios: { create: [{ studioId: studios.web }] },
             assigneeId: people.bilal,
             startDate: new Date(auj),
             endDate: new Date(addDaysIso(auj, 4)),
@@ -204,7 +204,7 @@ async function main() {
           },
           {
             title: "Charte graphique déclinée au site",
-            studioId: studios.graphisme,
+            studios: { create: [{ studioId: studios.graphisme }] },
             assigneeId: people.amelie,
             startDate: new Date(addDaysIso(auj, 2)),
             endDate: new Date(addDaysIso(auj, 8)),
@@ -227,7 +227,7 @@ async function main() {
         create: [
           {
             title: "Tournage sur site",
-            studioId: studios.video,
+            studios: { create: [{ studioId: studios.video }] },
             assigneeId: people.chloe,
             startDate: new Date(addDaysIso(auj, 5)),
             endDate: new Date(addDaysIso(auj, 6)),
@@ -235,7 +235,7 @@ async function main() {
           },
           {
             title: "Cadrage stratégique avec le client",
-            studioId: studios.consultance,
+            studios: { create: [{ studioId: studios.consultance }] },
             assigneeId: people.driss,
             startDate: new Date(auj),
             endDate: new Date(auj),

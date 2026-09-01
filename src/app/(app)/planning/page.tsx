@@ -33,7 +33,7 @@ export default async function PlanningPage({
         // Un projet archivé sort ses tâches de la vue Semaine (voir src/lib/data/tasks.ts).
         OR: [{ projectId: null }, { project: { archived: false } }],
       },
-      include: { studio: true, project: { include: { client: true } } },
+      include: { studios: { include: { studio: true } }, project: { include: { client: true } } },
     }),
     listStudios(),
     listPeople(),

@@ -198,7 +198,7 @@ export function TimeCalendar({
       endMinutes: Math.min(GRID_END_HOUR * 60, snapped + 30),
       context: {
         taskId: tasks[0]?.id ?? null,
-        studioId: tasks[0]?.studioId ?? studios[0].id,
+        studioId: tasks[0]?.studios[0]?.studioId ?? studios[0].id,
         projectId: null,
         categoryId: null,
       },

@@ -11,7 +11,7 @@ export function listActiveTasksForListing() {
     where: { trashedAt: null, ...ACTIVE_PROJECT_FILTER },
     include: {
       project: { include: { client: true } },
-      studio: true,
+      studios: { include: { studio: true } },
       assignee: true,
       status: true,
       _count: { select: { comments: true, attachments: true } },
@@ -22,7 +22,7 @@ export function listActiveTasksForListing() {
 
 export type TaskListItem = Awaited<ReturnType<typeof listActiveTasksForListing>>[number];
 
-/** Candidates pour le champ "Dépend de" et le suivi de temps — nom, studio et projet, pas les détails complets d'une tâche. */
+/** Candidates pour le champ "Dépend de" et le suivi de temps — nom, studios et projet, pas les détails complets d'une tâche. */
 export function listActiveTasksForForms() {
   return db.task.findMany({
     where: { trashedAt: null, ...ACTIVE_PROJECT_FILTER },
@@ -30,7 +30,7 @@ export function listActiveTasksForForms() {
     select: {
       id: true,
       title: true,
-      studioId: true,
+      studios: { select: { studioId: true } },
       project: { select: { id: true, name: true, client: { select: { id: true, name: true } } } },
     },
   });

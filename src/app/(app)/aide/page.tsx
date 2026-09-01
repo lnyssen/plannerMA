@@ -159,7 +159,10 @@ export default function AidePage() {
           <P>Ouvrir une tâche (clic sur sa ligne, depuis n’importe quelle vue) ouvre sa fiche complète en pleine page.</P>
           <H3>Champs</H3>
           <Ul>
-            <li>Intitulé, description, studio, statut, projet (ou « Sans projet »), personne attribuée.</li>
+            <li>
+              Intitulé, description, statut, projet (ou « Sans projet »), personne attribuée. Studios : un ou plusieurs
+              (puces à cliquer), sans hiérarchie entre eux.
+            </li>
             <li>Dates de début/fin, durée maximale facultative (garde-fou contre une plage saisie par erreur).</li>
             <li>
               Estimation en demi-journées — distincte de la plage de dates, sert au calcul de charge (voir{" "}
@@ -285,6 +288,10 @@ export default function AidePage() {
           <P>
             Vos écritures de temps, par jour ou par semaine. Une écriture peut être liée à une tâche précise ou
             directement à un projet (temps non affecté à une tâche particulière).
+          </P>
+          <P>
+            Si la tâche choisie a plusieurs studios, un champ « Studio (pour cette écriture) » apparaît pour préciser
+            lequel compte pour ce temps — invisible sinon, la tâche n’ayant qu’un seul studio à choisir.
           </P>
           <P>Export CSV pour le reporting — même principe que sur le Tableau de bord.</P>
         </section>

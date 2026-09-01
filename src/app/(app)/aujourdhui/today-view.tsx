@@ -18,7 +18,7 @@ interface TodayTask {
   title: string;
   endDate: string;
   project: { name: string; client: { name: string } } | null;
-  studio: { name: string; fillHex: string; colorHex: string };
+  studios: { id: string; name: string; fillHex: string; colorHex: string }[];
   status: { name: string; fillHex: string; colorHex: string };
 }
 
@@ -109,7 +109,9 @@ export function TodayView({
                       {t.project ? `${t.project.client.name} — ${t.project.name}` : "Sans projet"}
                     </p>
                   </div>
-                  <StudioBadge name={t.studio.name} fillHex={t.studio.fillHex} colorHex={t.studio.colorHex} />
+                  {t.studios.map((s) => (
+                    <StudioBadge key={s.id} name={s.name} fillHex={s.fillHex} colorHex={s.colorHex} />
+                  ))}
                   <StatusBadge status={t.status} />
                   {t.endDate < todayIso && (
                     <span className="flex items-center gap-1 text-2xs font-semibold text-alert">

@@ -43,14 +43,21 @@ async function resolveEntryContext(
   if (input.taskId) {
     const task = await db.task.findUnique({
       where: { id: input.taskId },
-      select: { studioId: true, projectId: true, project: { select: { archived: true } } },
+      select: { studios: { select: { studioId: true } }, projectId: true, project: { select: { archived: true } } },
     });
     if (!task) return { error: "Cette tâche n’existe plus." };
     // Un projet archivé ne doit plus recevoir de nouveau suivi de temps —
     // même via une tâche encore liée (voir src/lib/data/tasks.ts, qui
     // l'exclut déjà des sélecteurs pour les nouvelles écritures).
     if (task.project?.archived) return { error: "Le projet de cette tâche est archivé — impossible d’y ajouter du temps." };
-    return { taskId: input.taskId, projectId: task.projectId, studioId: task.studioId, categoryId: input.categoryId ?? null };
+    // Une tâche peut appartenir à plusieurs studios (voir TaskStudio) : on
+    // fait confiance au studio envoyé par le client s'il fait bien partie de
+    // ceux de la tâche (ex. choisi explicitement quand plusieurs existent),
+    // sinon on retombe sur le premier — jamais un studio hors de cette liste.
+    const studioIds = task.studios.map((s) => s.studioId);
+    const studioId = studioIds.includes(input.studioId) ? input.studioId : studioIds[0];
+    if (!studioId) return { error: "Cette tâche n’a aucun studio associé." };
+    return { taskId: input.taskId, projectId: task.projectId, studioId, categoryId: input.categoryId ?? null };
   }
   if (input.projectId) {
     const project = await db.project.findUnique({ where: { id: input.projectId }, select: { archived: true } });

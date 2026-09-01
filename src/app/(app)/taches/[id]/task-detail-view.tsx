@@ -45,7 +45,7 @@ export function TaskDetailView({
   const [values, setValues] = useState<TaskFormValues>({
     title: initialTask.title,
     description: initialTask.description ?? "",
-    studioId: initialTask.studioId,
+    studioIds: initialTask.studios.map((s) => s.studioId),
     projectId: initialTask.projectId ?? "",
     assigneeId: initialTask.assigneeId ?? "",
     startDate: toIsoDate(initialTask.startDate),
@@ -95,7 +95,7 @@ export function TaskDetailView({
         taskId: task.id,
         title: values.title,
         description: values.description || null,
-        studioId: values.studioId,
+        studioIds: values.studioIds,
         projectId: values.projectId || null,
         assigneeId: values.assigneeId || null,
         startDate: values.startDate,
@@ -238,7 +238,7 @@ export function TaskDetailView({
   function handleStartTimer() {
     setTimeError(null);
     startTransition(async () => {
-      const result = await startTimer({ taskId: task.id, studioId: task.studioId });
+      const result = await startTimer({ taskId: task.id, studioId: task.studios[0]?.studioId ?? "" });
       if (result.error) {
         setTimeError(result.error);
         return;
@@ -266,7 +266,7 @@ export function TaskDetailView({
     startTransition(async () => {
       const result = await addManualEntry({
         taskId: task.id,
-        studioId: task.studioId,
+        studioId: task.studios[0]?.studioId ?? "",
         date: manualDate,
         hours: Number(manualHours) || 0,
         minutes: Number(manualMinutes) || 0,

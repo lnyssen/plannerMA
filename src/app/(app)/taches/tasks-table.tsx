@@ -160,14 +160,14 @@ export function TasksTable({
     let filtered = tasks;
     if (q) {
       filtered = filtered.filter((t) =>
-        [t.title, t.project?.name, t.project?.client.name, t.studio.name, t.assignee?.name]
+        [t.title, t.project?.name, t.project?.client.name, ...t.studios.map((s) => s.studio.name), t.assignee?.name]
           .filter(Boolean)
           .join(" ")
           .toLowerCase()
           .includes(q),
       );
     }
-    if (studioFilter.length > 0) filtered = filtered.filter((t) => studioFilter.includes(t.studioId));
+    if (studioFilter.length > 0) filtered = filtered.filter((t) => t.studios.some((s) => studioFilter.includes(s.studioId)));
     if (personFilter.length > 0) filtered = filtered.filter((t) => t.assigneeId != null && personFilter.includes(t.assigneeId));
     if (statusFilter.length > 0) filtered = filtered.filter((t) => statusFilter.includes(t.statusId));
     if (projectFilter.length > 0) filtered = filtered.filter((t) => t.projectId != null && projectFilter.includes(t.projectId));
@@ -179,7 +179,7 @@ export function TasksTable({
         case "client":
           return t.project?.client.name ?? "";
         case "studio":
-          return t.studio.name;
+          return t.studios[0]?.studio.name ?? "";
         case "person":
           return t.assignee?.name ?? "";
         case "dates":
@@ -322,7 +322,9 @@ export function TasksTable({
                   )}
                 </div>
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                  <StudioBadge name={t.studio.name} fillHex={t.studio.fillHex} colorHex={t.studio.colorHex} />
+                  {t.studios.map(({ studio }) => (
+                    <StudioBadge key={studio.id} name={studio.name} fillHex={studio.fillHex} colorHex={studio.colorHex} />
+                  ))}
                   {t.project && <ClientTypeBadge type={t.project.type} />}
                 </div>
                 <div className="flex items-center justify-between gap-2 text-xs text-ink-muted">
@@ -401,7 +403,11 @@ export function TasksTable({
                     </span>
                   </td>
                   <td className="border-b border-line px-3 py-2.5">
-                    <StudioBadge name={t.studio.name} fillHex={t.studio.fillHex} colorHex={t.studio.colorHex} />
+                    <div className="flex flex-wrap items-center gap-1">
+                      {t.studios.map(({ studio }) => (
+                        <StudioBadge key={studio.id} name={studio.name} fillHex={studio.fillHex} colorHex={studio.colorHex} />
+                      ))}
+                    </div>
                   </td>
                   {!hidePersonColumn && (
                     <td className="border-b border-line px-3 py-2.5 text-sm text-ink">

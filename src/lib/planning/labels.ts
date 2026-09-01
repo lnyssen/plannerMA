@@ -1,5 +1,28 @@
 import type { ProjectType } from "@prisma/client";
 
+/**
+ * Couleur d'une barre/bloc de tâche selon ses studios — un seul garde
+ * l'aplat plein habituel ; plusieurs studios (voir TaskStudio, aucune
+ * hiérarchie entre eux) se partagent la largeur en bandes égales plutôt que
+ * d'en privilégier un seul. Partagé entre Gantt et Semaine.
+ */
+export function studioBarStyle(
+  studios: { studio: { fillHex: string; colorHex: string } }[],
+): { background: string; color: string } {
+  if (studios.length <= 1) {
+    const s = studios[0]?.studio;
+    return { background: s?.fillHex ?? "var(--color-wash)", color: s?.colorHex ?? "var(--color-ink)" };
+  }
+  const stops = studios
+    .map(({ studio }, i) => {
+      const from = (i / studios.length) * 100;
+      const to = ((i + 1) / studios.length) * 100;
+      return `${studio.fillHex} ${from}% ${to}%`;
+    })
+    .join(", ");
+  return { background: `linear-gradient(90deg, ${stops})`, color: studios[0].studio.colorHex };
+}
+
 interface EntryWithContext {
   task: { title: string } | null;
   project: { name: string; client: { name: string } } | null;

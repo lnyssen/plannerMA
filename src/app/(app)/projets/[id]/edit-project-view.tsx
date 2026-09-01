@@ -469,7 +469,7 @@ export function EditProjectView({
           studios={studios}
           projects={activeProjects}
           people={people}
-          initialValues={{ projectId: project.id, studioId: project.studios[0]?.studioId ?? studios[0]?.id ?? "" }}
+          initialValues={{ projectId: project.id, studioIds: project.studios[0] ? [project.studios[0].studioId] : studios[0] ? [studios[0].id] : [] }}
           onClose={() => setCreatingTask(false)}
           onCreated={() => {
             setCreatingTask(false);

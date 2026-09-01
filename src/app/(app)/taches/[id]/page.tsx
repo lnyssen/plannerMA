@@ -40,7 +40,12 @@ export default async function TacheDetailPage({ params }: { params: Promise<{ id
       projects={projects}
       people={people}
       statuses={statuses}
-      tasks={allTasks.map((t) => ({ id: t.id, title: t.title, studioId: t.studioId, project: t.project }))}
+      tasks={allTasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        project: t.project,
+        studios: t.studios.map((s) => ({ studioId: s.studioId })),
+      }))}
     />
   );
 }

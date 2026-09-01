@@ -19,7 +19,7 @@ export async function getTaskDetail(taskId: string) {
     where: { id: taskId },
     include: {
       project: true,
-      studio: true,
+      studios: { include: { studio: true } },
       assignee: true,
       attachments: { orderBy: { createdAt: "desc" }, include: { uploadedBy: { select: { name: true } } } },
       comments: { orderBy: { createdAt: "asc" }, include: { mentions: { include: { person: true } } } },
@@ -30,7 +30,12 @@ export async function getTaskDetail(taskId: string) {
       // (elle n'apparaît plus dans les options actives, voir
       // listActiveTasksForForms) alors que le lien existe toujours.
       dependsOn: {
-        select: { id: true, title: true, studioId: true, project: { select: { id: true, name: true, client: { select: { id: true, name: true } } } } },
+        select: {
+          id: true,
+          title: true,
+          studios: { select: { studioId: true } },
+          project: { select: { id: true, name: true, client: { select: { id: true, name: true } } } },
+        },
       },
       journalEntries: { orderBy: { createdAt: "desc" } },
       timeEntries: { orderBy: { startedAt: "desc" }, include: { person: { select: { name: true } } } },
@@ -92,7 +97,7 @@ function withDurationChecks<T extends z.ZodType<DurationFields>>(schema: T) {
 const taskFieldsSchema = z.object({
   title: z.string().trim().min(1, "L’intitulé est requis."),
   description: z.string().trim().max(4000).nullable(),
-  studioId: z.string().min(1, "Le studio est requis."),
+  studioIds: z.array(z.string()).min(1, "Choisissez au moins un studio."),
   projectId: z.string().nullable(),
   assigneeId: z.string().nullable(),
   startDate: isoDate,
@@ -118,7 +123,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
   const {
     title,
     description,
-    studioId,
+    studioIds,
     projectId,
     assigneeId,
     startDate,
@@ -141,7 +146,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
     data: {
       title,
       description: description || null,
-      studioId,
+      studios: { create: studioIds.map((studioId) => ({ studioId })) },
       projectId: projectId || null,
       assigneeId: assigneeId || null,
       startDate: new Date(startDate),
@@ -234,7 +239,7 @@ interface RecurringTaskSource {
   id: string;
   title: string;
   description: string | null;
-  studioId: string;
+  studios: { studioId: string }[];
   projectId: string | null;
   assigneeId: string | null;
   startDate: Date;
@@ -280,7 +285,7 @@ async function maybeGenerateNextOccurrence(
     data: {
       title: task.title,
       description: task.description,
-      studioId: task.studioId,
+      studios: { create: task.studios.map(({ studioId }) => ({ studioId })) },
       projectId: task.projectId,
       assigneeId: task.assigneeId,
       startDate: new Date(next.startDate),
@@ -336,7 +341,7 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     taskId,
     title,
     description,
-    studioId,
+    studioIds,
     projectId,
     assigneeId,
     startDate,
@@ -365,7 +370,6 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     data: {
       title,
       description: description || null,
-      studioId,
       projectId: projectId || null,
       assigneeId: assigneeId || null,
       startDate: new Date(startDate),
@@ -385,7 +389,15 @@ export async function updateTask(input: UpdateTaskInput): Promise<{ error?: stri
     return { error: "Cette tâche a été modifiée entre-temps par quelqu’un d’autre. Rechargez la page." };
   }
 
-  const task = await db.task.findUniqueOrThrow({ where: { id: taskId }, include: { project: true, status: true } });
+  // Studios remplacés à part (updateMany ne peut pas écrire une relation) —
+  // sûr une fois le verrou optimiste ci-dessus passé : personne d'autre n'a
+  // pu écrire cette même version entre-temps.
+  await db.$transaction([
+    db.taskStudio.deleteMany({ where: { taskId } }),
+    db.taskStudio.createMany({ data: studioIds.map((studioId) => ({ taskId, studioId })) }),
+  ]);
+
+  const task = await db.task.findUniqueOrThrow({ where: { id: taskId }, include: { project: true, status: true, studios: { select: { studioId: true } } } });
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
@@ -434,7 +446,10 @@ export async function updateTaskStatus(
     return { error: "Cette tâche a été modifiée entre-temps par quelqu’un d’autre. Rechargez la page." };
   }
 
-  const task = await db.task.findUniqueOrThrow({ where: { id: taskId }, include: { status: true } });
+  const task = await db.task.findUniqueOrThrow({
+    where: { id: taskId },
+    include: { status: true, studios: { select: { studioId: true } } },
+  });
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
@@ -559,7 +574,7 @@ export async function duplicateTask(taskId: string): Promise<{ error?: string; i
 
   const source = await db.task.findUnique({
     where: { id: taskId },
-    include: { subtasks: { orderBy: { position: "asc" } } },
+    include: { subtasks: { orderBy: { position: "asc" } }, studios: { select: { studioId: true } } },
   });
   if (!source) return { error: "Cette tâche n’existe plus." };
 
@@ -572,7 +587,7 @@ export async function duplicateTask(taskId: string): Promise<{ error?: string; i
       title: `${source.title} (copie)`,
       description: source.description,
       projectId: source.projectId,
-      studioId: source.studioId,
+      studios: { create: source.studios.map(({ studioId }) => ({ studioId })) },
       assigneeId: source.assigneeId,
       startDate: shift(source.startDate),
       endDate: shift(source.endDate),

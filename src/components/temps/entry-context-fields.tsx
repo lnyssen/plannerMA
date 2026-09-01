@@ -43,12 +43,13 @@ export function EntryContextFields({
   tasks: TaskOption[];
 }) {
   const [mode, setMode] = useState<"task" | "other">(value.taskId ? "task" : "other");
+  const selectedTask = tasks.find((t) => t.id === value.taskId) ?? null;
 
   function switchMode(next: "task" | "other") {
     setMode(next);
     if (next === "task") {
       const firstTask = tasks[0];
-      onChange({ taskId: firstTask?.id ?? null, studioId: firstTask?.studioId ?? value.studioId, projectId: null });
+      onChange({ taskId: firstTask?.id ?? null, studioId: firstTask?.studios[0]?.studioId ?? value.studioId, projectId: null });
     } else {
       onChange({ taskId: null, studioId: value.studioId || studios[0]?.id || "", projectId: null });
     }
@@ -81,15 +82,38 @@ export function EntryContextFields({
       </div>
 
       {mode === "task" ? (
-        <TaskCascadeFields
-          tasks={tasks}
-          value={value.taskId ?? ""}
-          onChange={(taskId) => {
-            const task = tasks.find((t) => t.id === taskId);
-            onChange({ taskId: taskId || null, studioId: task?.studioId ?? value.studioId });
-          }}
-          idPrefix="entry-task"
-        />
+        <>
+          <TaskCascadeFields
+            tasks={tasks}
+            value={value.taskId ?? ""}
+            onChange={(taskId) => {
+              const task = tasks.find((t) => t.id === taskId);
+              onChange({ taskId: taskId || null, studioId: task?.studios[0]?.studioId ?? value.studioId });
+            }}
+            idPrefix="entry-task"
+          />
+          {/* Une tâche a en général un seul studio : ce sélecteur
+              n'apparaît que si celle-ci en a plusieurs (voir TaskStudio) —
+              aucune hiérarchie entre eux, donc rien à présumer côté serveur
+              (voir resolveEntryContext dans time-entries.ts). */}
+          {selectedTask && selectedTask.studios.length > 1 && (
+            <div className="min-w-[160px]">
+              <FieldLabel htmlFor="entry-task-studio">Studio (pour cette écriture)</FieldLabel>
+              <select
+                id="entry-task-studio"
+                className={fieldInputClass}
+                value={value.studioId}
+                onChange={(e) => onChange({ studioId: e.target.value })}
+              >
+                {selectedTask.studios.map(({ studioId }) => (
+                  <option key={studioId} value={studioId}>
+                    {studios.find((s) => s.id === studioId)?.name ?? studioId}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </>
       ) : (
         <div className="flex flex-wrap gap-3">
           <div className="min-w-[200px] flex-1">

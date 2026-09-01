@@ -100,7 +100,10 @@ export async function duplicateProject(projectId: string): Promise<{ error?: str
     include: {
       studios: true,
       milestones: true,
-      tasks: { where: { trashedAt: null }, include: { subtasks: { orderBy: { position: "asc" } } } },
+      tasks: {
+        where: { trashedAt: null },
+        include: { subtasks: { orderBy: { position: "asc" } }, studios: { select: { studioId: true } } },
+      },
     },
   });
   if (!source) return { error: "Projet introuvable." };
@@ -136,7 +139,7 @@ export async function duplicateProject(projectId: string): Promise<{ error?: str
           title: t.title,
           description: t.description,
           projectId: project.id,
-          studioId: t.studioId,
+          studios: { create: t.studios.map(({ studioId }) => ({ studioId })) },
           assigneeId: t.assigneeId,
           startDate: shift(t.startDate),
           endDate: shift(t.endDate),

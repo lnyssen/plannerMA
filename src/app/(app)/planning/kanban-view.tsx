@@ -30,8 +30,10 @@ function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) =
           <strong className="font-bold text-ink">{task.project.client.name}</strong> — {task.project.name}
         </p>
       )}
-      <div className="mb-1.5">
-        <StudioBadge name={task.studio.name} fillHex={task.studio.fillHex} colorHex={task.studio.colorHex} />
+      <div className="mb-1.5 flex flex-wrap gap-1">
+        {task.studios.map(({ studio }) => (
+          <StudioBadge key={studio.id} name={studio.name} fillHex={studio.fillHex} colorHex={studio.colorHex} />
+        ))}
       </div>
       <div className="flex items-center justify-between text-2xs text-ink-muted">
         <span>{task.assignee?.name ?? "Non attribué"}</span>
@@ -70,10 +72,14 @@ export function KanbanView({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return tasks.filter((t) => {
-      if (studioFilter.length > 0 && !studioFilter.includes(t.studioId)) return false;
+      if (studioFilter.length > 0 && !t.studios.some((s) => studioFilter.includes(s.studioId))) return false;
       if (personFilter.length > 0 && (!t.assigneeId || !personFilter.includes(t.assigneeId))) return false;
       if (!q) return true;
-      return [t.title, t.project?.name, t.studio.name, t.assignee?.name].filter(Boolean).join(" ").toLowerCase().includes(q);
+      return [t.title, t.project?.name, ...t.studios.map((s) => s.studio.name), t.assignee?.name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
     });
   }, [tasks, search, studioFilter, personFilter]);
 

@@ -35,7 +35,7 @@ export function CreateTaskModal({
   const auj = today();
   const [values, setValues] = useState<TaskFormValues>({
     ...EMPTY_TASK_FORM,
-    studioId: studios[0]?.id ?? "",
+    studioIds: studios[0] ? [studios[0].id] : [],
     startDate: auj,
     endDate: auj,
     ...initialValues,
@@ -52,7 +52,7 @@ export function CreateTaskModal({
       const result = await createTask({
         title: values.title,
         description: values.description || null,
-        studioId: values.studioId,
+        studioIds: values.studioIds,
         projectId: values.projectId || null,
         assigneeId: values.assigneeId || null,
         startDate: values.startDate,

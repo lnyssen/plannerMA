@@ -15,7 +15,7 @@ import { FieldLabel, fieldInputClass } from "./modal-shell";
 export interface TaskFormValues {
   title: string;
   description: string;
-  studioId: string;
+  studioIds: string[];
   projectId: string;
   assigneeId: string;
   startDate: string;
@@ -108,20 +108,33 @@ export function TaskFormFields({
         />
       </div>
 
-      <div>
-        <FieldLabel htmlFor="task-studio">Studio</FieldLabel>
-        <select
-          id="task-studio"
-          className={fieldInputClass}
-          value={values.studioId}
-          onChange={(e) => onChange({ studioId: e.target.value })}
-        >
-          {studios.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+      <div className="sm:col-span-2">
+        <FieldLabel>Studios</FieldLabel>
+        <div className="flex flex-wrap gap-1.5">
+          {studios.map((s) => {
+            const active = values.studioIds.includes(s.id);
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() =>
+                  onChange({
+                    studioIds: active ? values.studioIds.filter((id) => id !== s.id) : [...values.studioIds, s.id],
+                  })
+                }
+                aria-pressed={active}
+                className="rounded-full px-3 py-1.5 text-sm font-semibold transition-colors duration-100"
+                style={{
+                  border: `1.5px solid ${active ? s.colorHex : "var(--color-line)"}`,
+                  color: active ? s.colorHex : "var(--color-ink-muted)",
+                  background: active ? `color-mix(in srgb, ${s.colorHex} 14%, transparent)` : "transparent",
+                }}
+              >
+                {s.name}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {showStatus && (
         <div>
@@ -306,7 +319,7 @@ export function TaskFormFields({
 export const EMPTY_TASK_FORM: TaskFormValues = {
   title: "",
   description: "",
-  studioId: "",
+  studioIds: [],
   projectId: "",
   assigneeId: "",
   startDate: "",

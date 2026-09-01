@@ -57,7 +57,7 @@ export function DemandesView({
   const initialValues: Partial<TaskFormValues> | undefined = converting
     ? {
         title: converting.subject,
-        studioId: converting.studioId,
+        studioIds: [converting.studioId],
         description: [converting.requester ? `Demandé par ${converting.requester}.` : null, converting.detail]
           .filter(Boolean)
           .join("\n\n"),

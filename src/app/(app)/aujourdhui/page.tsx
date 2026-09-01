@@ -22,7 +22,7 @@ export default async function TodayPage() {
             endDate: { gte: todayDate },
           },
           orderBy: { endDate: "asc" },
-          include: { project: { include: { client: true } }, studio: true, status: true },
+          include: { project: { include: { client: true } }, studios: { include: { studio: true } }, status: true },
         })
       : Promise.resolve([]),
     getRunningTimer(),
@@ -47,7 +47,7 @@ export default async function TodayPage() {
         title: t.title,
         endDate: toIsoDate(t.endDate),
         project: t.project ? { name: t.project.name, client: { name: t.project.client.name } } : null,
-        studio: { name: t.studio.name, fillHex: t.studio.fillHex, colorHex: t.studio.colorHex },
+        studios: t.studios.map((s) => ({ id: s.studio.id, name: s.studio.name, fillHex: s.studio.fillHex, colorHex: s.studio.colorHex })),
         status: { name: t.status.name, fillHex: t.status.fillHex, colorHex: t.status.colorHex },
       }))}
       runningTimer={runningTimer}

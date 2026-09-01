@@ -138,7 +138,7 @@ model Studio {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tasks       Task[]
+  tasks       TaskStudio[]
   projects    ProjectStudio[]
   people      PersonStudio[]
   requests    Request[]
@@ -332,8 +332,9 @@ enum RecurrenceFrequency {
   MONTHLY
 }
 
-/// Une tâche appartient à un seul studio (contrairement au projet). La
-/// corbeille du prototype (`corbeille`/`jete`) devient `trashedAt` : une
+/// Une tâche peut appartenir à plusieurs studios à la fois, sans hiérarchie
+/// entre eux (voir TaskStudio) — même principe que Project/ProjectStudio.
+/// La corbeille du prototype (`corbeille`/`jete`) devient `trashedAt` : une
 /// tâche à la corbeille garde son historique, elle est filtrée par requête
 /// plutôt que supprimée, jusqu'à destruction définitive par un administrateur
 /// (Réglages → Corbeille).
@@ -349,8 +350,7 @@ model Task {
   description         String?
   project             Project?             @relation(fields: [projectId], references: [id])
   projectId           String?              @map("project_id")
-  studio              Studio               @relation(fields: [studioId], references: [id])
-  studioId            String               @map("studio_id")
+  studios             TaskStudio[]
   assignee            Person?              @relation(fields: [assigneeId], references: [id])
   assigneeId          String?              @map("assignee_id")
   startDate           DateTime             @map("start_date") @db.Date
@@ -396,13 +396,23 @@ model Task {
   journalEntries JournalEntry[]
   timeEntries    TimeEntry[]
 
-  @@index([studioId])
   @@index([projectId])
   @@index([assigneeId])
   @@index([statusId])
   @@index([startDate, endDate])
   @@index([recurrenceParentId])
   @@map("tasks")
+}
+
+model TaskStudio {
+  taskId   String @map("task_id")
+  studioId String @map("studio_id")
+
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, studioId])
+  @@map("task_studios")
 }
 
 /// Sous-tâche avec échéance propre, éventuellement attribuée à quelqu'un

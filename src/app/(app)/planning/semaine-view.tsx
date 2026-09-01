@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { textButtonClass } from "@/components/ui/buttons";
 import { addDays, formatShortFr, fromIsoDate, mondayOf, toIsoDate, today, type IsoDate } from "@/lib/planning/dates";
+import { studioBarStyle } from "@/lib/planning/labels";
 
 const JOUR_LABEL = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
 
@@ -11,7 +12,7 @@ export interface WeekTask {
   id: string;
   title: string;
   assigneeId: string | null;
-  studio: { name: string; fillHex: string; colorHex: string };
+  studios: { studio: { id: string; name: string; fillHex: string; colorHex: string } }[];
   project: { name: string; client: { name: string } } | null;
   startDate: Date;
   endDate: Date;
@@ -151,7 +152,7 @@ function PersonRow({
                 onDoubleClick={() => onOpenTask(t.id)}
                 title={`${t.title} (double-clic pour les détails)`}
                 className="cursor-pointer px-1.5 py-1 text-left outline-2 -outline-offset-2 outline-transparent transition-[outline-color] duration-100 hover:outline-current"
-                style={{ background: t.studio.fillHex, color: t.studio.colorHex }}
+                style={studioBarStyle(t.studios)}
               >
                 <div className="text-2xs font-semibold">{t.title}</div>
                 {t.project && (

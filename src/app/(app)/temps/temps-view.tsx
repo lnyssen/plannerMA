@@ -56,7 +56,7 @@ export function TempsView({
   const [mineView, setMineView] = useState<"list" | "calendar" | "summary">("calendar");
   const [context, setContext] = useState<EntryContextValue>({
     taskId: tasks[0]?.id ?? null,
-    studioId: tasks[0]?.studioId ?? studios[0]?.id ?? "",
+    studioId: tasks[0]?.studios[0]?.studioId ?? studios[0]?.id ?? "",
     projectId: null,
     categoryId: null,
   });
