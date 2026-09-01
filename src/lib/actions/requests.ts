@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { notifyRequest } from "@/lib/mail/notify";
+import { currentActorName } from "./actor";
 import { createNotification } from "./notifications";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
@@ -43,7 +44,7 @@ export async function createRequest(input: CreateRequestInput): Promise<{ error?
       requester: requester || null,
       wantedFor: wantedFor ? new Date(wantedFor) : null,
       detail: detail || null,
-      createdBy: session.user.name ?? session.user.email ?? "Anonyme",
+      createdBy: await currentActorName(session),
     },
   });
 

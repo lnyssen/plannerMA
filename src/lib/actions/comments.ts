@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { notifyMention } from "@/lib/mail/notify";
+import { currentActorName } from "./actor";
 import { createNotification } from "./notifications";
 
 const addCommentSchema = z.object({
@@ -47,18 +48,18 @@ export async function addComment(input: z.infer<typeof addCommentSchema>): Promi
 
   const people = await db.person.findMany({ select: { id: true, name: true } });
   const mentionedIds = findMentionedPersonIds(body, people).filter((id) => id !== session.user.personId);
+  const authorName = await currentActorName(session);
 
   const comment = await db.comment.create({
     data: {
       taskId,
       authorId: session.user.personId,
-      authorName: session.user.name ?? session.user.email ?? "Anonyme",
+      authorName,
       body,
       mentions: { create: mentionedIds.map((personId) => ({ personId })) },
     },
   });
 
-  const authorName = session.user.name ?? session.user.email ?? "Quelqu’un";
   for (const personId of mentionedIds) {
     void notifyMention(personId, { taskId, taskTitle: task.title, authorName, commentBody: body });
     await createNotification({
