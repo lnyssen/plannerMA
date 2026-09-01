@@ -41,6 +41,18 @@ function Ul({ children }: { children: React.ReactNode }) {
   return <ul className="mb-2.5 flex list-disc flex-col gap-1 pl-5 text-sm text-ink marker:text-ink-muted">{children}</ul>;
 }
 
+/** Procédure numérotée — distincte des puces `Ul` (repères), pour un enchaînement d'actions dans l'ordre. */
+function Steps({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-3 rounded-lg border border-line p-3.5">
+      <p className="mb-2 text-sm font-bold text-heading">{title}</p>
+      <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm text-ink marker:font-semibold marker:text-heading">
+        {children}
+      </ol>
+    </div>
+  );
+}
+
 function Admin({ children = "réservé aux administrateurs" }: { children?: React.ReactNode }) {
   return (
     <span className="ml-1.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold" style={{ background: "var(--color-wash)", color: "var(--color-ink-muted)" }}>
@@ -53,41 +65,52 @@ function Kbd({ children }: { children: React.ReactNode }) {
   return <kbd className="rounded border border-line bg-wash px-1.5 py-0.5 text-2xs text-ink-muted">{children}</kbd>;
 }
 
+/** Capture d'écran — bordée comme les cartes de l'appli, jamais plus large que son conteneur. */
+function Shot({ src, alt }: { src: string; alt: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={alt} className="mb-4 w-full rounded-lg border border-line" />
+  );
+}
+
 /**
  * Documentation interne — page statique volontairement (pas de FieldSection
  * ni d'état) : c'est un texte de référence à parcourir ou chercher (Ctrl+F
  * navigateur), pas un écran d'action. Un seul document plutôt qu'une page
  * par section : plus simple à chercher dedans, et le sommaire en haut sert
- * de sauts d'ancre pour qui sait déjà ce qu'il cherche.
+ * de sauts d'ancre pour qui sait déjà ce qu'il cherche. Les captures d'écran
+ * (public/docs/) datent du 1er septembre 2026 — à regénérer si l'interface
+ * change sensiblement.
  */
 export default function AidePage() {
   return (
-    <div className="mx-auto max-w-3xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-8 py-8">
       <h1 className="mb-2 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
         Documentation
       </h1>
-      <p className="mb-6 text-sm text-ink-muted">
+      <p className="mb-6 max-w-3xl text-sm text-ink-muted">
         Comment utiliser Studio planner, écran par écran. Les puces « réservé aux administrateurs » signalent ce que
         seul un compte administrateur voit ou peut faire — pour les autres comptes, cette partie n’apparaît pas dans
         l’application.
       </p>
 
-      <nav className="mb-8 rounded-lg border border-line p-4">
-        <p className="mb-2 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Sommaire</p>
-        <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-          {SECTIONS.map((s) => (
-            <li key={s.id}>
-              <a href={`#${s.id}`} className="text-heading underline-offset-2 hover:underline">
-                {s.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className="flex flex-col">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_200px]">
+        <div className="flex max-w-3xl flex-col">
+          <nav className="mb-8 rounded-lg border border-line p-4 lg:hidden">
+            <p className="mb-2 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Sommaire</p>
+            <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+              {SECTIONS.map((s) => (
+                <li key={s.id}>
+                  <a href={`#${s.id}`} className="text-heading underline-offset-2 hover:underline">
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
         <section className="mb-8">
           <H2 id="aujourdhui">Aujourd’hui</H2>
+          <Shot src="/docs/aujourdhui.png" alt="Page d’accueil Aujourd’hui : tâches du jour, minuteur, absences à venir" />
           <P>
             Page d’accueil personnelle pour un compte solo : vos tâches du jour, un minuteur, et vos prochaines
             absences (les vôtres et celles de l’équipe). Rien à configurer — elle se construit toute seule à partir
@@ -97,38 +120,42 @@ export default function AidePage() {
 
         <section className="mb-8">
           <H2 id="taches">Tâches</H2>
+          <Shot src="/docs/taches.png" alt="Liste des tâches, avec ses quatre filtres et le tri par colonne" />
           <P>
             Liste de toutes les tâches actives de l’équipe (hors corbeille, hors projets archivés), en tableau sur
             grand écran et en cartes sur mobile.
           </P>
           <H3>Filtrer et chercher</H3>
           <Ul>
-            <li>Quatre filtres combinables : Projet, Studio, Personne, Statut.</li>
+            <li>Quatre filtres combinables, en haut de la liste : Projet, Studio, Personne, Statut.</li>
             <li>
               La recherche (icône loupe, à droite des filtres) couvre le titre <em>et</em> la description de la
               tâche, ainsi que le contenu des commentaires — un mot cherché dans un commentaire remonte la tâche
-              concernée.
+              concernée (voir <a href="#recherche" className="text-heading underline-offset-2 hover:underline">Recherche</a> ci-dessous pour un exemple).
             </li>
             <li>Cliquer un en-tête de colonne trie la liste ; recliquer inverse l’ordre.</li>
           </Ul>
-          <H3>Actions groupées</H3>
-          <P>
-            Cocher plusieurs tâches (case en tête de ligne, ou la case d’en-tête pour tout sélectionner) fait
-            apparaître une barre d’actions : changer le statut ou la personne attribuée pour toute la sélection en
-            un seul choix. Si la réattribution surchargerait quelqu’un (voir <a href="#charge" className="text-heading underline-offset-2 hover:underline">Charge</a> ci-dessous), une
-            confirmation s’affiche avant d’appliquer — vous pouvez annuler.
-          </P>
-          <H3>Dupliquer une tâche</H3>
-          <P>
-            Depuis la fiche d’une tâche, le bouton « Dupliquer » crée une copie : mêmes sous-tâches (remises à « non
-            fait »), même dépendance, dates décalées pour démarrer aujourd’hui, statut remis au premier de la liste.
-            Les commentaires, pièces jointes et écritures de temps ne sont jamais copiés — propres à l’historique de
-            l’original.
-          </P>
+          <Steps title="Réattribuer plusieurs tâches d’un coup">
+            <li>Cocher les tâches concernées (case en tête de ligne), ou la case d’en-tête pour tout sélectionner.</li>
+            <li>Dans la barre qui apparaît, choisir « Changer le statut… » ou « Changer la personne… ».</li>
+            <li>
+              Si la réattribution surchargerait quelqu’un (voir <a href="#charge" className="text-heading underline-offset-2 hover:underline">Charge</a>), une confirmation
+              s’affiche avant d’appliquer — annuler pour revenir en arrière, valider pour continuer quand même.
+            </li>
+          </Steps>
+          <Steps title="Dupliquer une tâche">
+            <li>Ouvrir la tâche à dupliquer.</li>
+            <li>
+              Cliquer « Dupliquer » (à côté de « Corbeille », en haut de la fiche) — voir{" "}
+              <a href="#fiche-tache" className="text-heading underline-offset-2 hover:underline">La fiche d’une tâche</a> pour le détail de ce qui est copié.
+            </li>
+            <li>La copie s’ouvre directement, prête à ajuster (dates déjà décalées à aujourd’hui).</li>
+          </Steps>
         </section>
 
         <section className="mb-8">
           <H2 id="fiche-tache">La fiche d’une tâche</H2>
+          <Shot src="/docs/fiche-tache.png" alt="Fiche d’une tâche : champs, sous-tâches, pièces jointes, activité, temps" />
           <P>Ouvrir une tâche (clic sur sa ligne, depuis n’importe quelle vue) ouvre sa fiche complète en pleine page.</P>
           <H3>Champs</H3>
           <Ul>
@@ -144,38 +171,41 @@ export default function AidePage() {
               que celle-ci passe à un statut « Terminé ».
             </li>
           </Ul>
-          <H3>Avertissement de surcharge</H3>
           <P>
             Si la personne attribuée dépasserait 90 % de charge la semaine concernée (avec cette tâche incluse), un
             bandeau orange s’affiche directement dans le formulaire, avant même d’enregistrer. Ce n’est qu’un
             signal — rien n’empêche d’enregistrer quand même.
           </P>
-          <H3>Sous-tâches</H3>
-          <P>Une checklist avec échéance propre, éventuellement attribuée à quelqu’un d’autre que le titulaire de la tâche.</P>
-          <H3>Pièces jointes</H3>
-          <P>Un lien externe (SharePoint, Drive…) ou un fichier déposé directement. Chaque ligne indique qui l’a déposé et quand.</P>
+          <Steps title="Commenter et mentionner quelqu’un">
+            <li>Descendre à « Activité », tout en bas de la fiche.</li>
+            <li>Écrire le texte dans le champ « Ajouter un commentaire… ».</li>
+            <li>Cliquer une des puces « @Nom » sous le champ pour insérer une mention.</li>
+            <li>
+              Cliquer « Commenter » — la personne mentionnée reçoit une notification (cloche, et courriel si activé) ;
+              l’attributaire de la tâche est lui aussi averti de tout nouveau commentaire, même sans être mentionné.
+            </li>
+          </Steps>
+          <Steps title="Ajouter une sous-tâche">
+            <li>Dans la section « Sous-tâches », taper l’intitulé dans le champ « Nouvelle sous-tâche ».</li>
+            <li>Choisir une échéance (facultatif).</li>
+            <li>Cliquer « Ajouter ». Cocher la case à gauche marque une sous-tâche comme faite.</li>
+          </Steps>
+          <Steps title="Suivre le temps passé">
+            <li>« Démarrer un minuteur » lance un chronomètre, visible et arrêtable depuis n’importe quelle page tant qu’il tourne.</li>
+            <li>« Saisie manuelle » ouvre une date + une durée à saisir directement, pour du temps déjà passé.</li>
+          </Steps>
           <H3>Activité</H3>
           <P>
             Un seul fil chronologique regroupe les commentaires, les pièces jointes déposées et le journal des
             changements (création, modification, changement de statut…) — pour voir d’un coup d’œil tout ce qui
             s’est passé sur la tâche, dans l’ordre où c’est arrivé.
           </P>
-          <P>
-            Écrire un commentaire : taper le texte, éventuellement cliquer une des puces « @Nom » sous le champ pour
-            mentionner quelqu’un — la personne mentionnée reçoit une notification (cloche + courriel si activé).
-            L’attributaire de la tâche est lui aussi averti de tout nouveau commentaire, même sans être mentionné
-            explicitement.
-          </P>
-          <H3>Temps</H3>
-          <P>
-            Démarrer un minuteur (s’arrête depuis n’importe quelle page tant qu’il tourne) ou saisir une durée
-            manuellement. Le total de la tâche s’affiche en tête de section.
-          </P>
         </section>
 
         <section className="mb-8">
           <H2 id="planning">Planning</H2>
-          <P>Trois façons de voir les mêmes tâches, à choisir selon ce qu’on cherche :</P>
+          <P>Trois façons de voir les mêmes tâches, à choisir selon ce qu’on cherche (onglets en haut de la page) :</P>
+          <Shot src="/docs/planning-kanban.png" alt="Planning en vue Kanban, colonnes par statut" />
           <Ul>
             <li><strong>Kanban</strong> — colonnes par statut, glisser-déposer une tâche pour changer son statut.</li>
             <li><strong>Semaine</strong> — grille jour par jour, une ligne par personne.</li>
@@ -185,6 +215,7 @@ export default function AidePage() {
 
         <section className="mb-8">
           <H2 id="projets">Projets</H2>
+          <Shot src="/docs/projets.png" alt="Liste des projets en vue Cartes, regroupés par client" />
           <P>Vue Cartes (regroupées par client) ou Tableau, avec un onglet Archives séparé.</P>
           <H3>Fiche projet</H3>
           <Ul>
@@ -193,16 +224,22 @@ export default function AidePage() {
             <li>Liste des tâches du projet et de ses jalons, avec ajout direct depuis la fiche.</li>
             <li>Historique propre au projet (création, duplication, modification, archivage).</li>
           </Ul>
-          <H3>Dupliquer un projet</H3>
-          <P>
-            Copie le projet et toutes ses tâches actives (avec sous-tâches, dépendances remappées vers les copies, et
-            jalons), dates décalées pour démarrer aujourd’hui en conservant l’espacement relatif. Sert de « modèle »
-            léger pour un studio qui refait souvent le même type de projet.
-          </P>
+          <Steps title="Créer un projet">
+            <li>Bouton « Nouveau projet » (barre latérale, ou en haut de la liste Projets).</li>
+            <li>Choisir un client existant ou taper un nouveau nom (créé à la volée).</li>
+            <li>Type de client, type de projet, studios concernés.</li>
+            <li>Enregistrer — la fiche s’ouvre, prête à recevoir des tâches et un budget.</li>
+          </Steps>
+          <Steps title="Dupliquer un projet">
+            <li>Ouvrir le projet à dupliquer.</li>
+            <li>Cliquer « Dupliquer » — copie le projet et toutes ses tâches actives (sous-tâches, dépendances remappées, jalons).</li>
+            <li>Dates décalées pour démarrer aujourd’hui, en conservant l’espacement relatif entre tâches.</li>
+          </Steps>
         </section>
 
         <section className="mb-8">
           <H2 id="clients">Clients</H2>
+          <Shot src="/docs/clients.png" alt="Liste des clients, avec projets actifs et temps agrégé par carte" />
           <P>
             Liste des organisations (ONG, fédérations, services internes…) avec leurs coordonnées. Chaque carte
             affiche le nombre de projets (actifs vs total) et le temps total enregistré tous projets confondus — pour
@@ -215,13 +252,17 @@ export default function AidePage() {
             Tableau de bord
             <Admin />
           </H2>
+          <Shot src="/docs/tableau-de-bord.png" alt="Tableau de bord : budget total/réalisé/restant, échéances, détail par projet" />
           <P>
             Vue d’ensemble « budget de temps vs réalisé » : total budgété, réalisé, restant et écart, puis le détail
             par projet (barre de consommation, avancement des tâches, rythme — « en avance », « dans les temps » ou
             « en retard » selon que le budget se consomme plus vite ou moins vite que les tâches n’avancent). Une
-            section séparée liste les prochaines échéances (jalons) sous 30 jours, en retard ou à venir. Export CSV
-            disponible.
+            section séparée liste les prochaines échéances (jalons) sous 30 jours, en retard ou à venir.
           </P>
+          <Steps title="Exporter en CSV">
+            <li>Cliquer « Exporter en CSV », en haut de la page (n’apparaît que s’il y a au moins un projet avec budget).</li>
+            <li>Le fichier téléchargé reprend exactement les lignes affichées à l’écran.</li>
+          </Steps>
         </section>
 
         <section className="mb-8">
@@ -229,6 +270,7 @@ export default function AidePage() {
             Projets EP/Européens
             <Admin />
           </H2>
+          <Shot src="/docs/subventions.png" alt="Vue Projets EP/Européens, groupée par catégorie de financement" />
           <P>
             Même calcul que le Tableau de bord, mais filtré et groupé par catégorie de financement associatif :
             Éducation permanente d’un côté, Européen de l’autre. Deux démarches de justification distinctes auprès de
@@ -239,10 +281,12 @@ export default function AidePage() {
 
         <section className="mb-8">
           <H2 id="temps">Temps</H2>
+          <Shot src="/docs/temps.png" alt="Page Temps : écritures par jour ou par semaine" />
           <P>
             Vos écritures de temps, par jour ou par semaine. Une écriture peut être liée à une tâche précise ou
-            directement à un projet (temps non affecté à une tâche particulière). Export CSV pour le reporting.
+            directement à un projet (temps non affecté à une tâche particulière).
           </P>
+          <P>Export CSV pour le reporting — même principe que sur le Tableau de bord.</P>
         </section>
 
         <section className="mb-8">
@@ -250,33 +294,46 @@ export default function AidePage() {
             Charge
             <Admin />
           </H2>
+          <Shot src="/docs/charge.png" alt="Vue Charge : occupation par personne et par semaine" />
           <P>
-            Occupation de chaque personne, semaine par semaine (4, 8 ou 12 semaines affichables). Le calcul : chaque
-            jour ouvrable couvert par une tâche non terminée compte comme occupé, plafonné à 100 % par jour — une
-            tâche avec une estimation en demi-journées répartit son effort sur sa plage plutôt que de compter chaque
-            jour couvert comme entièrement pris. Les absences réduisent la disponibilité. Une puce signale un
-            chevauchement (deux tâches actives en même temps pour la même personne un même jour). Le seuil de
-            « surcharge » (≥ 90 % en moyenne) est le même que celui qui déclenche l’avertissement à l’assignation
-            d’une tâche (voir <a href="#fiche-tache" className="text-heading underline-offset-2 hover:underline">La fiche d’une tâche</a>) et sur la réattribution groupée
-            (voir <a href="#taches" className="text-heading underline-offset-2 hover:underline">Tâches</a>).
+            Occupation de chaque personne, semaine par semaine (4, 8 ou 12 semaines affichables, sélecteur en haut de
+            page).
           </P>
+          <Ul>
+            <li>
+              Chaque jour ouvrable couvert par une tâche non terminée compte comme occupé, plafonné à 100 % par jour —
+              une tâche avec une estimation en demi-journées répartit son effort sur sa plage plutôt que de compter
+              chaque jour couvert comme entièrement pris.
+            </li>
+            <li>Les absences réduisent la disponibilité de la personne concernée.</li>
+            <li>Une puce signale un chevauchement (deux tâches actives en même temps pour la même personne un même jour).</li>
+            <li>
+              Le seuil de « surcharge » (≥ 90 % en moyenne) est le même que celui qui déclenche l’avertissement à
+              l’assignation d’une tâche (voir <a href="#fiche-tache" className="text-heading underline-offset-2 hover:underline">La fiche d’une tâche</a>) et sur la
+              réattribution groupée (voir <a href="#taches" className="text-heading underline-offset-2 hover:underline">Tâches</a>).
+            </li>
+          </Ul>
         </section>
 
         <section className="mb-8">
           <H2 id="equipe">Équipe</H2>
-          <P>Trois onglets : Personnes, Absences, Calendrier (vue mensuelle des absences de toute l’équipe).</P>
-          <Ul>
-            <li>Déclarer sa propre absence est en libre-service pour tout le monde.</li>
+          <Shot src="/docs/equipe.png" alt="Page Équipe, onglet Personnes" />
+          <P>Trois onglets, en haut de la page : Personnes, Absences, Calendrier (vue mensuelle des absences de toute l’équipe).</P>
+          <Steps title="Déclarer une absence (tout le monde)">
+            <li>Onglet « Absences ».</li>
+            <li>Choisir les dates de début et de fin, un motif facultatif.</li>
+            <li>Enregistrer — elle apparaît aussitôt dans le Calendrier de l’équipe et réduit la disponibilité dans Charge.</li>
+          </Steps>
+          <Steps title="Créer un accès de connexion pour quelqu’un">
+            <Admin>admin</Admin>
+            <li>Onglet « Personnes », ouvrir la fiche de la personne (ou en créer une nouvelle).</li>
+            <li>Bouton « Inviter » (ou équivalent) — choisir son rôle.</li>
             <li>
-              Gérer les fiches personnes (ajouter, désactiver, créer un accès de connexion, réinitialiser un mot de
-              passe) est <Admin>réservé aux administrateurs</Admin>.
+              Un mot de passe temporaire est généré et envoyé par courriel ; s’il échoue (SMTP pas configuré), il
+              s’affiche directement pour le communiquer soi-même. La personne peut ensuite le changer depuis ses
+              propres réglages.
             </li>
-            <li>
-              Créer un accès de connexion génère un mot de passe temporaire, envoyé par courriel (ou affiché
-              directement si l’envoi échoue, pour le communiquer soi-même) — la personne peut ensuite le changer
-              depuis ses propres réglages.
-            </li>
-          </Ul>
+          </Steps>
         </section>
 
         <section className="mb-8">
@@ -284,11 +341,16 @@ export default function AidePage() {
             Demandes
             <Admin />
           </H2>
+          <Shot src="/docs/demandes.png" alt="File des demandes non planifiées" />
           <P>
             File des demandes non planifiées (« ce qu’on vous demande dans un couloir ») : n’importe qui peut en
-            déposer une depuis le bouton « Nouvelle demande », les administrateurs les reçoivent en notification et
-            décident de les convertir en tâche ou de les écarter.
+            déposer une depuis le bouton « Nouvelle demande » (barre latérale), les administrateurs les reçoivent en
+            notification.
           </P>
+          <Ul>
+            <li><strong>Convertir en tâche</strong> — crée une vraie tâche à partir de la demande, qui disparaît alors de la file.</li>
+            <li><strong>Écarter</strong> — la retire sans créer de tâche (avec confirmation).</li>
+          </Ul>
         </section>
 
         <section className="mb-8">
@@ -296,18 +358,24 @@ export default function AidePage() {
             Réglages
             <Admin />
           </H2>
-          <P>
-            Configuration de fond : studios, statuts de tâche (et leur ordre), catégories de temps, et le journal
-            global (toutes les écritures d’historique de l’application, pas seulement celles d’une fiche).
-          </P>
+          <Shot src="/docs/reglages.png" alt="Page Réglages, onglet Général" />
+          <P>Configuration de fond, en quatre onglets :</P>
+          <Ul>
+            <li><strong>Général</strong> — couleurs et ordre des studios, statuts de tâche et leur ordre, bouton de test du récap quotidien par courriel.</li>
+            <li><strong>Catégories de tâches</strong> — nomenclature utilisée pour classer le temps saisi.</li>
+            <li><strong>Corbeille</strong> — tâches supprimées, restaurables ou à effacer définitivement.</li>
+            <li><strong>Journal</strong> — toutes les écritures d’historique de l’application, pas seulement celles d’une fiche.</li>
+          </Ul>
         </section>
 
         <section className="mb-8">
           <H2 id="recherche">Recherche et palette de commandes</H2>
+          <Shot src="/docs/recherche.png" alt="Résultats de recherche : tâches, commentaires, projets" />
           <P>
             L’icône loupe (barre latérale) ouvre une recherche rapide : tâches (titre et description), commentaires
-            (avec un extrait), projets (nom et code), clients.
+            (avec un extrait du texte trouvé), projets (nom et code), clients.
           </P>
+          <Shot src="/docs/palette.png" alt="Palette de commandes ouverte, avec actions rapides" />
           <P>
             <Kbd>⌘</Kbd>/<Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> depuis n’importe où ouvre la palette de commandes : la même
             recherche, plus des actions rapides (nouvelle tâche/projet/demande, aller à une page) et vos éléments
@@ -317,12 +385,18 @@ export default function AidePage() {
 
         <section className="mb-8">
           <H2 id="notifications">Notifications</H2>
+          <Shot src="/docs/notifications.png" alt="Panneau de notifications ouvert" />
           <P>
             La cloche (barre latérale) liste vos notifications dans l’application — toujours actives, rien à
-            configurer. Elle s’allume pour : une tâche qui vous est attribuée, une mention dans un commentaire, un
-            nouveau commentaire sur une tâche qui vous est attribuée, une nouvelle demande <Admin />, un budget de
-            projet dépassé ou un rythme de consommation qui dérive <Admin />.
+            configurer.
           </P>
+          <Ul>
+            <li>Une tâche qui vous est attribuée.</li>
+            <li>Une mention (« @Nom ») dans un commentaire.</li>
+            <li>Un nouveau commentaire sur une tâche qui vous est attribuée, même sans mention.</li>
+            <li>Une nouvelle demande <Admin />.</li>
+            <li>Un budget de projet dépassé, ou un rythme de consommation qui dérive <Admin />.</li>
+          </Ul>
           <P>
             Le courriel correspondant à chacune de ces alertes se règle indépendamment dans « Mes notifications »
             (menu du compte, en bas de la barre latérale) — la cloche reste active même si tous les courriels sont
@@ -333,15 +407,18 @@ export default function AidePage() {
         <section className="mb-8">
           <H2 id="compte">Mon compte et mot de passe</H2>
           <Ul>
-            <li>Changer son mot de passe : menu du compte → Mot de passe.</li>
-            <li>
-              Mot de passe oublié : lien « Mot de passe oublié ? » sur l’écran de connexion — un courriel avec un
-              lien de réinitialisation, valable une heure. Si le courriel n’arrive pas (SMTP pas encore configuré),
-              demander à un administrateur de réinitialiser l’accès depuis Équipe.
-            </li>
+            <li>Changer son mot de passe : menu du compte (en bas de la barre latérale) → Mot de passe.</li>
             <li>Thème clair/sombre : bascule dans la barre latérale.</li>
             <li>Ordre du menu de gauche : personnalisable par glisser-déposer (menu du compte → Réorganiser le menu).</li>
           </Ul>
+          <Steps title="Mot de passe oublié">
+            <li>Sur l’écran de connexion, cliquer « Mot de passe oublié ? ».</li>
+            <li>Saisir son adresse courriel — un lien de réinitialisation est envoyé, valable une heure.</li>
+            <li>
+              Si le courriel n’arrive pas (SMTP pas encore configuré), demander à un administrateur de réinitialiser
+              l’accès depuis Équipe.
+            </li>
+          </Steps>
         </section>
 
         <section className="mb-10">
@@ -354,6 +431,20 @@ export default function AidePage() {
             fiches personnes ni les réglages de fond.
           </P>
         </section>
+        </div>
+
+        <nav aria-label="Sommaire" className="hidden lg:sticky lg:top-8 lg:block lg:self-start">
+          <p className="mb-2 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Sommaire</p>
+          <ul className="flex max-h-[calc(100vh-6rem)] flex-col gap-1 overflow-y-auto border-l border-line pl-3 text-sm">
+            {SECTIONS.map((s) => (
+              <li key={s.id}>
+                <a href={`#${s.id}`} className="text-ink-muted underline-offset-2 hover:text-heading hover:underline">
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
     </div>
   );
