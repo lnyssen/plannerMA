@@ -3,6 +3,7 @@
 import { AlertTriangle, MessageSquare, Paperclip } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { MultiSelectField } from "@/components/ui/multi-select-field";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { SearchField } from "@/components/ui/search-field";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -84,10 +85,10 @@ export function TasksTable({
   const router = useRouter();
   const columns = hidePersonColumn ? ALL_COLUMNS.filter((c) => c.key !== "person") : ALL_COLUMNS;
   const [search, setSearch] = useState("");
-  const [studioFilter, setStudioFilter] = useState("");
-  const [personFilter, setPersonFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [projectFilter, setProjectFilter] = useState("");
+  const [studioFilter, setStudioFilter] = useState<string[]>([]);
+  const [personFilter, setPersonFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [projectFilter, setProjectFilter] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("dates");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -111,10 +112,10 @@ export function TasksTable({
           .includes(q),
       );
     }
-    if (studioFilter) filtered = filtered.filter((t) => t.studioId === studioFilter);
-    if (personFilter) filtered = filtered.filter((t) => t.assigneeId === personFilter);
-    if (statusFilter) filtered = filtered.filter((t) => t.statusId === statusFilter);
-    if (projectFilter) filtered = filtered.filter((t) => t.projectId === projectFilter);
+    if (studioFilter.length > 0) filtered = filtered.filter((t) => studioFilter.includes(t.studioId));
+    if (personFilter.length > 0) filtered = filtered.filter((t) => t.assigneeId != null && personFilter.includes(t.assigneeId));
+    if (statusFilter.length > 0) filtered = filtered.filter((t) => statusFilter.includes(t.statusId));
+    if (projectFilter.length > 0) filtered = filtered.filter((t) => t.projectId != null && projectFilter.includes(t.projectId));
 
     const value = (t: TaskListItem): string | number => {
       switch (sortKey) {
@@ -149,60 +150,40 @@ export function TasksTable({
     <div>
       <div className="mb-5 flex flex-wrap gap-3">
         <SearchField value={search} onChange={setSearch} className="max-w-md" />
-        <select
-          value={studioFilter}
-          onChange={(e) => setStudioFilter(e.target.value)}
-          aria-label="Filtrer par studio"
-          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
-        >
-          <option value="">Tous les studios</option>
-          {studios.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          aria-label="Filtrer par statut"
-          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
-        >
-          <option value="">Tous les statuts</option>
-          {statuses.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={projectFilter}
-          onChange={(e) => setProjectFilter(e.target.value)}
-          aria-label="Filtrer par client/projet"
-          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
-        >
-          <option value="">Tous les projets</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.client.name} — {p.name}
-            </option>
-          ))}
-        </select>
+        {/* Même ordre que les colonnes du tableau ci-dessous : Projet (donc
+            Client), puis Studio, Personne, Statut — du plus général au plus
+            précis, cohérent avec la nomenclature Client — Projet partout
+            ailleurs dans l'appli. */}
+        <MultiSelectField
+          label="Tous les projets"
+          selected={projectFilter}
+          onChange={setProjectFilter}
+          options={projects.map((p) => ({ id: p.id, label: `${p.client.name} — ${p.name}` }))}
+          className="max-w-[220px]"
+        />
+        <MultiSelectField
+          label="Tous les studios"
+          selected={studioFilter}
+          onChange={setStudioFilter}
+          options={studios.map((s) => ({ id: s.id, label: s.name }))}
+          className="max-w-[180px]"
+        />
         {!hidePersonFilter && (
-          <select
-            value={personFilter}
-            onChange={(e) => setPersonFilter(e.target.value)}
-            aria-label="Filtrer par personne"
-            className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
-          >
-            <option value="">Toutes les personnes</option>
-            {people.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+          <MultiSelectField
+            label="Toutes les personnes"
+            selected={personFilter}
+            onChange={setPersonFilter}
+            options={people.map((p) => ({ id: p.id, label: p.name }))}
+            className="max-w-[200px]"
+          />
         )}
+        <MultiSelectField
+          label="Tous les statuts"
+          selected={statusFilter}
+          onChange={setStatusFilter}
+          options={statuses.map((s) => ({ id: s.id, label: s.name }))}
+          className="max-w-[180px]"
+        />
       </div>
 
       {rows.length === 0 ? (

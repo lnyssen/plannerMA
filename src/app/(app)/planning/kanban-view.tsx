@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { MultiSelectField } from "@/components/ui/multi-select-field";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { SearchField } from "@/components/ui/search-field";
 import { StudioBadge } from "@/components/ui/studio-badge";
@@ -60,8 +61,8 @@ export function KanbanView({
   }
 
   const [search, setSearch] = useState("");
-  const [studioFilter, setStudioFilter] = useState("");
-  const [personFilter, setPersonFilter] = useState("");
+  const [studioFilter, setStudioFilter] = useState<string[]>([]);
+  const [personFilter, setPersonFilter] = useState<string[]>([]);
   const [dragOverStatusId, setDragOverStatusId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -69,8 +70,8 @@ export function KanbanView({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return tasks.filter((t) => {
-      if (studioFilter && t.studioId !== studioFilter) return false;
-      if (personFilter && t.assigneeId !== personFilter) return false;
+      if (studioFilter.length > 0 && !studioFilter.includes(t.studioId)) return false;
+      if (personFilter.length > 0 && (!t.assigneeId || !personFilter.includes(t.assigneeId))) return false;
       if (!q) return true;
       return [t.title, t.project?.name, t.studio.name, t.assignee?.name].filter(Boolean).join(" ").toLowerCase().includes(q);
     });
@@ -102,32 +103,20 @@ export function KanbanView({
     <div>
       <div className="mb-5 flex flex-wrap gap-3">
         <SearchField value={search} onChange={setSearch} className="max-w-md" />
-        <select
-          value={studioFilter}
-          onChange={(e) => setStudioFilter(e.target.value)}
-          aria-label="Filtrer par studio"
-          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
-        >
-          <option value="">Tous les studios</option>
-          {studios.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={personFilter}
-          onChange={(e) => setPersonFilter(e.target.value)}
-          aria-label="Filtrer par personne"
-          className="min-w-0 max-w-full rounded-md border-[1.5px] border-heading px-2.5 py-2.5 text-sm text-ink"
-        >
-          <option value="">Toutes les personnes</option>
-          {people.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+        <MultiSelectField
+          label="Tous les studios"
+          selected={studioFilter}
+          onChange={setStudioFilter}
+          options={studios.map((s) => ({ id: s.id, label: s.name }))}
+          className="max-w-[180px]"
+        />
+        <MultiSelectField
+          label="Toutes les personnes"
+          selected={personFilter}
+          onChange={setPersonFilter}
+          options={people.map((p) => ({ id: p.id, label: p.name }))}
+          className="max-w-[200px]"
+        />
       </div>
 
       {error && (
