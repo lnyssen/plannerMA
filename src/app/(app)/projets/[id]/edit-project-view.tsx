@@ -11,7 +11,7 @@ import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
-import { formatShortFr, toIsoDate, today } from "@/lib/planning/dates";
+import { formatShortFr, quandFr, toIsoDate, today } from "@/lib/planning/dates";
 import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { recordRecentItem } from "@/lib/recent-items";
@@ -446,6 +446,20 @@ export function EditProjectView({
                 {milestoneError}
               </p>
             )}
+          </div>
+
+          <div className="rounded-lg border border-line p-4">
+            <h3 className="mb-3 text-2xs font-bold tracking-wide text-ink-muted uppercase">
+              Historique ({project.journalEntries.length})
+            </h3>
+            <div className="flex flex-col gap-1.5">
+              {project.journalEntries.map((entry) => (
+                <p key={entry.id} className="text-xs text-ink">
+                  {entry.action}
+                  <span className="text-ink-muted"> — {entry.actorName}, {quandFr(entry.createdAt)}</span>
+                </p>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -254,10 +254,11 @@ model Project {
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
-  studios     ProjectStudio[]
-  tasks       Task[]
-  milestones  Milestone[]
-  timeEntries TimeEntry[]
+  studios        ProjectStudio[]
+  tasks          Task[]
+  milestones     Milestone[]
+  timeEntries    TimeEntry[]
+  journalEntries JournalEntry[]
 
   @@map("projects")
 }
@@ -605,6 +606,12 @@ model JournalEntry {
   /// arrivé avant sa suppression.
   task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
   taskId    String?  @map("task_id")
+  /// Même principe que taskId, pour les écritures qui concernent un projet
+  /// plutôt qu'une tâche (création, duplication, archivage…) — permet
+  /// d'afficher l'historique propre à une fiche projet, pas seulement le
+  /// journal global (Réglages → Journal).
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?  @map("project_id")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([createdAt])

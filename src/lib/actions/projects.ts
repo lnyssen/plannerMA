@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { addDays, fromIsoDate, today } from "@/lib/planning/dates";
+import { currentActorName } from "./actor";
 
 /**
  * Un projet référence soit un client existant (clientId), soit un nom à
@@ -64,8 +65,9 @@ export async function createProject(input: CreateProjectInput): Promise<{ error?
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Projet « ${name} » créé`,
+      projectId: project.id,
     },
   });
 
@@ -181,8 +183,9 @@ export async function duplicateProject(projectId: string): Promise<{ error?: str
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Projet « ${source.name} » dupliqué`,
+      projectId: newProjectId,
     },
   });
 
@@ -209,6 +212,7 @@ export async function getProjectDetail(projectId: string) {
       client: true,
       studios: { include: { studio: true } },
       milestones: { orderBy: { dueDate: "asc" } },
+      journalEntries: { orderBy: { createdAt: "desc" } },
       // Écritures rattachées directement au projet ("AGENCE"/hors-tâche
       // n'existe pas ici puisque c'est justement un vrai projet) — voir
       // src/lib/data/time-entries.ts pour la même logique côté budget global.
@@ -296,8 +300,9 @@ export async function updateProject(input: UpdateProjectInput): Promise<{ error?
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Projet « ${name} » modifié`,
+      projectId,
     },
   });
 
@@ -319,8 +324,9 @@ export async function setProjectArchived(input: z.infer<typeof toggleArchiveSche
   await db.journalEntry.create({
     data: {
       actorId: session.user.personId,
-      actorName: session.user.name ?? session.user.email ?? "Anonyme",
+      actorName: await currentActorName(session),
       action: `Projet « ${project.name} » ${archived ? "archivé" : "réactivé"}`,
+      projectId,
     },
   });
 
