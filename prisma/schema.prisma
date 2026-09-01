@@ -209,6 +209,11 @@ enum ProjectType {
   EQUIPE_EDUCATIVE
   EUROPEEN
   FONCTIONNEMENT
+  /// Éducation permanente — reconnaissance/subvention du secteur associatif
+  /// belge, distincte d'ÉQUIPE_ÉDUCATIVE (qui désigne un pôle interne, pas
+  /// une catégorie de financement). Avec EUROPEEN, alimente le portail de
+  /// suivi des subsides (voir /subventions).
+  EP
 }
 
 /// Client au sens organisation (ONG, fédération, service interne…), distinct

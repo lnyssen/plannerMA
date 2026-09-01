@@ -1,14 +1,16 @@
-// Export CSV du tableau de bord (budget de temps vs réel) — mêmes lignes et
-// le même calcul que dashboard-view.tsx (computeDashboardRows), pour un
-// export toujours identique à ce qui est affiché.
+// Export CSV du portail Subventions — mêmes lignes et le même calcul que
+// subventions-view.tsx (computeDashboardRows), filtré aux mêmes deux
+// catégories de financement (EP, Européen).
 
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { listProjectsWithBudget } from "@/lib/data/time-entries";
+import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
 import { toIsoDate } from "@/lib/planning/dates";
 import { computeDashboardRows, formatDurationFr } from "@/lib/planning/time";
 
+const GRANT_TYPES = ["EP", "EUROPEEN"] as const;
 const PACE_LABEL = { ahead: "En avance", onTrack: "Dans les temps", behind: "En retard" };
 
 function csvCell(value: string): string {
@@ -29,23 +31,26 @@ export async function GET() {
   const [projects, statuses] = await Promise.all([listProjectsWithBudget(), listTaskStatuses()]);
   const allStatuses = statuses.map((s) => ({ position: s.position, isDone: s.isDone }));
   const rows = computeDashboardRows(
-    projects.map((p) => ({
-      id: p.id,
-      name: p.name,
-      clientName: p.client.name,
-      projectType: p.projectType,
-      budgetHours: p.budgetHours!,
-      timeEntries: [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)],
-      taskStatuses: p.tasks.map((t) => t.status),
-    })),
+    projects
+      .filter((p) => (GRANT_TYPES as readonly string[]).includes(p.projectType))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        clientName: p.client.name,
+        projectType: p.projectType,
+        budgetHours: p.budgetHours!,
+        timeEntries: [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)],
+        taskStatuses: p.tasks.map((t) => t.status),
+      })),
     allStatuses,
   );
 
-  const header = ["Client", "Projet", "Budget_h", "Réalisé_h", "Consommé_%", "Avancement_%", "Rythme"];
+  const header = ["Catégorie", "Client", "Projet", "Budget_h", "Réalisé_h", "Consommé_%", "Avancement_%", "Rythme"];
   let csv = csvRow(header);
 
   for (const r of rows) {
     csv += csvRow([
+      PROJECT_TYPE_LABELS[r.projectType],
       r.clientName,
       r.name,
       formatDurationFr(r.budgetMinutes),
@@ -56,13 +61,10 @@ export async function GET() {
     ]);
   }
 
-  // BOM UTF-8 en tête : voir api/export/time-entries pour la même nécessité
-  // (Excel Windows ignore sinon l'encodage déclaré et rouvre en page de code
-  // système, illisible sur les accents).
-  return new NextResponse("\uFEFF" + csv, {
+  return new NextResponse(String.fromCharCode(0xfeff) + csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="tableau-de-bord-${toIsoDate(new Date())}.csv"`,
+      "Content-Disposition": `attachment; filename="subventions-${toIsoDate(new Date())}.csv"`,
       "Cache-Control": "private, max-age=0, no-cache",
     },
   });

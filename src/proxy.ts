@@ -34,7 +34,7 @@ export default auth((req) => {
   // ADMIN et le reste, plutôt que trois paliers à maintenir cohérents).
   if (
     isLoggedIn &&
-    (pathname.startsWith("/charge") || pathname.startsWith("/tableau-de-bord")) &&
+    (pathname.startsWith("/charge") || pathname.startsWith("/tableau-de-bord") || pathname.startsWith("/subventions")) &&
     req.auth?.user.role !== "ADMIN"
   ) {
     return NextResponse.redirect(new URL("/projets", req.nextUrl.origin));

@@ -55,6 +55,7 @@ export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   EQUIPE_EDUCATIVE: "Équipe éducative",
   EUROPEEN: "Européen",
   FONCTIONNEMENT: "Fonctionnement",
+  EP: "Éducation permanente",
 };
 
 /** Heure locale-affichage (le stockage reste UTC, voir dates.ts) au format "9h05". */

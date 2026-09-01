@@ -30,7 +30,7 @@ async function resolveClientId(ref: z.infer<typeof clientRefSchema>): Promise<st
   return client.id;
 }
 
-const projectTypeSchema = z.enum(["EXTERNE", "EQUIPE_EDUCATIVE", "EUROPEEN", "FONCTIONNEMENT"]);
+const projectTypeSchema = z.enum(["EXTERNE", "EQUIPE_EDUCATIVE", "EUROPEEN", "FONCTIONNEMENT", "EP"]);
 
 const createProjectSchema = z.object({
   name: z.string().trim().min(1, "Le nom du projet est requis."),

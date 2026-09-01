@@ -34,6 +34,7 @@ export default async function DashboardPage() {
         id: p.id,
         name: p.name,
         clientName: p.client.name,
+        projectType: p.projectType,
         budgetHours: p.budgetHours!,
         timeEntries: [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)],
         taskStatuses: p.tasks.map((t) => t.status),
