@@ -16,6 +16,10 @@ export const secondaryButtonClass =
 export const dangerButtonClass =
   `${BUTTON_BASE} text-alert transition-colors duration-100 hover:bg-alert-wash active:bg-alert-wash`;
 
+/** Action destructrice mise en avant — le bouton de confirmation d'une suppression, où l'alerte doit peser autant qu'un bouton primaire. */
+export const dangerSolidButtonClass =
+  `${BUTTON_BASE} bg-alert text-paper transition-[opacity,transform] duration-100 hover:opacity-85 active:scale-[0.97] active:opacity-100 disabled:opacity-60 disabled:active:scale-100`;
+
 export const dangerOutlineButtonClass =
   `${BUTTON_BASE} border-[1.5px] border-alert text-alert bg-transparent transition-colors duration-100 hover:bg-alert-wash active:bg-alert-wash`;
 
@@ -25,10 +29,10 @@ export const textButtonClass = "rounded-full transition-opacity duration-100 hov
 // Variantes pour la barre latérale (fond violet --color-rail) : mêmes
 // principes (opacité + léger tassement au clic), déclinés en blanc.
 export const primaryOnRailButtonClass =
-  "flex h-10 items-center justify-center rounded-full bg-white text-rail transition-[opacity,transform] duration-100 hover:opacity-85 active:scale-[0.97] active:opacity-100";
+  `${BUTTON_BASE} bg-white text-rail transition-[opacity,transform] duration-100 hover:opacity-85 active:scale-[0.97] active:opacity-100`;
 
 export const secondaryOnRailButtonClass =
-  "flex h-10 items-center justify-center rounded-full border-[1.5px] border-white text-white bg-transparent transition-colors duration-100 hover:bg-white/10 active:bg-white/20";
+  `${BUTTON_BASE} border-[1.5px] border-white text-white bg-transparent transition-colors duration-100 hover:bg-white/10 active:bg-white/20`;
 
 export const iconButtonOnRailClass =
   "rounded-full text-white transition-opacity duration-100 hover:opacity-75 active:opacity-100";

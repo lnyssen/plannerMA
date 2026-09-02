@@ -2,6 +2,8 @@
 
 import { AlertTriangle, MessageSquare, Paperclip, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { useMemo, useState, useTransition } from "react";
 import { checkBulkReassignCapacity } from "@/lib/actions/capacity";
 import { bulkUpdateTasks } from "@/lib/actions/tasks";
@@ -87,6 +89,8 @@ export function TasksTable({
   hidePersonColumn?: boolean;
 }) {
   const router = useRouter();
+  const ask = useConfirm();
+  const toast = useToast();
   const columns = hidePersonColumn ? ALL_COLUMNS.filter((c) => c.key !== "person") : ALL_COLUMNS;
   const [search, setSearch] = useState("");
   const [studioFilter, setStudioFilter] = useState<string[]>([]);
@@ -130,18 +134,20 @@ export function TasksTable({
           estimatedHalfDays: t.estimatedHalfDays,
         })),
       });
-      if (
-        warning &&
-        !window.confirm(
-          `${warning.personName} sera chargé·e à ${warning.ratioPercent}% la semaine du ${formatShortFr(warning.weekStart)} avec ces tâches incluses. Continuer ?`,
-        )
-      ) {
-        return;
+      if (warning) {
+        const ok = await ask({
+          title: "Cette attribution met la personne en surcharge",
+          body: `${warning.personName} sera chargé·e à ${warning.ratioPercent}% la semaine du ${formatShortFr(warning.weekStart)} avec ces tâches incluses.`,
+          confirmLabel: "Attribuer quand même",
+        });
+        if (!ok) return;
       }
     }
 
     startBulkTransition(async () => {
+      const count = selectedIds.length;
       await bulkUpdateTasks({ taskIds: selectedIds, assigneeId: newAssigneeId === "__none" ? null : newAssigneeId });
+      toast(`${count} tâche${count > 1 ? "s" : ""} réattribuée${count > 1 ? "s" : ""}.`);
       setSelectedIds([]);
       router.refresh();
     });

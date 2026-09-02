@@ -2,6 +2,8 @@
 
 import { CheckCircle2, ClipboardCheck, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { useState, useTransition } from "react";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
 import type { TaskFormValues } from "@/components/modals/task-form-fields";
@@ -31,13 +33,22 @@ export function DemandesView({
   tasks: TaskOption[];
 }) {
   const router = useRouter();
+  const ask = useConfirm();
+  const toast = useToast();
   const [, startTransition] = useTransition();
   const [converting, setConverting] = useState<RequestSummary | null>(null);
 
-  function dismiss(id: string) {
-    if (!confirm("Écarter cette demande ? Elle disparaît de la liste, sans créer de tâche.")) return;
+  async function dismiss(id: string) {
+    const ok = await ask({
+      title: "Écarter cette demande ?",
+      body: "Elle disparaît de la liste sans créer de tâche, et ne pourra pas être récupérée.",
+      confirmLabel: "Écarter",
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       await deleteRequest(id);
+      toast("Demande écartée.");
       router.refresh();
     });
   }

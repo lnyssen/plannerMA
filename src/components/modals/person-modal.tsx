@@ -3,6 +3,7 @@
 import type { Role } from "@prisma/client";
 import { AlertTriangle, KeyRound, Mail, Trash2, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useEffect, useState, useTransition } from "react";
 import { createPerson, deletePerson, getPersonDetail, invitePerson, removeUserAccess, resetPassword, updatePerson } from "@/lib/actions/people";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -26,6 +27,7 @@ export function PersonModal({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const ask = useConfirm();
   const [pending, startTransition] = useTransition();
   const [loading, setLoading] = useState(!!personId);
   const [name, setName] = useState("");
@@ -67,9 +69,15 @@ export function PersonModal({
     };
   }, [personId]);
 
-  function removeAccess() {
+  async function removeAccess() {
     if (!personId || !linkedUser) return;
-    if (!confirm(`Retirer l’accès de connexion pour ${linkedUser.email} ? La fiche personne et son historique restent intacts.`)) return;
+    const ok = await ask({
+      title: `Retirer l’accès de connexion pour ${linkedUser.email} ?`,
+      body: "La fiche personne et son historique restent intacts ; seule la connexion est supprimée.",
+      confirmLabel: "Retirer l’accès",
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const result = await removeUserAccess(personId);
       if (result.error) {
@@ -104,9 +112,14 @@ export function PersonModal({
     });
   }
 
-  function handleResetPassword() {
+  async function handleResetPassword() {
     if (!personId || !linkedUser) return;
-    if (!confirm(`Générer un nouveau mot de passe pour ${linkedUser.email} ? L’ancien cessera de fonctionner immédiatement.`)) return;
+    const ok = await ask({
+      title: `Générer un nouveau mot de passe pour ${linkedUser.email} ?`,
+      body: "L’ancien cesse de fonctionner immédiatement.",
+      confirmLabel: "Générer",
+    });
+    if (!ok) return;
     setError(null);
     startTransition(async () => {
       const result = await resetPassword(personId);
@@ -123,9 +136,15 @@ export function PersonModal({
     });
   }
 
-  function remove() {
+  async function remove() {
     if (!personId) return;
-    if (!confirm(`Supprimer définitivement ${name || "cette personne"} de l’équipe ? Cette action est irréversible.`)) return;
+    const ok = await ask({
+      title: `Supprimer définitivement ${name || "cette personne"} de l’équipe ?`,
+      body: "Cette action est irréversible.",
+      confirmLabel: "Supprimer définitivement",
+      danger: true,
+    });
+    if (!ok) return;
     setError(null);
     startTransition(async () => {
       const result = await deletePerson(personId);

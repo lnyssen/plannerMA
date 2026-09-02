@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronUp, Mail, Plus, RefreshCw, ScrollText, Settings, Tags, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useState, useTransition } from "react";
 import { sendDailyDigestNow } from "@/lib/actions/account";
 import { createStudio, renameStudio } from "@/lib/actions/studios";
@@ -55,6 +56,7 @@ export function ReglagesView({
   journal: JournalEntrySummary[];
 }) {
   const router = useRouter();
+  const ask = useConfirm();
   const [tab, setTab] = useState<"general" | "categories" | "corbeille" | "journal">("general");
   const [, startTransition] = useTransition();
   const [newStudioName, setNewStudioName] = useState("");
@@ -245,8 +247,14 @@ export function ReglagesView({
                 </label>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!confirm(`Supprimer le statut « ${s.name} » ?`)) return;
+                  onClick={async () => {
+                    const ok = await ask({
+                      title: `Supprimer le statut « ${s.name} » ?`,
+                      body: "Les tâches qui portent ce statut devront en recevoir un autre.",
+                      confirmLabel: "Supprimer",
+                      danger: true,
+                    });
+                    if (!ok) return;
                     setStatusError(null);
                     startTransition(async () => {
                       const result = await deleteTaskStatus(s.id);
@@ -346,8 +354,14 @@ export function ReglagesView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!confirm(`Supprimer définitivement « ${t.title} » ? C’est irréversible.`)) return;
+                  onClick={async () => {
+                    const ok = await ask({
+                      title: `Supprimer définitivement « ${t.title} » ?`,
+                      body: "La tâche quitte la corbeille pour de bon : elle ne sera plus restaurable.",
+                      confirmLabel: "Supprimer définitivement",
+                      danger: true,
+                    });
+                    if (!ok) return;
                     startTransition(async () => {
                       await destroyTask(t.id);
                       router.refresh();
@@ -415,6 +429,7 @@ function CategoryGroup({
   router: { refresh: () => void };
   startTransition: (callback: () => void) => void;
 }) {
+  const ask = useConfirm();
   return (
     <div className="mb-5">
       <h3 className="mb-2 text-xs font-semibold text-ink">{title}</h3>
@@ -469,11 +484,18 @@ function CategoryGroup({
               type="button"
               onClick={async () => {
                 const usage = await countTaskCategoryUsage(c.id);
-                const message =
+                // Le corps porte la conséquence, pas une reformulation du titre :
+                // ce qui compte ici est le nombre d'écritures qui perdent leur classement.
+                const consequence =
                   usage > 0
-                    ? `Supprimer la catégorie « ${c.name} » ? ${usage} écriture${usage > 1 ? "s" : ""} de temps perdra${usage > 1 ? "ont" : ""} ce classement.`
-                    : `Supprimer la catégorie « ${c.name} » ?`;
-                if (!confirm(message)) return;
+                    ? `${usage} écriture${usage > 1 ? "s" : ""} de temps perdra${usage > 1 ? "ont" : ""} ce classement.`
+                    : "Aucune écriture de temps n'utilise cette catégorie.";
+                if (!(await ask({
+                  title: `Supprimer la catégorie « ${c.name} » ?`,
+                  body: consequence,
+                  confirmLabel: "Supprimer",
+                  danger: true,
+                }))) return;
                 onError(null);
                 startTransition(async () => {
                   const result = await deleteTaskCategory(c.id);

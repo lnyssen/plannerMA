@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useEffect, useState, useTransition } from "react";
 import { createClient, deleteClient, getClientDetail, updateClientDetail } from "@/lib/actions/clients";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
@@ -18,6 +19,7 @@ export function ClientDetailModal({
   isAdmin: boolean;
 }) {
   const router = useRouter();
+  const ask = useConfirm();
   const [pending, startTransition] = useTransition();
   const [loading, setLoading] = useState(!!clientId);
   const [projectCount, setProjectCount] = useState(0);
@@ -74,9 +76,15 @@ export function ClientDetailModal({
     });
   }
 
-  function remove() {
+  async function remove() {
     if (!clientId) return;
-    if (!confirm(`Retirer « ${name} » ? Impossible si ce client a des projets.`)) return;
+    const ok = await ask({
+      title: `Retirer « ${name} » ?`,
+      body: "Le retrait est refusé si ce client porte encore des projets.",
+      confirmLabel: "Retirer",
+      danger: true,
+    });
+    if (!ok) return;
     setError(null);
     startTransition(async () => {
       const result = await deleteClient(clientId);

@@ -3,6 +3,8 @@
 import { AlertTriangle, AtSign, Copy, ExternalLink, History, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { useEffect, useState, useTransition } from "react";
 import { addLinkAttachment, deleteAttachment, uploadFileAttachment } from "@/lib/actions/attachments";
 import { addComment } from "@/lib/actions/comments";
@@ -40,6 +42,8 @@ export function TaskDetailView({
   tasks?: TaskOption[];
 }) {
   const router = useRouter();
+  const ask = useConfirm();
+  const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [task, setTask] = useState<TaskDetail>(initialTask);
   const [values, setValues] = useState<TaskFormValues>({
@@ -113,19 +117,27 @@ export function TaskDetailView({
         setError(result.error);
         return;
       }
+      toast("Tâche enregistrée.");
       router.push("/taches");
       router.refresh();
     });
   }
 
-  function trash() {
-    if (!confirm(`Mettre « ${task.title} » à la corbeille ?`)) return;
+  async function trash() {
+    const ok = await ask({
+      title: `Mettre « ${task.title} » à la corbeille ?`,
+      body: "Elle disparaît des listes et du planning, mais reste restaurable depuis Réglages → Corbeille.",
+      confirmLabel: "Mettre à la corbeille",
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const result = await trashTask(task.id);
       if (result.error) {
         setError(result.error);
         return;
       }
+      toast(`« ${task.title} » est à la corbeille.`);
       router.push("/taches");
       router.refresh();
     });
@@ -134,19 +146,26 @@ export function TaskDetailView({
   function restore() {
     startTransition(async () => {
       await restoreTask(task.id);
+      toast(`« ${task.title} » est restaurée.`);
       router.push("/taches");
       router.refresh();
     });
   }
 
-  function duplicate() {
-    if (!confirm(`Dupliquer « ${task.title} » ? Décalée pour démarrer aujourd’hui.`)) return;
+  async function duplicate() {
+    const ok = await ask({
+      title: `Dupliquer « ${task.title} » ?`,
+      body: "La copie démarre aujourd’hui et conserve la même durée.",
+      confirmLabel: "Dupliquer",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const result = await duplicateTask(task.id);
       if (result.error) {
         setError(result.error);
         return;
       }
+      toast("Copie créée.");
       router.push(`/taches/${result.id}`);
       router.refresh();
     });

@@ -119,3 +119,16 @@ body {
   font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
 }
+
+/* Entrée d'un toast (voir src/components/ui/toast.tsx) — appliqué via
+   `motion-safe:`, donc ignoré si l'utilisateur a demandé moins d'animation. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

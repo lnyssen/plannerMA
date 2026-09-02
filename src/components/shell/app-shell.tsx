@@ -31,7 +31,9 @@ import { NavOrderModal } from "@/components/modals/nav-order-modal";
 import { NotificationPrefsModal } from "@/components/modals/notification-prefs-modal";
 import { RequestModal } from "@/components/modals/request-modal";
 import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass } from "@/components/ui/buttons";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { ToastProvider } from "@/components/ui/toast";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -549,6 +551,8 @@ export function AppShell({
   }
 
   return (
+    <ToastProvider>
+    <ConfirmProvider>
     <CreateModalsProvider open={openCreateModal}>
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside
@@ -648,5 +652,7 @@ export function AppShell({
       <CommandPalette navEntries={orderedEntries} />
     </div>
     </CreateModalsProvider>
+    </ConfirmProvider>
+    </ToastProvider>
   );
 }

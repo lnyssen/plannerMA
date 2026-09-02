@@ -15,6 +15,7 @@ import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/li
 import { fieldInputClass, FieldLabel } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useToast } from "@/components/ui/toast";
 import { EntryContextLabelParts } from "@/components/ui/task-context-label";
 import { EntryContextFields, type EntryContextValue } from "@/components/temps/entry-context-fields";
 import { SegmentedControl, type SegmentedOption } from "@/components/ui/segmented-control";
@@ -66,6 +67,7 @@ export function TempsView({
   hasPerson: boolean;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [, startTransition] = useTransition();
   const [tab, setTab] = useState<"mine" | "team">("mine");
   const [mineView, setMineView] = useState<MineView>("calendar");
@@ -107,6 +109,7 @@ export function TempsView({
         setError(result.error);
         return;
       }
+      toast("Minuteur démarré.");
       router.refresh();
     });
   }
@@ -114,6 +117,7 @@ export function TempsView({
   function handleStop(entryId: string) {
     startTransition(async () => {
       await stopTimer(entryId);
+      toast("Minuteur arrêté, temps enregistré.");
       router.refresh();
     });
   }
@@ -133,6 +137,7 @@ export function TempsView({
         setError(result.error);
         return;
       }
+      toast("Temps ajouté.");
       setManualNote("");
       setShowManual(false);
       router.refresh();
@@ -142,6 +147,7 @@ export function TempsView({
   function handleDelete(entryId: string) {
     startTransition(async () => {
       await deleteTimeEntry(entryId);
+      toast("Écriture supprimée.");
       router.refresh();
     });
   }

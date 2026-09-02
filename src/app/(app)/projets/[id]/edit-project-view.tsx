@@ -4,6 +4,8 @@ import type { ProjectType } from "@prisma/client";
 import { AlertTriangle, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
 import { duplicateProject, getProjectDetail, setProjectArchived, updateProject, type ProjectDetail } from "@/lib/actions/projects";
@@ -38,6 +40,8 @@ export function EditProjectView({
   isAdmin: boolean;
 }) {
   const router = useRouter();
+  const ask = useConfirm();
+  const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [project, setProject] = useState<ProjectDetail>(initialProject);
   const [name, setName] = useState(initialProject.name);
@@ -155,6 +159,7 @@ export function EditProjectView({
         setError(result.error);
         return;
       }
+      toast("Projet enregistré.");
       router.push("/projets");
       router.refresh();
     });
@@ -163,19 +168,26 @@ export function EditProjectView({
   function toggleArchived() {
     startTransition(async () => {
       await setProjectArchived({ projectId: project.id, archived: !project.archived });
+      toast(project.archived ? "Projet réactivé." : "Projet archivé.");
       router.push("/projets");
       router.refresh();
     });
   }
 
-  function duplicate() {
-    if (!confirm(`Dupliquer « ${project.name} » ? Les tâches actives (avec sous-tâches, dépendances et jalons) sont copiées, décalées pour démarrer aujourd’hui.`)) return;
+  async function duplicate() {
+    const ok = await ask({
+      title: `Dupliquer « ${project.name} » ?`,
+      body: "Les tâches actives sont copiées avec leurs sous-tâches, dépendances et jalons, décalées pour démarrer aujourd’hui.",
+      confirmLabel: "Dupliquer",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const result = await duplicateProject(project.id);
       if (result.error) {
         setError(result.error);
         return;
       }
+      toast("Copie du projet créée.");
       router.push(`/projets/${result.id}`);
       router.refresh();
     });
