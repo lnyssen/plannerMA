@@ -1,9 +1,10 @@
 "use client";
 
-import { Building2, Clock, Globe, Mail, Phone, Plus } from "lucide-react";
+import { Building2, Globe, Mail, Phone, Plus } from "lucide-react";
 import { useState } from "react";
 import { ClientDetailModal } from "@/components/modals/client-detail-modal";
 import { primaryButtonClass } from "@/components/ui/buttons";
+import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { ClientWithCounts } from "@/lib/data/clients";
 import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
@@ -12,61 +13,6 @@ import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 function clientMinutes(client: ClientWithCounts): number {
   const entries = client.projects.flatMap((p) => [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)]);
   return sumDurationMinutes(entries);
-}
-
-function ClientCard({ client, onOpen }: { client: ClientWithCounts; onOpen: (id: string) => void }) {
-  const count = client._count.projects;
-  const activeCount = client.projects.filter((p) => !p.archived).length;
-  const minutes = clientMinutes(client);
-  const hasContact = client.contactName || client.contactEmail || client.contactPhone || client.website;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(client.id)}
-      className="rounded-lg border border-line p-4 text-left transition-colors duration-100 hover:border-heading active:bg-wash"
-      title="Modifier le client"
-    >
-      {/* min-h réserve la place de deux lignes : un nom court ne doit pas
-          remonter "N projets" plus haut qu'un nom qui retourne à la ligne —
-          sinon cette ligne (et tout ce qui suit) ne s'aligne plus d'une carte à l'autre. */}
-      <div className="mb-1 min-h-12 font-[family-name:var(--font-body)] text-base font-bold text-heading">{client.name}</div>
-      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold text-ink">
-        <span>
-          {count} projet{count === 1 ? "" : "s"}
-          {activeCount !== count && <span className="font-normal text-ink-muted"> ({activeCount} actif{activeCount === 1 ? "" : "s"})</span>}
-        </span>
-        {minutes > 0 && (
-          <span className="flex items-center gap-1 text-ink-muted">
-            <Clock size={12} className="flex-shrink-0" aria-hidden="true" /> {formatDurationFr(minutes)}
-          </span>
-        )}
-      </div>
-
-      {hasContact ? (
-        <div className="flex flex-col gap-1 text-sm text-ink-muted">
-          {client.contactName && <div>{client.contactName}</div>}
-          {client.contactEmail && (
-            <div className="flex items-center gap-1.5">
-              <Mail size={12} aria-hidden="true" /> {client.contactEmail}
-            </div>
-          )}
-          {client.contactPhone && (
-            <div className="flex items-center gap-1.5">
-              <Phone size={12} aria-hidden="true" /> {client.contactPhone}
-            </div>
-          )}
-          {client.website && (
-            <div className="flex items-center gap-1.5">
-              <Globe size={12} aria-hidden="true" /> {client.website}
-            </div>
-          )}
-        </div>
-      ) : (
-        <p className="text-sm text-ink-muted">Aucune coordonnée enregistrée.</p>
-      )}
-    </button>
-  );
 }
 
 export function ClientsView({
@@ -112,11 +58,93 @@ export function ClientsView({
           onAction={isAdmin ? () => setOpenClientId("new") : undefined}
         />
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
-          {clients.map((c) => (
-            <ClientCard key={c.id} client={c} onOpen={setOpenClientId} />
-          ))}
-        </div>
+        <DataTable
+          rows={clients}
+          getRowId={(c) => c.id}
+          onRowClick={(c) => setOpenClientId(c.id)}
+          storageKey="planning-studios:colonnes:clients"
+          columns={[
+            {
+              key: "nom",
+              label: "Client",
+              required: true,
+              sortValue: (c) => c.name,
+              render: (c) => <span className="font-semibold text-heading">{c.name}</span>,
+            },
+            {
+              key: "projets",
+              label: "Projets",
+              sortValue: (c) => c._count.projects,
+              cellClassName: "whitespace-nowrap tabular-nums",
+              render: (c) => {
+                const total = c._count.projects;
+                const actifs = c.projects.filter((p) => !p.archived).length;
+                return (
+                  <>
+                    {total}
+                    {actifs !== total && <span className="text-ink-muted"> ({actifs} actif{actifs === 1 ? "" : "s"})</span>}
+                  </>
+                );
+              },
+            },
+            {
+              key: "temps",
+              label: "Temps enregistré",
+              sortValue: (c) => clientMinutes(c),
+              cellClassName: "whitespace-nowrap text-ink-muted tabular-nums",
+              render: (c) => {
+                const m = clientMinutes(c);
+                return m > 0 ? formatDurationFr(m) : "—";
+              },
+            },
+            {
+              key: "contact",
+              label: "Contact",
+              sortValue: (c) => c.contactName ?? "",
+              render: (c) => c.contactName ?? <span className="text-ink-muted">—</span>,
+            },
+            {
+              key: "email",
+              label: "Email",
+              sortValue: (c) => c.contactEmail ?? "",
+              render: (c) =>
+                c.contactEmail ? (
+                  <span className="flex items-center gap-1.5">
+                    <Mail size={12} aria-hidden="true" className="flex-shrink-0 text-ink-muted" /> {c.contactEmail}
+                  </span>
+                ) : (
+                  <span className="text-ink-muted">—</span>
+                ),
+            },
+            {
+              key: "telephone",
+              label: "Téléphone",
+              sortValue: (c) => c.contactPhone ?? "",
+              cellClassName: "whitespace-nowrap",
+              render: (c) =>
+                c.contactPhone ? (
+                  <span className="flex items-center gap-1.5">
+                    <Phone size={12} aria-hidden="true" className="flex-shrink-0 text-ink-muted" /> {c.contactPhone}
+                  </span>
+                ) : (
+                  <span className="text-ink-muted">—</span>
+                ),
+            },
+            {
+              key: "site",
+              label: "Site web",
+              sortValue: (c) => c.website ?? "",
+              render: (c) =>
+                c.website ? (
+                  <span className="flex items-center gap-1.5 truncate">
+                    <Globe size={12} aria-hidden="true" className="flex-shrink-0 text-ink-muted" /> {c.website}
+                  </span>
+                ) : (
+                  <span className="text-ink-muted">—</span>
+                ),
+            },
+          ]}
+        />
       )}
 
       {openClientId && (

@@ -106,6 +106,25 @@ export function EditProjectView({
   const budgetMinutes = project.budgetHours != null ? project.budgetHours * 60 : null;
   const overBudget = budgetMinutes != null && loggedMinutes > budgetMinutes;
 
+  /**
+   * Répartition des heures du projet, de la tâche la plus consommatrice à la
+   * moins. Au-delà de cinq lignes, le reste est regroupé : la question est
+   * « qu'est-ce qui a coûté », pas « la liste exhaustive », qui est déjà
+   * plus bas dans la page.
+   */
+  const consommation = useMemo(() => {
+    const lignes = project.tasks
+      .map((t) => ({ label: t.title, minutes: sumDurationMinutes(t.timeEntries) }))
+      .filter((l) => l.minutes > 0);
+    const horsTache = sumDurationMinutes(project.timeEntries);
+    if (horsTache > 0) lignes.push({ label: "Hors tâche (rattaché au projet)", minutes: horsTache });
+    lignes.sort((a, b) => b.minutes - a.minutes);
+    if (lignes.length <= 6) return lignes;
+    const tete = lignes.slice(0, 5);
+    const reste = lignes.slice(5).reduce((sum, l) => sum + l.minutes, 0);
+    return [...tete, { label: `${lignes.length - 5} autres tâches`, minutes: reste }];
+  }, [project.tasks, project.timeEntries]);
+
   function toggleStudio(id: string) {
     setStudioIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
@@ -252,12 +271,38 @@ export function EditProjectView({
       )}
 
       {overBudget && (
-        <div
-          className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold"
-          style={{ background: "var(--color-alert-wash)", color: "var(--color-alert)" }}
-        >
-          <AlertTriangle size={16} className="flex-shrink-0" />
-          Budget dépassé : {formatDurationFr(loggedMinutes)} enregistrées sur {formatDurationFr(budgetMinutes!)} prévues.
+        <div className="mb-4 rounded-lg px-3 py-2.5" style={{ background: "var(--color-alert-wash)" }}>
+          <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--color-alert)" }}>
+            <AlertTriangle size={16} className="flex-shrink-0" />
+            Budget dépassé de {formatDurationFr(loggedMinutes - budgetMinutes!)} :{" "}
+            {formatDurationFr(loggedMinutes)} enregistrées sur {formatDurationFr(budgetMinutes!)} prévues.
+          </div>
+
+          {/* Annoncer un dépassement sans dire d'où il vient oblige à aller
+              chercher l'information ailleurs, alors qu'elle est déjà à
+              l'écran. La ventilation par tâche répond à la seule question
+              qu'on se pose en lisant ce bandeau : où sont passées les heures. */}
+          {consommation.length > 0 && (
+            <div className="mt-2.5 border-t pt-2.5" style={{ borderColor: "color-mix(in srgb, var(--color-alert) 25%, transparent)" }}>
+              <p className="mb-1.5 text-2xs font-semibold tracking-wide uppercase" style={{ color: "var(--color-alert)" }}>
+                Où sont passées les heures
+              </p>
+              <div className="flex flex-col gap-1">
+                {consommation.map((c) => (
+                  <div key={c.label} className="flex items-center gap-2.5 text-xs">
+                    <span className="min-w-0 flex-1 truncate text-ink">{c.label}</span>
+                    <span className="h-1.5 w-24 flex-shrink-0 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, var(--color-alert) 18%, transparent)" }}>
+                      <span className="block h-full rounded-full" style={{ width: `${(c.minutes / loggedMinutes) * 100}%`, background: "var(--color-alert)" }} />
+                    </span>
+                    <span className="w-16 flex-shrink-0 text-right font-semibold text-ink tabular-nums">{formatDurationFr(c.minutes)}</span>
+                    <span className="w-9 flex-shrink-0 text-right text-ink-muted tabular-nums">
+                      {Math.round((c.minutes / loggedMinutes) * 100)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

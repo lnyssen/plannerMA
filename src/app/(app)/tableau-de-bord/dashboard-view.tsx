@@ -1,5 +1,9 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { AlertTriangle, Download, Flag, LayoutDashboard } from "lucide-react";
 import { secondaryButtonClass } from "@/components/ui/buttons";
+import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MonthlyHoursChart } from "@/components/ui/monthly-hours-chart";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -89,6 +93,7 @@ export function DashboardView({
   allStatuses: ProgressStatus[];
   milestones: UpcomingMilestone[];
 }) {
+  const router = useRouter();
   const rows = computeDashboardRows(projects, allStatuses);
   const todayIso = today();
 
@@ -215,60 +220,71 @@ export function DashboardView({
             </p>
           )}
 
-          <div className="overflow-x-auto rounded-lg border border-line">
-            <table className="w-full min-w-[640px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-line bg-wash text-left text-2xs font-semibold text-ink-muted uppercase">
-                  <th className="px-3 py-2 font-semibold">Projet</th>
-                  <th className="px-3 py-2 font-semibold">Budget</th>
-                  <th className="px-3 py-2 font-semibold">Consommé</th>
-                  <th className="px-3 py-2 font-semibold">Avancement</th>
-                  <th className="px-3 py-2 font-semibold">Rythme</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((p) => (
-                  <tr key={p.id} className="border-b border-line last:border-0">
-                    <td className="px-3 py-2.5">
-                      <p className="font-semibold text-heading">{p.name}</p>
-                      <p className="text-2xs text-ink-muted">{p.clientName}</p>
-                    </td>
-                    <td className="px-3 py-2.5 whitespace-nowrap text-ink-muted tabular-nums">{formatDurationFr(p.budgetMinutes)}</td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-24 flex-shrink-0 bg-line">
-                          <div
-                            className="h-full"
-                            style={{
-                              width: `${Math.min(100, Math.round(p.consumedRatio * 100))}%`,
-                              background: p.consumedRatio > 1 ? "var(--color-alert)" : "var(--color-heading)",
-                            }}
-                          />
-                        </div>
-                        <span
-                          className="flex-shrink-0 text-2xs tabular-nums"
-                          style={{ color: p.consumedRatio > 1 ? "var(--color-alert)" : "var(--color-ink-muted)" }}
-                        >
-                          {Math.round(p.consumedRatio * 100)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-24 flex-shrink-0 bg-line">
-                          <div className="h-full bg-heading" style={{ width: `${Math.round(p.progress * 100)}%` }} />
-                        </div>
-                        <span className="flex-shrink-0 text-2xs tabular-nums text-ink-muted">{Math.round(p.progress * 100)}%</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <PacePill pace={p.pace} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            rows={rows}
+            getRowId={(p) => p.id}
+            onRowClick={(p) => router.push(`/projets/${p.id}`)}
+            storageKey="planning-studios:colonnes:tableau-de-bord"
+            columns={[
+              {
+                key: "projet",
+                label: "Projet",
+                required: true,
+                sortValue: (p) => p.name,
+                render: (p) => (
+                  <>
+                    <p className="font-semibold text-heading">{p.name}</p>
+                    <p className="text-2xs text-ink-muted">{p.clientName}</p>
+                  </>
+                ),
+              },
+              {
+                key: "budget",
+                label: "Budget",
+                sortValue: (p) => p.budgetMinutes,
+                cellClassName: "whitespace-nowrap text-ink-muted tabular-nums",
+                render: (p) => formatDurationFr(p.budgetMinutes),
+              },
+              {
+                key: "consomme",
+                label: "Consommé",
+                sortValue: (p) => p.consumedRatio,
+                render: (p) => (
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-24 flex-shrink-0 rounded-full bg-line">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.round(p.consumedRatio * 100))}%`,
+                          background: p.consumedRatio > 1 ? "var(--color-alert)" : "var(--color-heading)",
+                        }}
+                      />
+                    </div>
+                    <span
+                      className="flex-shrink-0 text-2xs tabular-nums"
+                      style={{ color: p.consumedRatio > 1 ? "var(--color-alert)" : "var(--color-ink-muted)" }}
+                    >
+                      {Math.round(p.consumedRatio * 100)}%
+                    </span>
+                  </div>
+                ),
+              },
+              {
+                key: "avancement",
+                label: "Avancement",
+                sortValue: (p) => p.progress,
+                render: (p) => (
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-24 flex-shrink-0 rounded-full bg-line">
+                      <div className="h-full rounded-full bg-heading" style={{ width: `${Math.round(p.progress * 100)}%` }} />
+                    </div>
+                    <span className="flex-shrink-0 text-2xs tabular-nums text-ink-muted">{Math.round(p.progress * 100)}%</span>
+                  </div>
+                ),
+              },
+              { key: "rythme", label: "Rythme", sortValue: (p) => p.pace, render: (p) => <PacePill pace={p.pace} /> },
+            ]}
+          />
         </>
       )}
     </div>

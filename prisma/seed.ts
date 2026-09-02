@@ -384,6 +384,13 @@ async function main() {
     },
   });
 
+  // Quelles tâches appartiennent à quel projet — sert à rattacher la plupart
+  // des écritures à une tâche précise plutôt qu'au projet en bloc.
+  const tachesParProjet: Record<string, string[]> = {};
+  for (const t of TACHES) {
+    (tachesParProjet[t.projet] ??= []).push(tachesParTitre[t.title]);
+  }
+
   console.log("Semis des écritures de temps (12 mois)…");
   // Réparties sur douze mois pour que l'historique du Tableau de bord ait une
   // vraie courbe, et calibrées pour qu'un projet dépasse son budget (Campagne
@@ -398,7 +405,7 @@ async function main() {
 
   const categoriesParStudio = await db.taskCategory.findMany({ select: { id: true, studioId: true } });
   const ecritures: {
-    personId: string; projectId: string; studioId: string; categoryId: string | null;
+    personId: string; projectId: string; taskId: string | null; studioId: string; categoryId: string | null;
     startedAt: Date; endedAt: Date; note: string | null;
   }[] = [];
 
@@ -417,9 +424,17 @@ async function main() {
         const studioSlug = parmi(profil.studios);
         const studioId = studios[studioSlug];
         const candidates = categoriesParStudio.filter((c) => c.studioId === studioId || c.studioId === null);
+        const cleProjet = parmi(profil.projets);
+        // Environ trois écritures sur quatre se rattachent à une tâche précise,
+        // le reste au projet seul (réunions, coordination, suivi). Tout
+        // rattacher au projet rendait la ventilation par tâche inutile —
+        // 100 % « hors tâche » — et ne ressemblait pas à un vrai relevé.
+        const tachesDuProjet = tachesParProjet[cleProjet] ?? [];
+        const taskId = tachesDuProjet.length > 0 && alea() < 0.75 ? parmi(tachesDuProjet) : null;
         ecritures.push({
           personId: people[profil.qui],
-          projectId: projets[parmi(profil.projets)],
+          projectId: projets[cleProjet],
+          taskId,
           studioId,
           categoryId: candidates.length ? parmi(candidates).id : null,
           startedAt: debut,

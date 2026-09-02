@@ -529,7 +529,7 @@ export default function AidePage() {
           <H2 id="roles">Rôles et droits</H2>
           <P>
             Deux paliers effectifs, pas trois : <strong>administrateur</strong> voit et gère tout — équipe, clients,
-            budgets, Charge, Tableau de bord, Subventions, Demandes, Réglages. Tout autre compte voit ses propres
+            budgets, Charge, Tableau de bord, Projets EP/Européens, Demandes, Réglages. Tout autre compte voit ses propres
             tâches et celles de l’équipe sur les projets, peut commenter, joindre des fichiers, saisir du temps et
             déclarer ses propres absences, mais pas les données de budget ni d’occupation d’équipe, et ne gère ni les
             fiches personnes ni les réglages de fond.

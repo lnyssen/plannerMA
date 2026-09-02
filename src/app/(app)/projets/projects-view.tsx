@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { secondaryButtonClass } from "@/components/ui/buttons";
 import { CreateButton } from "@/components/shell/create-button";
 import { ClientTypeBadge } from "@/components/ui/client-type-badge";
-import { ScrollFade } from "@/components/ui/scroll-fade";
+import { DataTable } from "@/components/ui/data-table";
 import { SearchField } from "@/components/ui/search-field";
 import { SegmentedControl, type SegmentedOption } from "@/components/ui/segmented-control";
 import { StudioBadge } from "@/components/ui/studio-badge";
@@ -333,103 +333,107 @@ export function ProjectsView({
           <ProjectGroup title="Clients externes" projects={external} statuses={statuses} onOpen={(id) => router.push(`/projets/${id}`)} />
         </>
       ) : (
-        <ScrollFade>
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <th className="sticky left-0 z-10 min-w-[220px] bg-paper px-3 py-2 text-left text-xs font-semibold text-ink-muted uppercase">
-                  Projet
-                </th>
-                <th className="min-w-[160px] px-3 py-2 text-left text-xs font-semibold text-ink-muted uppercase">
-                  Studios
-                </th>
-                <th className="min-w-[140px] px-3 py-2 text-left text-xs font-semibold text-ink-muted uppercase">
-                  Avancement
-                </th>
-                <th className="min-w-[90px] px-3 py-2 text-center text-xs font-semibold text-ink-muted uppercase">
-                  Tâches
-                </th>
-                <th className="min-w-[200px] px-3 py-2 text-left text-xs font-semibold text-ink-muted uppercase">
-                  Prochain jalon
-                </th>
-                <th className="min-w-[90px] px-3 py-2 text-center text-xs font-semibold text-ink-muted uppercase">
-                  En retard
-                </th>
-                <th className="min-w-[90px] px-3 py-2 text-center text-xs font-semibold text-ink-muted uppercase">
-                  Budget
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ project, progress, next, overdueCount, overBudget }) => (
-                <tr key={project.id} className="border-t border-line">
-                  <td className="sticky left-0 z-10 bg-paper px-3 py-2.5">
-                    <Link
-                      href={`/projets/${project.id}`}
-                      className="text-left text-sm font-bold text-heading underline-offset-2 hover:underline"
-                    >
-                      {project.name}
-                    </Link>
-                    <div className="text-xs text-ink-muted">{project.client.name}</div>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex flex-wrap gap-1">
-                      {project.studios.map(({ studio }) => (
-                        <StudioBadge key={studio.id} name={studio.name} fillHex={studio.fillHex} colorHex={studio.colorHex} />
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-20 flex-shrink-0 bg-line">
-                        <div className="h-full bg-heading" style={{ width: `${Math.round(progress * 100)}%` }} />
-                      </div>
-                      <span className="text-2xs tabular-nums text-ink-muted">{Math.round(progress * 100)}%</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5 text-center text-sm tabular-nums text-ink">{project._count.tasks}</td>
-                  <td className="px-3 py-2.5 text-sm text-ink">
-                    {next ? (
-                      <span className="flex items-center gap-1.5">
-                        <Flag size={12} className="flex-shrink-0 text-ink-muted" aria-hidden="true" />
-                        {next.title}
-                        <span className="text-2xs text-ink-muted tabular-nums">— {formatShortFr(toIsoDate(next.dueDate))}</span>
-                      </span>
-                    ) : (
-                      <span className="text-ink-muted">Aucun jalon à venir</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    {overdueCount > 0 ? (
-                      <span
-                        className="inline-flex items-center gap-1 text-sm font-semibold"
-                        style={{ color: "var(--color-alert)" }}
-                        title={`${overdueCount} jalon${overdueCount === 1 ? "" : "s"} en retard`}
-                      >
-                        <AlertTriangle size={13} /> {overdueCount}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-ink-muted">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    {overBudget ? (
-                      <span
-                        className="inline-flex items-center gap-1 text-sm font-semibold"
-                        style={{ color: "var(--color-alert)" }}
-                        title="Temps dépassé"
-                      >
-                        <AlertTriangle size={13} />
-                      </span>
-                    ) : (
-                      <span className="text-sm text-ink-muted">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollFade>
+        <DataTable
+          rows={rows}
+          getRowId={(r) => r.project.id}
+          onRowClick={(r) => router.push(`/projets/${r.project.id}`)}
+          storageKey="planning-studios:colonnes:projets"
+          columns={[
+            {
+              key: "projet",
+              label: "Projet",
+              required: true,
+              sortValue: (r) => r.project.name,
+              render: (r) => (
+                <>
+                  <span className="font-bold text-heading">{r.project.name}</span>
+                  <div className="text-2xs text-ink-muted">{r.project.client.name}</div>
+                </>
+              ),
+            },
+            {
+              key: "studios",
+              label: "Studios",
+              render: (r) => (
+                <div className="flex flex-wrap gap-1">
+                  {r.project.studios.map(({ studio }) => (
+                    <StudioBadge key={studio.id} name={studio.name} fillHex={studio.fillHex} colorHex={studio.colorHex} />
+                  ))}
+                </div>
+              ),
+            },
+            {
+              key: "avancement",
+              label: "Avancement",
+              sortValue: (r) => r.progress,
+              render: (r) => (
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-20 flex-shrink-0 rounded-full bg-line">
+                    <div className="h-full rounded-full bg-heading" style={{ width: `${Math.round(r.progress * 100)}%` }} />
+                  </div>
+                  <span className="text-2xs tabular-nums text-ink-muted">{Math.round(r.progress * 100)}%</span>
+                </div>
+              ),
+            },
+            {
+              key: "taches",
+              label: "Tâches",
+              sortValue: (r) => r.project._count.tasks,
+              cellClassName: "text-center tabular-nums",
+              headClassName: "text-center",
+              render: (r) => r.project._count.tasks,
+            },
+            {
+              key: "jalon",
+              label: "Prochain jalon",
+              sortValue: (r) => (r.next ? toIsoDate(r.next.dueDate) : "\uffff"),
+              render: (r) =>
+                r.next ? (
+                  <span className="flex items-center gap-1.5">
+                    <Flag size={12} className="flex-shrink-0 text-ink-muted" aria-hidden="true" />
+                    {r.next.title}
+                    <span className="text-2xs text-ink-muted tabular-nums">— {formatShortFr(toIsoDate(r.next.dueDate))}</span>
+                  </span>
+                ) : (
+                  <span className="text-ink-muted">Aucun jalon à venir</span>
+                ),
+            },
+            {
+              key: "retard",
+              label: "En retard",
+              sortValue: (r) => -r.overdueCount,
+              cellClassName: "text-center",
+              headClassName: "text-center",
+              render: (r) =>
+                r.overdueCount > 0 ? (
+                  <span
+                    className="inline-flex items-center gap-1 font-semibold"
+                    style={{ color: "var(--color-alert)" }}
+                    title={`${r.overdueCount} jalon${r.overdueCount === 1 ? "" : "s"} en retard`}
+                  >
+                    <AlertTriangle size={13} /> {r.overdueCount}
+                  </span>
+                ) : (
+                  <span className="text-ink-muted">—</span>
+                ),
+            },
+            {
+              key: "budget",
+              label: "Budget",
+              sortValue: (r) => (r.overBudget ? 0 : 1),
+              cellClassName: "text-center",
+              headClassName: "text-center",
+              render: (r) =>
+                r.overBudget ? (
+                  <span className="inline-flex items-center gap-1 font-semibold" style={{ color: "var(--color-alert)" }} title="Temps dépassé">
+                    <AlertTriangle size={13} />
+                  </span>
+                ) : (
+                  <span className="text-ink-muted">—</span>
+                ),
+            },
+          ]}
+        />
       )}
     </div>
   );
