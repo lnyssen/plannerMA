@@ -146,3 +146,17 @@ body {
   background: hsl(var(--avatar-h) 32% 26%);
   color: hsl(var(--avatar-h) 72% 82%);
 }
+
+/* Entrée du panneau latéral (voir src/components/modals/side-panel.tsx) —
+   appliqué via `motion-safe:`, donc ignoré si l'utilisateur a demandé moins
+   d'animation. */
+@keyframes panel-in {
+  from {
+    transform: translateX(1.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

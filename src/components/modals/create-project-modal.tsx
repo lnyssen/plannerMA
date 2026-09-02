@@ -9,7 +9,8 @@ import type { StudioSummary } from "@/lib/data/studios";
 import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
 import { ClientPicker } from "./client-picker";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
-import { FieldLabel, ModalShell, fieldInputClass } from "./modal-shell";
+import { FieldLabel, fieldInputClass } from "./modal-shell";
+import { SidePanel } from "./side-panel";
 
 export function CreateProjectModal({
   studios,
@@ -51,7 +52,7 @@ export function CreateProjectModal({
   }
 
   return (
-    <ModalShell title="Nouveau projet" onClose={onClose}>
+    <SidePanel title="Nouveau projet" onClose={onClose}>
       <FieldLabel htmlFor="project-name">Nom du projet</FieldLabel>
       <input
         id="project-name"
@@ -144,6 +145,6 @@ export function CreateProjectModal({
           {pending ? "Création…" : "Créer"}
         </button>
       </div>
-    </ModalShell>
+    </SidePanel>
   );
 }

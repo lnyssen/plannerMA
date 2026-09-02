@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { createRequest } from "@/lib/actions/requests";
 import type { StudioSummary } from "@/lib/data/studios";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
-import { FieldLabel, ModalShell, fieldInputClass } from "./modal-shell";
+import { FieldLabel, fieldInputClass } from "./modal-shell";
+import { SidePanel } from "./side-panel";
 
 /**
  * Dépôt rapide d'une demande non planifiée — pas encore d'écran de gestion
@@ -40,7 +41,7 @@ export function RequestModal({ studios, onClose }: { studios: StudioSummary[]; o
   }
 
   return (
-    <ModalShell title="Nouvelle demande" onClose={onClose}>
+    <SidePanel title="Nouvelle demande" onClose={onClose}>
       {done ? (
         <>
           <p className="mb-4 text-sm text-ink">Demande envoyée — les administrateurs ont été notifiés.</p>
@@ -129,6 +130,6 @@ export function RequestModal({ studios, onClose }: { studios: StudioSummary[]; o
           </div>
         </>
       )}
-    </ModalShell>
+    </SidePanel>
   );
 }

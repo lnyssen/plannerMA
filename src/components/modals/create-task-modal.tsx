@@ -10,7 +10,7 @@ import type { TaskOption } from "@/lib/data/tasks";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { today } from "@/lib/planning/dates";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
-import { ModalShell } from "./modal-shell";
+import { SidePanel } from "./side-panel";
 import { EMPTY_TASK_FORM, TaskFormFields, type TaskFormValues } from "./task-form-fields";
 
 export function CreateTaskModal({
@@ -78,7 +78,7 @@ export function CreateTaskModal({
   }
 
   return (
-    <ModalShell title="Nouvelle tâche" onClose={onClose} size="lg">
+    <SidePanel title="Nouvelle tâche" onClose={onClose} size="lg">
       {/* Une tâche démarre normalement dans le premier statut, sans champ
           « État » à la création. On ne l'affiche que si le geste d'ouverture
           en a désigné un — créer depuis une colonne du Kanban, typiquement :
@@ -117,6 +117,6 @@ export function CreateTaskModal({
           {pending ? "Création…" : "Créer"}
         </button>
       </div>
-    </ModalShell>
+    </SidePanel>
   );
 }
