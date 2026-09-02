@@ -11,7 +11,10 @@ palier par palier.
 **Palier 3 (Projets/Tâches/Semaine/Gantt/Équipe/Réglages) livré.** Ce qui
 fonctionne aujourd'hui, avec de vraies données en base :
 
-- Connexion par comptes nominatifs (3 rôles), identité visuelle réelle.
+- Connexion par comptes nominatifs, identité visuelle réelle. Deux niveaux
+  effectifs : administrateur et collaborateur. `Role` porte encore
+  `STUDIO_LEAD` pour ne pas invalider une ligne existante, mais il n'ouvre
+  aucun droit et n'est plus proposé à l'attribution — voir `proxy.ts`.
 - Créer et **modifier** des projets et des tâches (modales, depuis n'importe
   quel écran ou en cliquant une tâche/un projet existant).
 - Tâches : description, pièces jointes (liens **et** fichiers déposés —
@@ -32,8 +35,8 @@ fonctionne aujourd'hui, avec de vraies données en base :
   redimensionnable, navigation par calendrier, plage affichée en toutes
   lettres, en-tête fixe au défilement), Kanban (colonnes par statut, toujours
   en ligne — largeur fixe, défilement horizontal plutôt que de retomber à la
-  ligne ; glisser une carte pour changer son statut — sur mobile, ouvrir la
-  tâche fait la même chose depuis sa fiche) et Semaine. Changer d'onglet est
+  ligne ; attraper la poignée d'une carte pour changer son statut, à la souris
+  comme au doigt) et Semaine. Changer d'onglet est
   immédiat ; la date affichée par Semaine reste dans l'URL
   (`/planning?vue=semaine&debut=…`), comme avant la fusion. Les anciennes
   adresses `/gantt`, `/semaine`, `/kanban` redirigent vers le bon onglet.
@@ -191,6 +194,34 @@ fonctionne aujourd'hui, avec de vraies données en base :
   le lien reste possible ("Tâche planifiée", Studio/Projet alors dérivés de
   la tâche) mais "Autre activité" permet de logger du temps sans créer de
   tâche au préalable, pour rester rapide sur du travail non planifié.
+
+- **Feuilles de temps mensuelles** (Temps → Feuilles) : chacun remet le mois
+  écoulé, un administrateur valide ou rouvre. Une feuille remise puis validée
+  verrouille les écritures du mois — démarrage de minuteur, saisie manuelle,
+  création depuis le calendrier, déplacement et suppression sont refusés, pas
+  seulement masqués. Le verrou porte sur le couple personne/mois plutôt que
+  sur l'écriture, sans quoi une écriture *créée après coup* dans un mois
+  validé passerait au travers. Indispensable pour prouver, lors d'un contrôle
+  de subvention, que les chiffres remis n'ont pas bougé depuis. Voir
+  `TimesheetPeriod` dans le schéma et `src/lib/actions/timesheets.ts`.
+- **Historique des heures** (Tableau de bord) : douze mois glissants, barres
+  empilées par studio — le reporting de subvention se lisait jusqu'ici en
+  exportant le CSV pour le refaire à la main.
+- **Retours d'action** : chaque mutation confirme par un message bref en bas
+  à droite, et les confirmations de suppression passent par une fenêtre de
+  l'application (plus de `window.confirm` natif) qui distingue la mise à la
+  corbeille de la suppression définitive.
+- **Création par le geste** : tirer une plage de jours sur la ligne de
+  quelqu'un dans Semaine, ou sur une zone vide du Gantt, ouvre la création
+  avec personne/projet/dates déjà remplis ; chaque colonne du Kanban a son
+  bouton, qui pose le statut de la colonne. Les formulaires de création
+  s'ouvrent en panneau latéral pour garder le contexte visible.
+- **Récurrence** quotidienne, hebdomadaire ou mensuelle, cette dernière au
+  choix sur le même quantième ou le même rang de jour de semaine (« le
+  premier lundi »).
+- **Accessibilité clavier** : anneau de focus visible partout (violet sur
+  fond papier, blanc sur la barre latérale) — les champs le supprimaient
+  jusqu'ici sans rien remettre.
 
 Détail palier par palier et écarts assumés par rapport au plan initial (nav à
 6+3 entrées — Kanban/Semaine/Gantt fusionnés en un seul « Planning », Charge/

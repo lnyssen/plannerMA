@@ -212,8 +212,9 @@ export default function AidePage() {
           <Shot src="/docs/planning-kanban.png" alt="Planning en vue Kanban, colonnes par statut" />
           <Ul>
             <li>
-              <strong>Kanban</strong> — colonnes par statut, glisser-déposer une tâche pour changer son statut. Le
-              bouton en bas de chaque colonne crée une tâche déjà dans ce statut.
+              <strong>Kanban</strong> — colonnes par statut. Attrapez la poignée d’une carte (à droite de son titre)
+              et glissez-la vers une autre colonne pour changer son statut, à la souris comme au doigt. Le bouton en
+              bas de chaque colonne crée une tâche déjà dans ce statut.
             </li>
             <li><strong>Semaine</strong> — grille jour par jour, une ligne par personne.</li>
             <li><strong>Gantt</strong> — barres sur une frise, dépendances affichées en trait reliant deux tâches, nombre de semaines réglable.</li>
@@ -323,6 +324,24 @@ export default function AidePage() {
             lequel compte pour ce temps — invisible sinon, la tâche n’ayant qu’un seul studio à choisir.
           </P>
           <P>Export CSV pour le reporting — même principe que sur le Tableau de bord.</P>
+          <H3>Feuilles de temps</H3>
+          <P>
+            L’onglet <strong>Feuilles</strong> liste vos six derniers mois. Une fois un mois terminé, « Remettre » le
+            transmet pour validation.
+          </P>
+          <Ul>
+            <li><strong>En cours</strong> — vous saisissez et corrigez librement.</li>
+            <li>
+              <strong>Remise</strong> — vous ne pouvez plus rien y modifier : ni ajouter, ni déplacer, ni supprimer une
+              écriture de ce mois. Demandez sa réouverture à un administrateur.
+            </li>
+            <li><strong>Validée</strong> — verrouillée pour tout le monde, jusqu’à réouverture par un administrateur.</li>
+          </Ul>
+          <Steps title="Valider une feuille (administrateur)">
+            <li>Temps → Feuilles → section « Feuilles remises et validées ».</li>
+            <li>« Valider » verrouille le mois, « Rouvrir » le rend de nouveau modifiable.</li>
+            <li>Une feuille déjà validée reste dans la liste : elle peut toujours être rouverte si une correction s’impose.</li>
+          </Steps>
         </section>
 
         <section className="mb-8">
