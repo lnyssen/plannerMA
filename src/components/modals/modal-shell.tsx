@@ -68,26 +68,47 @@ export function FieldLabel({ children, htmlFor }: { children: React.ReactNode; h
  * filet — pour que les fiches denses (projet, tâche) se scannent en blocs
  * plutôt qu'en une seule colonne continue de labels de même poids.
  */
+/**
+ * Bloc titré d'une fiche (sous-tâches, pièces jointes, activité, jalons…).
+ *
+ * L'intitulé était une micro-étiquette grise en capitales : ça se lit comme
+ * une légende alors que ça structure la page. Il prend la même graisse que
+ * les autres titres de section de l'appli, un cran sous le titre de la fiche.
+ *
+ * `count` et `meta` sortent du titre au lieu d'y être concaténés : à zéro ils
+ * disparaissent, parce que « Jalons (0) » suivi de « Aucun jalon. » disait
+ * deux fois la même chose.
+ */
 export function FieldSection({
   title,
   icon: Icon,
   action,
+  count,
+  meta,
   children,
   first = false,
 }: {
   title: string;
   icon?: LucideIcon;
   action?: React.ReactNode;
+  /** Nombre d'éléments — masqué à zéro, l'état vide en dessous suffit. */
+  count?: number;
+  /** Précision courte après le titre (« 3/5 faites »), quand un simple compte ne dit pas tout. */
+  meta?: string;
   children: React.ReactNode;
   /** Le tout premier bloc n'a pas besoin du filet du dessus. */
   first?: boolean;
 }) {
   return (
     <section className={first ? "mb-5" : "mt-6 mb-5 border-t border-line pt-5"}>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-2xs font-bold tracking-wide text-ink-muted uppercase">
-          {Icon && <Icon size={13} className="flex-shrink-0" aria-hidden="true" />}
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="flex items-baseline gap-1.5 font-[family-name:var(--font-display)] text-base font-semibold tracking-[-0.1px] text-heading">
+          {Icon && <Icon size={14} className="flex-shrink-0 self-center" aria-hidden="true" />}
           {title}
+          {count !== undefined && count > 0 && (
+            <span className="text-sm font-semibold text-ink-muted tabular-nums">{count}</span>
+          )}
+          {meta && <span className="text-xs font-medium text-ink-muted">{meta}</span>}
         </h3>
         {action}
       </div>

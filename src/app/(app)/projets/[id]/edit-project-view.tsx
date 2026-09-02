@@ -369,8 +369,11 @@ export function EditProjectView({
         <div className="flex flex-col gap-6">
           <div className="rounded-lg border border-line p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="flex items-center gap-1.5 text-2xs font-bold tracking-wide text-ink-muted uppercase">
-                <ListChecks size={13} /> Tâches ({project.tasks.length})
+              <h3 className="flex items-baseline gap-1.5 font-[family-name:var(--font-display)] text-base font-semibold tracking-[-0.1px] text-heading">
+                <ListChecks size={14} className="self-center" aria-hidden="true" /> Tâches
+                {project.tasks.length > 0 && (
+                  <span className="text-sm font-semibold text-ink-muted tabular-nums">{project.tasks.length}</span>
+                )}
               </h3>
               <button
                 type="button"
@@ -404,8 +407,11 @@ export function EditProjectView({
           </div>
 
           <div className="rounded-lg border border-line p-4">
-            <h3 className="mb-3 flex items-center gap-1.5 text-2xs font-bold tracking-wide text-ink-muted uppercase">
-              <Flag size={13} /> Jalons ({project.milestones.length})
+            <h3 className="mb-3 flex items-baseline gap-1.5 font-[family-name:var(--font-display)] text-base font-semibold tracking-[-0.1px] text-heading">
+              <Flag size={14} className="self-center" aria-hidden="true" /> Jalons
+              {project.milestones.length > 0 && (
+                <span className="text-sm font-semibold text-ink-muted tabular-nums">{project.milestones.length}</span>
+              )}
             </h3>
             <div className="mb-3 flex flex-col gap-1.5">
               {project.milestones.map((m) => (

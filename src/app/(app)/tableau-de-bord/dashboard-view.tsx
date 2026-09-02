@@ -1,6 +1,7 @@
 import { AlertTriangle, Download, Flag, LayoutDashboard } from "lucide-react";
 import { secondaryButtonClass } from "@/components/ui/buttons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { formatShortFr, today } from "@/lib/planning/dates";
 import type { ProgressStatus } from "@/lib/planning/tasks";
 import { computeDashboardRows, formatDurationFr, type BudgetPace, type DashboardProjectInput } from "@/lib/planning/time";
@@ -36,6 +37,28 @@ function PacePill({ pace }: { pace: BudgetPace }) {
   );
 }
 
+
+/** Chiffre d'en-tête ; la teinte d'alerte ne s'allume que si le chiffre désigne un problème. */
+function StatTile({ label, value, alert = false }: { label: string; value: number; alert?: boolean }) {
+  return (
+    <div
+      className="rounded-lg border p-3"
+      style={{
+        borderColor: alert ? "var(--color-alert)" : "var(--color-line)",
+        background: alert ? "var(--color-alert-wash)" : "transparent",
+      }}
+    >
+      <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">{label}</p>
+      <p
+        className="font-[family-name:var(--font-display)] text-lg font-semibold tabular-nums"
+        style={{ color: alert ? "var(--color-alert)" : "var(--color-heading)" }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
 /**
  * Vue d'ensemble budget de temps (admin) — équivalent "Budget vs. Actual"
  * pour des heures plutôt que de l'argent : total budgété/consommé/restant,
@@ -44,11 +67,20 @@ function PacePill({ pace }: { pace: BudgetPace }) {
  * devienne un dépassement franc. Charge (occupation par personne) reste une
  * page séparée — celle-ci est le pendant "argent du temps", vue globale.
  */
+export interface DashboardActivity {
+  activeProjects: number;
+  activeTasks: number;
+  lateTasks: number;
+  unassignedTasks: number;
+}
+
 export function DashboardView({
+  activity,
   projects,
   allStatuses,
   milestones,
 }: {
+  activity: DashboardActivity;
   projects: DashboardProjectInput[];
   allStatuses: ProgressStatus[];
   milestones: UpcomingMilestone[];
@@ -78,12 +110,23 @@ export function DashboardView({
         )}
       </div>
 
+      {/* Repères d'activité : le tableau de bord ne couvrait que les projets
+          dotés d'un budget de temps, si bien qu'il pouvait n'afficher
+          strictement rien — le pire état possible pour la page censée donner
+          la vue d'ensemble. Ces quatre chiffres tiennent quoi qu'il arrive. */}
+      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile label="Projets en cours" value={activity.activeProjects} />
+        <StatTile label="Tâches en cours" value={activity.activeTasks} />
+        <StatTile label="Tâches en retard" value={activity.lateTasks} alert={activity.lateTasks > 0} />
+        <StatTile label="Tâches non attribuées" value={activity.unassignedTasks} alert={activity.unassignedTasks > 0} />
+      </div>
+
       <div className="mb-8">
-        <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">
-          Prochaines échéances (30 jours)
-        </p>
+        <SectionHeading count={milestones.length}>Prochaines échéances (30 jours)</SectionHeading>
         {milestones.length === 0 ? (
-          <p className="text-sm text-ink-muted">Aucun jalon en retard ou à venir sous 30 jours.</p>
+          <p className="rounded-lg border border-line px-3 py-2.5 text-sm text-ink-muted">
+            Aucun jalon en retard ou à venir sous 30 jours.
+          </p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {milestones.map((m) => {

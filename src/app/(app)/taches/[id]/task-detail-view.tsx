@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, AtSign, Copy, ExternalLink, History, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2 } from "lucide-react";
+import { AlertTriangle, AtSign, Copy, ExternalLink, History, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -26,6 +26,19 @@ import { SearchField } from "@/components/ui/search-field";
 import { fieldInputClass, FieldSection } from "@/components/modals/modal-shell";
 import { TaskFormFields, type TaskFormValues } from "@/components/modals/task-form-fields";
 
+function AddToggle({ open, onToggle, label }: { open: boolean; onToggle: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className={`flex h-8! items-center gap-1 px-2.5 text-2xs font-semibold ${secondaryButtonClass}`}
+    >
+      {open ? <X size={12} /> : <Plus size={12} />} {open ? "Fermer" : label}
+    </button>
+  );
+}
+
 export function TaskDetailView({
   initialTask,
   studios,
@@ -43,6 +56,11 @@ export function TaskDetailView({
 }) {
   const router = useRouter();
   const ask = useConfirm();
+  // Les formulaires d'ajout sont repliés par défaut : ouverts en permanence,
+  // ils occupaient près de 300 px de la fiche pour des gestes occasionnels,
+  // et repoussaient les commentaires hors de l'écran.
+  const [addingSubtask, setAddingSubtask] = useState(false);
+  const [addingAttachment, setAddingAttachment] = useState(false);
   const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [task, setTask] = useState<TaskDetail>(initialTask);
@@ -465,8 +483,15 @@ export function TaskDetailView({
           />
 
           <FieldSection
-            title={`Sous-tâches (${task.subtasks.filter((s) => s.done).length}/${task.subtasks.length})`}
+            title="Sous-tâches"
             icon={ListChecks}
+            count={task.subtasks.length}
+            meta={
+              task.subtasks.length > 0
+                ? `${task.subtasks.filter((s) => s.done).length} faite${task.subtasks.filter((s) => s.done).length > 1 ? "s" : ""}`
+                : undefined
+            }
+            action={<AddToggle open={addingSubtask} onToggle={() => setAddingSubtask((v) => !v)} label="Ajouter" />}
           >
             <div className="mb-3 flex flex-col gap-1.5">
               {task.subtasks.map((s) => (
@@ -490,6 +515,7 @@ export function TaskDetailView({
                 </div>
               ))}
             </div>
+            {addingSubtask && (
             <div className="mb-4 flex flex-wrap gap-2">
               <input
                 type="text"
@@ -514,6 +540,7 @@ export function TaskDetailView({
                 <Plus size={14} /> Ajouter
               </button>
             </div>
+            )}
             {subtaskError && (
               <p role="alert" className="mb-3 text-xs font-semibold text-alert">
                 {subtaskError}
@@ -521,7 +548,12 @@ export function TaskDetailView({
             )}
           </FieldSection>
 
-          <FieldSection title={`Pièces jointes (${task.attachments.length})`} icon={Paperclip}>
+          <FieldSection
+            title="Pièces jointes"
+            icon={Paperclip}
+            count={task.attachments.length}
+            action={<AddToggle open={addingAttachment} onToggle={() => setAddingAttachment((v) => !v)} label="Joindre" />}
+          >
             {task.attachments.length > 3 && (
               <div className="mb-3">
                 <SearchField value={attachmentSearch} onChange={setAttachmentSearch} placeholder="Rechercher un fichier…" className="max-w-xs" />
@@ -578,6 +610,7 @@ export function TaskDetailView({
                 </table>
               </div>
             )}
+            {addingAttachment && (
             <div className="mb-4 flex flex-wrap gap-2">
               <input
                 type="text"
@@ -601,9 +634,10 @@ export function TaskDetailView({
                 <input type="file" className="hidden" onChange={onFileChange} />
               </label>
             </div>
+            )}
           </FieldSection>
 
-          <FieldSection title={`Activité (${activity.length})`} icon={MessageSquare}>
+          <FieldSection title="Activité" icon={MessageSquare} count={activity.length}>
             <div className="mb-3 flex max-h-80 flex-col gap-2 overflow-y-auto">
               {activity.map((item) => {
                 if (item.type === "comment") {
@@ -674,8 +708,11 @@ export function TaskDetailView({
 
         <div className="flex flex-col gap-6">
           <div className="rounded-lg border border-line p-4">
-            <h3 className="mb-3 flex items-center gap-1.5 text-2xs font-bold tracking-wide text-ink-muted uppercase">
-              <Timer size={13} /> Temps ({formatDurationFr(sumDurationMinutes(task.timeEntries))})
+            <h3 className="mb-3 flex items-baseline gap-1.5 font-[family-name:var(--font-display)] text-base font-semibold tracking-[-0.1px] text-heading">
+              <Timer size={14} className="self-center" aria-hidden="true" /> Temps
+              <span className="text-sm font-semibold text-ink-muted tabular-nums">
+                {formatDurationFr(sumDurationMinutes(task.timeEntries))}
+              </span>
             </h3>
             <div className="mb-3 flex flex-col gap-1.5">
               {task.timeEntries.map((e) => (

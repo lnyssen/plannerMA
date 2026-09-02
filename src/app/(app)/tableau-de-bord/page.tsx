@@ -15,7 +15,11 @@ export default async function DashboardPage() {
   const todayDate = fromIsoDate(today());
   const horizon = addDays(todayDate, 30);
 
-  const [projects, statuses, milestones] = await Promise.all([
+  // Repères d'activité affichés même quand aucun projet ne porte de budget
+  // de temps : sans eux, le tableau de bord pouvait être entièrement vide,
+  // ce qui est le pire état possible pour la page censée donner la vue
+  // d'ensemble.
+  const [projects, statuses, milestones, activeProjects, activeTasks, lateTasks, unassignedTasks] = await Promise.all([
     listProjectsWithBudget(),
     listTaskStatuses(),
     // En retard (dueDate dépassée, pas faite) ou à venir sous 30 jours — pas
@@ -26,10 +30,15 @@ export default async function DashboardPage() {
       orderBy: { dueDate: "asc" },
       include: { project: { select: { name: true, client: { select: { name: true } } } } },
     }),
+    db.project.count({ where: { archived: false } }),
+    db.task.count({ where: { trashedAt: null, status: { isDone: false } } }),
+    db.task.count({ where: { trashedAt: null, status: { isDone: false }, endDate: { lt: todayDate } } }),
+    db.task.count({ where: { trashedAt: null, status: { isDone: false }, assigneeId: null } }),
   ]);
 
   return (
     <DashboardView
+      activity={{ activeProjects, activeTasks, lateTasks, unassignedTasks }}
       projects={projects.map((p) => ({
         id: p.id,
         name: p.name,
