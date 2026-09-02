@@ -10,9 +10,9 @@ import { TasksTable } from "./tasks-table";
 export default async function TachesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ open?: string }>;
+  searchParams: Promise<{ open?: string; projet?: string }>;
 }) {
-  const { open } = await searchParams;
+  const { open, projet } = await searchParams;
   // Anciens liens profonds (notifications déjà en base, courriels déjà
   // envoyés) — voir src/lib/actions/tasks.ts, comments.ts, time-entries.ts,
   // src/lib/mail/templates.ts. Les nouveaux liens pointent directement sur
@@ -35,7 +35,14 @@ export default async function TachesPage({
         <span className="flex-1" />
         <CreateButton kind="task" />
       </div>
-      <TasksTable tasks={tasks} studios={studios} people={people} projects={projects} statuses={statuses} />
+      <TasksTable
+        tasks={tasks}
+        studios={studios}
+        people={people}
+        projects={projects}
+        statuses={statuses}
+        initialProjectFilter={projet ? [projet] : []}
+      />
     </div>
   );
 }

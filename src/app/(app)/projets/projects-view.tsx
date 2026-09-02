@@ -381,7 +381,21 @@ export function ProjectsView({
               sortValue: (r) => r.project._count.tasks,
               cellClassName: "text-center tabular-nums",
               headClassName: "text-center",
-              render: (r) => r.project._count.tasks,
+              // Le compte était un chiffre mort : il mène maintenant à la
+              // liste des tâches, déjà filtrée sur ce projet.
+              render: (r) =>
+                r.project._count.tasks > 0 ? (
+                  <Link
+                    href={`/taches?projet=${r.project.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Voir les tâches de ce projet"
+                    className="font-semibold text-heading underline-offset-2 hover:underline"
+                  >
+                    {r.project._count.tasks}
+                  </Link>
+                ) : (
+                  <span className="text-ink-muted">—</span>
+                ),
             },
             {
               key: "jalon",

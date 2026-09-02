@@ -11,7 +11,7 @@ import { textButtonClass } from "@/components/ui/buttons";
 import { ClientTypeBadge } from "@/components/ui/client-type-badge";
 import { PersonLabel } from "@/components/ui/person-avatar";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
-import { ScrollFade } from "@/components/ui/scroll-fade";
+import { DataTable } from "@/components/ui/data-table";
 import { SearchField } from "@/components/ui/search-field";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StudioBadge } from "@/components/ui/studio-badge";
@@ -47,19 +47,9 @@ function ActivityBadges({ comments, attachments }: { comments: number; attachmen
   );
 }
 
-type SortKey = "title" | "project" | "client" | "studio" | "person" | "dates" | "status";
 
 // Ordre des colonnes : nomenclature Client — Projet — Tâche partout dans
 // l'appli, du plus général au plus précis.
-const ALL_COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "client", label: "Client" },
-  { key: "project", label: "Projet" },
-  { key: "title", label: "Tâche" },
-  { key: "studio", label: "Studio" },
-  { key: "person", label: "Personne" },
-  { key: "dates", label: "Début → Échéance" },
-  { key: "status", label: "Statut" },
-];
 
 /**
  * Plage de dates d'une tâche.
@@ -92,6 +82,7 @@ export function TasksTable({
   projects,
   statuses,
   hidePersonFilter = false,
+  initialProjectFilter = [],
   hidePersonColumn = false,
 }: {
   tasks: TaskListItem[];
@@ -101,23 +92,22 @@ export function TasksTable({
   statuses: TaskStatusSummary[];
   /** Vue "Mes tâches" : filtrer/afficher par personne n'a pas de sens quand tout appartient déjà à la même personne. */
   hidePersonFilter?: boolean;
+  /** Filtre projet posé par l'URL — voir le compte de tâches cliquable dans la liste Projets. */
+  initialProjectFilter?: string[];
   hidePersonColumn?: boolean;
 }) {
   const router = useRouter();
   const ask = useConfirm();
   const toast = useToast();
-  const columns = hidePersonColumn ? ALL_COLUMNS.filter((c) => c.key !== "person") : ALL_COLUMNS;
   const [search, setSearch] = useState("");
   const [studioFilter, setStudioFilter] = useState<string[]>([]);
   const [personFilter, setPersonFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [projectFilter, setProjectFilter] = useState<string[]>([]);
+  const [projectFilter, setProjectFilter] = useState<string[]>(initialProjectFilter);
   // Filtre à part des quatre autres : ce n'est pas une valeur à choisir dans
   // une liste mais un état calculé, et c'est la question la plus fréquente
   // devant ce tableau — « qu'est-ce qui a débordé ? ».
   const [seulementRetard, setSeulementRetard] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("dates");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkPending, startBulkTransition] = useTransition();
 
@@ -172,13 +162,6 @@ export function TasksTable({
     });
   }
 
-  function toggleSort(key: SortKey) {
-    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  }
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -198,34 +181,11 @@ export function TasksTable({
     if (projectFilter.length > 0) filtered = filtered.filter((t) => t.projectId != null && projectFilter.includes(t.projectId));
     if (seulementRetard) filtered = filtered.filter(estEnRetard);
 
-    const value = (t: TaskListItem): string | number => {
-      switch (sortKey) {
-        case "project":
-          return t.project?.name ?? "";
-        case "client":
-          return t.project?.client.name ?? "";
-        case "studio":
-          return t.studios[0]?.studio.name ?? "";
-        case "person":
-          return t.assignee?.name ?? "";
-        case "dates":
-          return t.startDate.getTime();
-        case "status":
-          return t.status.name;
-        default:
-          return t.title;
-      }
-    };
-
-    const sorted = [...filtered].sort((a, b) => {
-      const av = value(a);
-      const bv = value(b);
-      if (av < bv) return sortDir === "asc" ? -1 : 1;
-      if (av > bv) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    return sorted;
-  }, [tasks, search, studioFilter, personFilter, statusFilter, projectFilter, seulementRetard, sortKey, sortDir]);
+    // Ordre par défaut : par date de début. Le tri par colonne appartient
+    // désormais au tableau commun (DataTable), qui prend le relais dès qu'on
+    // clique un en-tête.
+    return [...filtered].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+  }, [tasks, search, studioFilter, personFilter, statusFilter, projectFilter, seulementRetard]);
 
   return (
     <div>
@@ -390,93 +350,100 @@ export function TasksTable({
             ))}
           </div>
 
-          <ScrollFade className="hidden sm:block">
-          <table className="w-full min-w-[760px] border-collapse">
-            <thead>
-              <tr>
-                <th className="w-8 border-b-2 border-heading px-3 py-2.5">
-                  <input
-                    type="checkbox"
-                    aria-label="Sélectionner toutes les tâches affichées"
-                    checked={rows.length > 0 && selectedIds.length === rows.length}
-                    onChange={(e) => setSelectedIds(e.target.checked ? rows.map((t) => t.id) : [])}
-                    className="h-4 w-4 accent-heading"
-                  />
-                </th>
-                {columns.map((col) => (
-                  <th
-                    key={col.key}
-                    onClick={() => toggleSort(col.key)}
-                    className="cursor-pointer border-b-2 border-heading px-3 py-2.5 text-left font-[family-name:var(--font-display)] text-sm font-medium tracking-[-0.1px] whitespace-nowrap text-heading transition-colors duration-100 hover:bg-wash active:bg-tint"
-                  >
-                    {col.label} {sortKey === col.key ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((t) => (
-                <tr
-                  key={t.id}
-                  onClick={() => router.push(`/taches/${t.id}`)}
-                  className="cursor-pointer transition-colors duration-100 hover:bg-wash active:bg-tint"
-                  title="Ouvrir la fiche"
-                >
-                  <td className="border-b border-line px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      aria-label={`Sélectionner « ${t.title} »`}
-                      checked={selectedIds.includes(t.id)}
-                      onChange={() => toggleSelected(t.id)}
-                      className="h-4 w-4 accent-heading"
-                    />
-                  </td>
-                  <td className="border-b border-line px-3 py-2.5 text-sm text-ink">
-                    {t.project ? (
+          <div className="hidden sm:block">
+            <DataTable
+              rows={rows}
+              getRowId={(t) => t.id}
+              onRowClick={(t) => router.push(`/taches/${t.id}`)}
+              storageKey={`planning-studios:colonnes:taches${hidePersonColumn ? ":mes" : ""}`}
+              leadingHead={
+                <input
+                  type="checkbox"
+                  aria-label="Sélectionner toutes les tâches affichées"
+                  checked={rows.length > 0 && selectedIds.length === rows.length}
+                  onChange={(e) => setSelectedIds(e.target.checked ? rows.map((t) => t.id) : [])}
+                  className="h-4 w-4 accent-heading"
+                />
+              }
+              leadingCell={(t) => (
+                <input
+                  type="checkbox"
+                  aria-label={`Sélectionner « ${t.title} »`}
+                  checked={selectedIds.includes(t.id)}
+                  onChange={() => toggleSelected(t.id)}
+                  className="h-4 w-4 accent-heading"
+                />
+              )}
+              columns={[
+                {
+                  key: "client",
+                  label: "Client",
+                  sortValue: (t) => t.project?.client.name ?? "",
+                  render: (t) =>
+                    t.project ? (
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-heading">{t.project.client.name}</span>
                         <ClientTypeBadge type={t.project.type} className="flex-shrink-0" />
                       </div>
                     ) : (
                       "—"
-                    )}
-                  </td>
-                  <td className="border-b border-line px-3 py-2.5 text-sm text-ink">{t.project?.name ?? "—"}</td>
-                  <td className="border-b border-line px-3 py-2.5 text-sm font-semibold text-heading">
+                    ),
+                },
+                { key: "project", label: "Projet", sortValue: (t) => t.project?.name ?? "", render: (t) => t.project?.name ?? "—" },
+                {
+                  key: "title",
+                  label: "Tâche",
+                  required: true,
+                  sortValue: (t) => t.title,
+                  cellClassName: "font-semibold text-heading",
+                  render: (t) => (
                     <span className="flex items-center gap-2">
                       {t.title}
                       <ActivityBadges comments={t._count.comments} attachments={t._count.attachments} />
                     </span>
-                  </td>
-                  <td className="border-b border-line px-3 py-2.5">
+                  ),
+                },
+                {
+                  key: "studio",
+                  label: "Studio",
+                  sortValue: (t) => t.studios.map((s) => s.studio.name).sort().join(", "),
+                  render: (t) => (
                     <div className="flex flex-wrap items-center gap-1">
                       {t.studios.map(({ studio }) => (
                         <StudioBadge key={studio.id} name={studio.name} fillHex={studio.fillHex} colorHex={studio.colorHex} />
                       ))}
                     </div>
-                  </td>
-                  {!hidePersonColumn && (
-                    <td className="border-b border-line px-3 py-2.5 text-sm text-ink">
-                      <PersonLabel name={t.assignee?.name ?? null} />
-                    </td>
-                  )}
-                  <td
-                    className="border-b border-line px-3 py-2.5 text-sm tabular-nums"
-                    style={isTaskLate(t) ? { color: "var(--color-alert)", fontWeight: 600 } : { color: "var(--color-ink)" }}
-                  >
-                    <span className="flex items-center gap-1">
+                  ),
+                },
+                ...(hidePersonColumn
+                  ? []
+                  : [
+                      {
+                        key: "person",
+                        label: "Personne",
+                        sortValue: (t: TaskListItem) => t.assignee?.name ?? "",
+                        render: (t: TaskListItem) => <PersonLabel name={t.assignee?.name ?? null} />,
+                      },
+                    ]),
+                {
+                  key: "dates",
+                  label: "Début → Échéance",
+                  sortValue: (t) => toIsoDate(t.startDate),
+                  cellClassName: "tabular-nums",
+                  render: (t) => (
+                    <span
+                      className="flex items-center gap-1"
+                      style={isTaskLate(t) ? { color: "var(--color-alert)", fontWeight: 600 } : undefined}
+                    >
                       {isTaskLate(t) && <AlertTriangle size={12} className="flex-shrink-0" />}
                       {formatRange(t.startDate, t.endDate)}
                     </span>
-                  </td>
-                  <td className="border-b border-line px-3 py-2.5">
-                    <StatusBadge status={t.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </ScrollFade>
+                  ),
+                },
+                { key: "status", label: "Statut", sortValue: (t) => t.status.name, render: (t) => <StatusBadge status={t.status} /> },
+              ]}
+            />
+          </div>
         </>
       )}
     </div>
