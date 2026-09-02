@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addMonthsIso, belgianHolidays, easterSunday, formatRangeFr, isBusinessDay, mondayOf, toIsoDate } from "../dates";
+import { addMonthsIso, addMonthsSameWeekdayIso, belgianHolidays, easterSunday, formatRangeFr, isBusinessDay, mondayOf, toIsoDate } from "../dates";
 
 describe("easterSunday", () => {
   // Dates de référence publiques du dimanche de Pâques (calendrier grégorien).
@@ -88,5 +88,28 @@ describe("formatRangeFr", () => {
 
   it("précise les deux années quand la plage chevauche le nouvel an", () => {
     expect(formatRangeFr("2026-12-28", "2027-01-10")).toBe("Du 28 décembre 2026 au 10 janvier 2027");
+  });
+});
+
+describe("addMonthsSameWeekdayIso", () => {
+  it("garde le rang du jour de semaine plutôt que le quantième", () => {
+    // 2026-09-07 est le premier lundi de septembre ; le premier lundi
+    // d'octobre 2026 est le 5, pas le 7.
+    expect(addMonthsSameWeekdayIso("2026-09-07", 1)).toBe("2026-10-05");
+  });
+
+  it("gère un troisième jeudi", () => {
+    // 2026-01-15 est le troisième jeudi de janvier ; celui de février est le 19.
+    expect(addMonthsSameWeekdayIso("2026-01-15", 1)).toBe("2026-02-19");
+  });
+
+  it("retombe sur le dernier du mois quand le rang n’existe pas", () => {
+    // 2026-01-29 est le cinquième jeudi de janvier ; février 2026 n'en a que
+    // quatre, on retient le dernier (26).
+    expect(addMonthsSameWeekdayIso("2026-01-29", 1)).toBe("2026-02-26");
+  });
+
+  it("recule aussi bien qu’il avance", () => {
+    expect(addMonthsSameWeekdayIso("2026-10-05", -1)).toBe("2026-09-07");
   });
 });

@@ -323,13 +323,23 @@ model TaskStatus {
   @@map("task_statuses")
 }
 
-/// Fréquence d'une tâche récurrente — volontairement limité à deux options
-/// simples (pas de RRULE complet à la Outlook) : couvre les cas réels d'une
-/// petite équipe (réunion hebdomadaire, rapport mensuel) sans la complexité
-/// d'un moteur de règles générique.
+/// Fréquence d'une tâche récurrente — volontairement loin d'un RRULE complet
+/// à la Outlook : trois pas simples qui couvrent les cas réels d'une petite
+/// équipe (point quotidien, réunion hebdomadaire, rapport mensuel).
 enum RecurrenceFrequency {
+  DAILY
   WEEKLY
   MONTHLY
+}
+
+/// Comment retomber d'un mois sur l'autre, pour une récurrence mensuelle.
+/// `BY_DATE` garde le quantième (le 15 reste le 15) ; `BY_WEEKDAY` garde le
+/// rang du jour de semaine (« le premier lundi »), qui ne tombe pas au même
+/// quantième d'un mois à l'autre. Sans ce choix, une réunion calée sur un
+/// rang dérivait d'un mois sur l'autre.
+enum MonthlyRecurrenceMode {
+  BY_DATE
+  BY_WEEKDAY
 }
 
 /// Une tâche peut appartenir à plusieurs studios à la fois, sans hiérarchie
@@ -380,6 +390,8 @@ model Task {
   /// générer la suite qu'une seule fois par tâche.
   recurrenceFrequency RecurrenceFrequency? @map("recurrence_frequency")
   recurrenceInterval  Int?                 @map("recurrence_interval")
+  /// Seulement pour une récurrence MONTHLY — null ailleurs (voir MonthlyRecurrenceMode).
+  recurrenceMonthlyMode MonthlyRecurrenceMode? @map("recurrence_monthly_mode")
   recurrenceUntil     DateTime?            @map("recurrence_until") @db.Date
   recurrenceParent    Task?                @relation("TaskRecurrence", fields: [recurrenceParentId], references: [id], onDelete: SetNull)
   recurrenceParentId  String?              @map("recurrence_parent_id")

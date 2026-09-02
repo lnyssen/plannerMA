@@ -48,6 +48,32 @@ export function addMonthsIso(s: IsoDate, n: number): IsoDate {
   return toIsoDate(targetMonthStart);
 }
 
+/**
+ * Même rang de jour de semaine dans un mois décalé — « le premier lundi »,
+ * « le troisième jeudi ».
+ *
+ * `addMonthsIso` conserve le numéro du jour (le 15 reste le 15), ce qui ne
+ * convient pas aux réunions calées sur un rang : « premier lundi de septembre »
+ * ne tombe pas le même quantième que celui d'août. Si le mois d'arrivée n'a
+ * pas ce rang (cinquième mardi qui n'existe pas), on retient le dernier du
+ * même jour de semaine, ce qui est la lecture courante de « le dernier ».
+ */
+export function addMonthsSameWeekdayIso(s: IsoDate, n: number): IsoDate {
+  const d = fromIsoDate(s);
+  const weekday = d.getUTCDay();
+  const nth = Math.ceil(d.getUTCDate() / 7); // 1 à 5
+
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth() + n;
+  const firstOfMonth = new Date(Date.UTC(year, month, 1));
+  const offsetToFirstWeekday = (weekday - firstOfMonth.getUTCDay() + 7) % 7;
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+
+  let day = 1 + offsetToFirstWeekday + (nth - 1) * 7;
+  while (day > daysInMonth) day -= 7;
+  return toIsoDate(new Date(Date.UTC(year, month, day)));
+}
+
 /** Lundi de la semaine contenant `d` (semaine ISO, du lundi au dimanche). */
 export function mondayOf(d: Date): Date {
   const dow = (d.getUTCDay() + 6) % 7; // 0 = lundi ... 6 = dimanche

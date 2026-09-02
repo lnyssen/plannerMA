@@ -24,8 +24,9 @@ export interface TaskFormValues {
   statusId: string;
   dependsOnId: string; // chaîne vide = aucune dépendance
   estimatedHalfDays: string; // chaîne vide = pas d'estimation (calcul de charge en tout-ou-rien, voir availability.ts)
-  recurrenceFrequency: string; // "" | "WEEKLY" | "MONTHLY"
-  recurrenceInterval: string; // "tous les N" semaines/mois — ignoré si recurrenceFrequency est vide
+  recurrenceFrequency: string; // "" | "DAILY" | "WEEKLY" | "MONTHLY"
+  recurrenceMonthlyMode: string; // "BY_DATE" | "BY_WEEKDAY" — n'a de sens que si recurrenceFrequency vaut "MONTHLY"
+  recurrenceInterval: string; // "tous les N" jours/semaines/mois — ignoré si recurrenceFrequency est vide
   recurrenceUntil: string; // chaîne vide = pas de fin
 }
 
@@ -275,6 +276,7 @@ export function TaskFormFields({
             onChange={(e) => onChange({ recurrenceFrequency: e.target.value })}
           >
             <option value="">Aucune</option>
+            <option value="DAILY">Chaque jour</option>
             <option value="WEEKLY">Chaque semaine</option>
             <option value="MONTHLY">Chaque mois</option>
           </select>
@@ -291,8 +293,29 @@ export function TaskFormFields({
                   value={values.recurrenceInterval}
                   onChange={(e) => onChange({ recurrenceInterval: e.target.value })}
                 />
-                {values.recurrenceFrequency === "WEEKLY" ? "semaine(s)" : "mois"}
+                {values.recurrenceFrequency === "DAILY"
+                  ? "jour(s)"
+                  : values.recurrenceFrequency === "WEEKLY"
+                    ? "semaine(s)"
+                    : "mois"}
               </label>
+              {/* « Le 15 » et « le premier lundi » ne tombent pas au même
+                  quantième d'un mois sur l'autre : sans ce choix, une réunion
+                  calée sur un rang dérivait de mois en mois. */}
+              {values.recurrenceFrequency === "MONTHLY" && (
+                <label className="flex items-center gap-1.5 text-sm text-ink" htmlFor="task-recurrence-monthly-mode">
+                  Le
+                  <select
+                    id="task-recurrence-monthly-mode"
+                    className={`${fieldInputClass} max-w-[210px]`}
+                    value={values.recurrenceMonthlyMode}
+                    onChange={(e) => onChange({ recurrenceMonthlyMode: e.target.value })}
+                  >
+                    <option value="BY_DATE">même quantième</option>
+                    <option value="BY_WEEKDAY">même rang de jour (1ᵉʳ lundi…)</option>
+                  </select>
+                </label>
+              )}
               <label className="flex items-center gap-1.5 text-sm text-ink" htmlFor="task-recurrence-until">
                 Jusqu’au
                 <input
@@ -329,6 +352,7 @@ export const EMPTY_TASK_FORM: TaskFormValues = {
   dependsOnId: "",
   estimatedHalfDays: "",
   recurrenceFrequency: "",
+  recurrenceMonthlyMode: "BY_DATE",
   recurrenceInterval: "1",
   recurrenceUntil: "",
 };

@@ -65,6 +65,8 @@ export function CreateTaskModal({
         estimatedHalfDays: values.estimatedHalfDays ? Number(values.estimatedHalfDays) : null,
         recurrenceFrequency: values.recurrenceFrequency ? (values.recurrenceFrequency as "WEEKLY" | "MONTHLY") : null,
         recurrenceInterval: values.recurrenceFrequency ? Number(values.recurrenceInterval) || 1 : null,
+        recurrenceMonthlyMode:
+          values.recurrenceFrequency === "MONTHLY" ? (values.recurrenceMonthlyMode as "BY_DATE" | "BY_WEEKDAY") : null,
         recurrenceUntil: values.recurrenceFrequency && values.recurrenceUntil ? values.recurrenceUntil : null,
         statusId: values.statusId || undefined,
       });

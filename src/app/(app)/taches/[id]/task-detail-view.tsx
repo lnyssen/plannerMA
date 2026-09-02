@@ -78,6 +78,7 @@ export function TaskDetailView({
     estimatedHalfDays: initialTask.estimatedHalfDays != null ? String(initialTask.estimatedHalfDays) : "",
     recurrenceFrequency: initialTask.recurrenceFrequency ?? "",
     recurrenceInterval: initialTask.recurrenceInterval != null ? String(initialTask.recurrenceInterval) : "1",
+    recurrenceMonthlyMode: initialTask.recurrenceMonthlyMode ?? "BY_DATE",
     recurrenceUntil: initialTask.recurrenceUntil ? toIsoDate(initialTask.recurrenceUntil) : "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +129,8 @@ export function TaskDetailView({
         estimatedHalfDays: values.estimatedHalfDays ? Number(values.estimatedHalfDays) : null,
         recurrenceFrequency: values.recurrenceFrequency ? (values.recurrenceFrequency as "WEEKLY" | "MONTHLY") : null,
         recurrenceInterval: values.recurrenceFrequency ? Number(values.recurrenceInterval) || 1 : null,
+        recurrenceMonthlyMode:
+          values.recurrenceFrequency === "MONTHLY" ? (values.recurrenceMonthlyMode as "BY_DATE" | "BY_WEEKDAY") : null,
         recurrenceUntil: values.recurrenceFrequency && values.recurrenceUntil ? values.recurrenceUntil : null,
         expectedVersion: task.version,
       });

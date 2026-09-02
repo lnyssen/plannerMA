@@ -2,11 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import type { RecurrenceFrequency } from "@prisma/client";
+import type { MonthlyRecurrenceMode, RecurrenceFrequency } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { notifyAssignment } from "@/lib/mail/notify";
-import { addDays, addDaysIso, addMonthsIso, daysBetween, fromIsoDate, toIsoDate, today } from "@/lib/planning/dates";
+import {
+  addDays,
+  addDaysIso,
+  addMonthsIso,
+  addMonthsSameWeekdayIso,
+  daysBetween,
+  fromIsoDate,
+  toIsoDate,
+  today,
+} from "@/lib/planning/dates";
 import { currentActorName } from "./actor";
 import { createNotification } from "./notifications";
 
@@ -67,7 +76,7 @@ interface DurationFields {
   startDate: string;
   endDate: string;
   maxDurationDays: number | null;
-  recurrenceFrequency: "WEEKLY" | "MONTHLY" | null;
+  recurrenceFrequency: "DAILY" | "WEEKLY" | "MONTHLY" | null;
   recurrenceUntil: string | null;
 }
 
@@ -105,7 +114,9 @@ const taskFieldsSchema = z.object({
   maxDurationDays: z.number().int().positive().nullable(),
   dependsOnId: z.string().nullable(),
   estimatedHalfDays: z.number().int().min(0).nullable(),
-  recurrenceFrequency: z.enum(["WEEKLY", "MONTHLY"]).nullable(),
+  recurrenceFrequency: z.enum(["DAILY", "WEEKLY", "MONTHLY"]).nullable(),
+  /** Ignoré hors récurrence mensuelle — voir MonthlyRecurrenceMode. */
+  recurrenceMonthlyMode: z.enum(["BY_DATE", "BY_WEEKDAY"]).nullable(),
   recurrenceInterval: z.number().int().min(1).nullable(),
   recurrenceUntil: isoDate.nullable(),
 });
@@ -137,6 +148,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
     estimatedHalfDays,
     recurrenceFrequency,
     recurrenceInterval,
+    recurrenceMonthlyMode,
     recurrenceUntil,
     statusId: requestedStatusId,
   } = parsed.data;
@@ -167,6 +179,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
       estimatedHalfDays,
       recurrenceFrequency,
       recurrenceInterval: recurrenceFrequency ? recurrenceInterval : null,
+      recurrenceMonthlyMode: recurrenceFrequency === "MONTHLY" ? (recurrenceMonthlyMode ?? "BY_DATE") : null,
       recurrenceUntil: recurrenceFrequency && recurrenceUntil ? new Date(recurrenceUntil) : null,
     },
     include: { project: true },
@@ -238,9 +251,20 @@ function shiftRecurrenceDates(
   endDate: string,
   frequency: RecurrenceFrequency,
   interval: number,
+  monthlyMode: MonthlyRecurrenceMode | null,
 ): { startDate: string; endDate: string } {
+  if (frequency === "DAILY") {
+    return { startDate: addDaysIso(startDate, interval), endDate: addDaysIso(endDate, interval) };
+  }
   if (frequency === "WEEKLY") {
     return { startDate: addDaysIso(startDate, 7 * interval), endDate: addDaysIso(endDate, 7 * interval) };
+  }
+  // Mensuel : soit le même quantième, soit le même rang de jour de semaine.
+  // La durée de la tâche est reportée telle quelle sur la nouvelle date de
+  // début, pour que « premier lundi, sur trois jours » le reste.
+  if (monthlyMode === "BY_WEEKDAY") {
+    const nextStart = addMonthsSameWeekdayIso(startDate, interval);
+    return { startDate: nextStart, endDate: addDaysIso(nextStart, daysBetween(startDate, endDate)) };
   }
   return { startDate: addMonthsIso(startDate, interval), endDate: addMonthsIso(endDate, interval) };
 }
@@ -258,6 +282,7 @@ interface RecurringTaskSource {
   estimatedHalfDays: number | null;
   recurrenceFrequency: RecurrenceFrequency | null;
   recurrenceInterval: number | null;
+  recurrenceMonthlyMode: MonthlyRecurrenceMode | null;
   recurrenceUntil: Date | null;
   status: { isDone: boolean };
 }
@@ -285,7 +310,13 @@ async function maybeGenerateNextOccurrence(
   if (alreadyGenerated) return;
 
   const interval = task.recurrenceInterval ?? 1;
-  const next = shiftRecurrenceDates(toIsoDate(task.startDate), toIsoDate(task.endDate), task.recurrenceFrequency, interval);
+  const next = shiftRecurrenceDates(
+    toIsoDate(task.startDate),
+    toIsoDate(task.endDate),
+    task.recurrenceFrequency,
+    interval,
+    task.recurrenceMonthlyMode,
+  );
   if (task.recurrenceUntil && next.startDate > toIsoDate(task.recurrenceUntil)) return;
 
   const defaultStatus = await db.taskStatus.findFirst({ orderBy: { position: "asc" } });
@@ -305,6 +336,7 @@ async function maybeGenerateNextOccurrence(
       statusId: defaultStatus.id,
       recurrenceFrequency: task.recurrenceFrequency,
       recurrenceInterval: task.recurrenceInterval,
+      recurrenceMonthlyMode: task.recurrenceMonthlyMode,
       recurrenceUntil: task.recurrenceUntil,
       recurrenceParentId: task.id,
     },
