@@ -17,6 +17,19 @@ const ROLE_LABEL: Record<Role, string> = {
   COLLABORATOR: "Collaborateur",
 };
 
+/**
+ * Rôles réellement proposés à l'attribution.
+ *
+ * STUDIO_LEAD n'ouvre aucun droit : l'appli tient volontairement deux niveaux
+ * effectifs, administrateur et le reste (voir le commentaire sur Role dans
+ * prisma/schema.prisma, et les redirections de proxy.ts). Le laisser dans le
+ * sélecteur était un piège — on l'attribuait en croyant déléguer, la personne
+ * voyait exactement la même chose qu'un collaborateur. La valeur reste dans
+ * l'enum et dans ROLE_LABEL pour continuer d'afficher correctement un compte
+ * qui la porterait déjà.
+ */
+const ASSIGNABLE_ROLES: Role[] = ["ADMIN", "COLLABORATOR"];
+
 export function PersonModal({
   personId,
   studios,
@@ -291,9 +304,9 @@ export function PersonModal({
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as Role)}
                   >
-                    {Object.entries(ROLE_LABEL).map(([value, label]) => (
+                    {ASSIGNABLE_ROLES.map((value) => (
                       <option key={value} value={value}>
-                        {label}
+                        {ROLE_LABEL[value]}
                       </option>
                     ))}
                   </select>
@@ -396,9 +409,9 @@ export function PersonModal({
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as Role)}
                   >
-                    {Object.entries(ROLE_LABEL).map(([value, label]) => (
+                    {ASSIGNABLE_ROLES.map((value) => (
                       <option key={value} value={value}>
-                        {label}
+                        {ROLE_LABEL[value]}
                       </option>
                     ))}
                   </select>

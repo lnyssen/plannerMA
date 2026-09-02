@@ -260,7 +260,7 @@ export function TasksTable({
             disabled={bulkPending}
             onChange={(e) => applyBulkStatus(e.target.value)}
             aria-label="Changer le statut des tâches sélectionnées"
-            className="h-9 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink disabled:opacity-60"
+            className="h-10 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink disabled:opacity-60"
           >
             <option value="" disabled>
               Changer le statut…
@@ -276,7 +276,7 @@ export function TasksTable({
             disabled={bulkPending}
             onChange={(e) => applyBulkAssignee(e.target.value)}
             aria-label="Changer la personne des tâches sélectionnées"
-            className="h-9 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink disabled:opacity-60"
+            className="h-10 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink disabled:opacity-60"
           >
             <option value="" disabled>
               Changer la personne…

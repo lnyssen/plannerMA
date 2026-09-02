@@ -160,3 +160,19 @@ body {
     opacity: 1;
   }
 }
+
+/* Anneau de focus clavier.
+   `fieldInputClass` et les écrans de connexion posaient `outline-none` sans
+   rien remettre : en naviguant au clavier, on ne voyait jamais où on était
+   (WCAG 2.4.7). Cette règle vit hors de toute couche, donc elle l'emporte sur
+   les utilitaires Tailwind même là où un `outline-none` traînerait encore. */
+:focus-visible {
+  outline: 2px solid var(--color-heading);
+  outline-offset: 2px;
+}
+
+/* Sur le rail violet plein, un anneau violet ne se voit pas. */
+aside :focus-visible,
+header.bg-rail :focus-visible {
+  outline-color: #ffffff;
+}

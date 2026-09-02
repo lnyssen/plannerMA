@@ -47,7 +47,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="h-11 rounded-md border-[1.5px] border-heading bg-paper px-3 text-sm text-ink outline-none"
+          className="h-10 rounded-md border-[1.5px] border-heading bg-paper px-2.5 text-sm text-ink"
         />
       </div>
 
@@ -62,7 +62,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="h-11 rounded-md border-[1.5px] border-heading bg-paper px-3 text-sm text-ink outline-none"
+          className="h-10 rounded-md border-[1.5px] border-heading bg-paper px-2.5 text-sm text-ink"
         />
       </div>
 

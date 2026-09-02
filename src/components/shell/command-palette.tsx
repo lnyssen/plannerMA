@@ -115,7 +115,7 @@ export function CommandPalette({ navEntries }: { navEntries: NavEntry[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Rechercher ou lancer une action…"
-            className="w-full text-sm text-ink outline-none"
+            className="w-full text-sm text-ink"
           />
           <kbd className="flex-shrink-0 rounded border border-line px-1.5 py-0.5 text-2xs text-ink-muted">Échap</kbd>
         </div>

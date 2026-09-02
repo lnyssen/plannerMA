@@ -39,7 +39,7 @@ export function ConnexionForm({ redirectTo }: { redirectTo: string }) {
           required
           autoComplete="email"
           autoFocus
-          className="h-11 rounded-md border-[1.5px] border-heading bg-paper px-3 text-sm text-ink outline-none"
+          className="h-10 rounded-md border-[1.5px] border-heading bg-paper px-2.5 text-sm text-ink"
         />
       </div>
 
@@ -58,7 +58,7 @@ export function ConnexionForm({ redirectTo }: { redirectTo: string }) {
           type="password"
           required
           autoComplete="current-password"
-          className="h-11 rounded-md border-[1.5px] border-heading bg-paper px-3 text-sm text-ink outline-none"
+          className="h-10 rounded-md border-[1.5px] border-heading bg-paper px-2.5 text-sm text-ink"
         />
       </div>
 

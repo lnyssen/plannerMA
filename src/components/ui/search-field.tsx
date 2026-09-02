@@ -56,7 +56,7 @@ export function SearchField({
             setOpen(false);
           }
         }}
-        className="h-10 w-full rounded-md border-[1.5px] border-heading bg-paper py-2 pr-8 pl-9 text-sm text-ink outline-none"
+        className="h-10 w-full rounded-md border-[1.5px] border-heading bg-paper py-2 pr-8 pl-9 text-sm text-ink"
       />
       {value && (
         <button
