@@ -6,7 +6,10 @@ import { addDays, belgianHolidaysRange, fromIsoDate, mondayOf, today } from "@/l
 import { weeklyLoad, type LoadAbsence, type LoadTask } from "@/lib/planning/availability";
 import { entryDurationMinutes, formatDurationFr } from "@/lib/planning/time";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InfoHint } from "@/components/ui/info-hint";
 
 interface ChargePerson {
   id: string;
@@ -129,17 +132,24 @@ export function ChargeView({
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Charge
         </h1>
-        <select
-          value={weeks}
-          onChange={(e) => setWeeks(Number(e.target.value))}
-          className="ml-2 rounded-md border-[1.5px] border-heading px-2 py-1 text-sm text-ink"
-        >
-          {WEEK_OPTIONS.map((n) => (
-            <option key={n} value={n}>
-              {n} semaines
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <SegmentedControl
+            ariaLabel="Nombre de semaines affichées"
+            size="sm"
+            value={String(weeks)}
+            onChange={(v) => setWeeks(Number(v))}
+            options={WEEK_OPTIONS.map((n) => ({ id: String(n), label: String(n), title: `${n} semaines` }))}
+          />
+          <span className="text-sm text-ink-muted">semaines</span>
+        </div>
+        <InfoHint label="Comment cette charge est calculée">
+          Part des jours ouvrables occupés par des tâches non terminées (jours fériés, week-ends et absences
+          déduits). Une tâche avec une estimation (demi-journées, fiche de tâche) répartit son effort sur sa plage
+          de dates ; sans estimation, tout jour couvert compte comme entièrement occupé. Puce rose : chevauchement
+          de deux tâches actives pour cette personne. « Temps réel » (depuis Temps) : total effectivement enregistré
+          sur la même période — à lire à côté de la charge prévue, pas convertie dans la même unité (l’appli ne
+          définit pas d’heures par jour à temps plein).
+        </InfoHint>
       </div>
 
       {people.length === 0 ? (
@@ -177,9 +187,7 @@ export function ChargeView({
 
           {studioAverages.length > 0 && (
             <div className="mb-6 max-w-md">
-              <p className="mb-2 text-2xs font-semibold tracking-wide text-ink-muted uppercase">
-                Charge moyenne par studio
-              </p>
+              <SectionHeading>Charge moyenne par studio</SectionHeading>
               <div className="flex flex-col gap-1.5">
                 {studioAverages.map(({ studio, average }) => (
                   <div key={studio} className="flex items-center gap-2">
@@ -236,8 +244,15 @@ export function ChargeView({
                   </td>
                   {cells.map((c, i) => (
                     <td key={i} className="border border-line p-0 text-center">
+                      {/* La teinte disait seulement « beaucoup » ou « peu » :
+                          70 % et 110 % se ressemblaient, alors que l'un est sain
+                          et l'autre est le problème qu'on vient chercher ici.
+                          Au-delà du seuil de surcharge, l'aplat passe à
+                          l'alerte. */}
                       <div
-                        style={{ background: `color-mix(in srgb, var(--color-heading) ${Math.round(c.ratio * 100)}%, var(--color-paper))` }}
+                        style={{
+                          background: `color-mix(in srgb, var(--color-${c.ratio >= OVERLOAD_THRESHOLD ? "alert" : "heading"}) ${Math.min(100, Math.round(c.ratio * 100))}%, var(--color-paper))`,
+                        }}
                         className="flex h-9 w-full items-center justify-center"
                       >
                         <span
@@ -263,14 +278,6 @@ export function ChargeView({
         </>
       )}
 
-      <p className="mt-4 max-w-2xl text-xs text-ink-muted">
-        Part des jours ouvrables occupés par des tâches non terminées (jours fériés, week-ends et absences déduits).
-        Une tâche avec une estimation (demi-journées, fiche de tâche) répartit son effort sur sa plage de dates ;
-        sans estimation, tout jour couvert compte comme entièrement occupé. Puce rose : chevauchement de deux tâches
-        actives pour cette personne. « Temps réel » (depuis Temps) : total effectivement enregistré sur la même
-        période — à lire à côté de la charge prévue, pas convertie dans la même unité (l’appli ne définit pas
-        d’heures par jour à temps plein).
-      </p>
     </div>
   );
 }

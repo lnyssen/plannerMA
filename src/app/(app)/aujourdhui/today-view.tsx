@@ -9,6 +9,7 @@ import { dangerButtonClass, secondaryButtonClass } from "@/components/ui/buttons
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StudioBadge } from "@/components/ui/studio-badge";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { EntryContextLabelParts } from "@/components/ui/task-context-label";
 import { formatLongFr, formatShortFr, today } from "@/lib/planning/dates";
 import { entryDurationMinutes, formatDurationFr } from "@/lib/planning/time";
@@ -90,9 +91,7 @@ export function TodayView({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
-          <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">
-            Tâches du jour ({tasks.length})
-          </p>
+          <SectionHeading count={tasks.length}>Tâches du jour</SectionHeading>
           {tasks.length === 0 ? (
             <EmptyState icon={CheckSquare} title="Rien de planifié aujourd’hui" description="Profitez-en, ou consultez Mes tâches pour la suite." />
           ) : (
@@ -126,7 +125,7 @@ export function TodayView({
 
         <div className="flex flex-col gap-6">
           <div>
-            <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Minuteur</p>
+            <SectionHeading>Minuteur</SectionHeading>
             {runningTimer ? (
               <div className="rounded-lg border border-heading bg-wash p-3">
                 <div className="mb-2 flex items-center gap-2">
@@ -158,7 +157,7 @@ export function TodayView({
           </div>
 
           <div>
-            <p className="mb-3 text-xs font-semibold tracking-wide text-ink-muted uppercase">Absences à venir (14 jours)</p>
+            <SectionHeading>Absences à venir (14 jours)</SectionHeading>
             {myNextAbsence && (
               <p className="mb-2 text-sm text-ink">
                 Vous : {formatShortFr(myNextAbsence.startDate)} → {formatShortFr(myNextAbsence.endDate)}
