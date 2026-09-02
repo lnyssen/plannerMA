@@ -31,6 +31,7 @@ import { NavOrderModal } from "@/components/modals/nav-order-modal";
 import { NotificationPrefsModal } from "@/components/modals/notification-prefs-modal";
 import { RequestModal } from "@/components/modals/request-modal";
 import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass } from "@/components/ui/buttons";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -390,8 +391,12 @@ export function AppShell({
 
         {/* Seule cette zone défile : les boutons d'action et le menu profil
             en dessous restent toujours visibles, même si la liste de
-            navigation dépasse la hauteur de l'écran. */}
-        <div className="min-h-0 flex-1 overflow-y-auto">{renderNav(isCollapsed)}</div>
+            navigation dépasse la hauteur de l'écran. Le dégradé dit qu'il
+            reste des entrées hors champ — sans lui, la dernière visible était
+            tranchée net par le bord, ce qui se lit comme un bug. */}
+        <ScrollFade axis="y" fadeTo="var(--color-rail)" className="min-h-0 flex-1">
+          {renderNav(isCollapsed)}
+        </ScrollFade>
 
         {/* Une seule action mise en avant (créer une tâche, le geste courant)
             et les deux autres réunies sur une ligne : la pile de trois

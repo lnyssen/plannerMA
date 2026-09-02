@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCreateModals, type CreateModalPrefill } from "@/components/shell/create-modals-context";
 import { textButtonClass } from "@/components/ui/buttons";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import type { GanttTask } from "@/lib/data/gantt";
 import { rescheduleTask } from "@/lib/actions/tasks";
 import {
@@ -57,6 +58,26 @@ interface Row {
 /** Plage de dates en cours de tracé sur une zone vide, avant ouverture de la création. */
 type CreateDragState = { row: number; a: number; b: number };
 
+const WEEK_CHOICES = [2, 4, 8, 12, 16];
+
+/**
+ * Début de fenêtre qui garde aujourd'hui visible quelle que soit sa largeur :
+ * un huitième de la fenêtre en amont, arrondi à la semaine inférieure.
+ *
+ * Sur 8 semaines cela laisse une semaine de passé — le réglage d'origine.
+ * Sur 2 semaines, aucune : la même semaine de contexte y plaçait aujourd'hui
+ * au neuvième jour sur quatorze, c'est-à-dire presque au bord droit, et il ne
+ * restait quasiment plus d'à-venir à lire.
+ */
+function anchorOnToday(weeks: number) {
+  return mondayOf(addDays(fromIsoDate(today()), -7 * Math.floor(weeks / 8)));
+}
+
+/** Pas des flèches ‹ › : une demi-fenêtre, pour garder du recouvrement d'un écran à l'autre. */
+function scrollStepDays(weeks: number) {
+  return 7 * Math.max(1, Math.floor(weeks / 2));
+}
+
 export function GanttView({
   initialTasks,
 }: {
@@ -74,8 +95,8 @@ export function GanttView({
     setTasks(initialTasks);
   }
 
-  const [weekStart, setWeekStart] = useState(() => mondayOf(addDays(fromIsoDate(today()), -7)));
   const [weeks, setWeeks] = useState(8);
+  const [weekStart, setWeekStart] = useState(() => anchorOnToday(8));
   const [groupBy, setGroupBy] = useState<"project" | "person">("project");
   const [drag, setDrag] = useState<DragState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -401,6 +422,20 @@ export function GanttView({
   const viewEndIso = toIsoDate(days[days.length - 1] ?? weekStart);
   const rangeLabel = formatRangeFr(startIsoOfView, viewEndIso);
 
+  /**
+   * Changer la largeur de la fenêtre déplace aussi son début — sinon on
+   * gardait le début calculé pour l'ancienne largeur et la date affichée ne
+   * bougeait pas : passer de 8 à 2 semaines laissait aujourd'hui coincé au
+   * bord droit. On ne réancre que si aujourd'hui est effectivement à l'écran :
+   * quelqu'un parti consulter mars prochain doit y rester.
+   */
+  function changeWeeks(next: number) {
+    const todayIso = today();
+    const todayInView = startIsoOfView <= todayIso && todayIso <= viewEndIso;
+    setWeeks(next);
+    if (todayInView) setWeekStart(anchorOnToday(next));
+  }
+
   // Équivalent clavier du glisser-déposer : Flèches pour décaler d'un jour,
   // Maj+Flèches pour raccourcir/allonger, Entrée/Espace pour ouvrir le
   // détail (équivalent du double-clic). Actif même quand `canDrag` est faux
@@ -430,26 +465,26 @@ export function GanttView({
           sa propre ligne, séparée du réglage qui la détermine. */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={weeks}
-            onChange={(e) => setWeeks(Number(e.target.value))}
-            className="h-10 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink"
-          >
-            {[2, 4, 8, 12, 16].map((n) => (
-              <option key={n} value={n}>
-                {n} semaines
-              </option>
-            ))}
-          </select>
-          <select
+          <div className="flex items-center gap-2">
+            <SegmentedControl
+              ariaLabel="Nombre de semaines affichées"
+              size="sm"
+              value={String(weeks)}
+              onChange={(v) => changeWeeks(Number(v))}
+              options={WEEK_CHOICES.map((n) => ({ id: String(n), label: String(n), title: `${n} semaines` }))}
+            />
+            <span className="text-sm text-ink-muted">semaines</span>
+          </div>
+          <SegmentedControl
+            ariaLabel="Grouper par"
+            size="sm"
             value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as "project" | "person")}
-            aria-label="Grouper par"
-            className="h-10 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink"
-          >
-            <option value="project">Par projet</option>
-            <option value="person">Par personne</option>
-          </select>
+            onChange={setGroupBy}
+            options={[
+              { id: "project", label: "Par projet" },
+              { id: "person", label: "Par personne" },
+            ]}
+          />
           <span className="text-sm font-semibold text-heading">{rangeLabel}</span>
         </div>
         <span className="flex-1" />
@@ -463,7 +498,7 @@ export function GanttView({
           />
           <button
             type="button"
-            onClick={() => setWeekStart((w) => addDays(w, -14))}
+            onClick={() => setWeekStart((w) => addDays(w, -scrollStepDays(weeks)))}
             className={`p-1 text-heading ${textButtonClass}`}
             aria-label="Reculer"
           >
@@ -471,14 +506,14 @@ export function GanttView({
           </button>
           <button
             type="button"
-            onClick={() => setWeekStart(mondayOf(addDays(fromIsoDate(today()), -7)))}
+            onClick={() => setWeekStart(anchorOnToday(weeks))}
             className={`text-sm font-semibold text-heading underline-offset-2 hover:underline ${textButtonClass}`}
           >
             Aujourd’hui
           </button>
           <button
             type="button"
-            onClick={() => setWeekStart((w) => addDays(w, 14))}
+            onClick={() => setWeekStart((w) => addDays(w, scrollStepDays(weeks)))}
             className={`p-1 text-heading ${textButtonClass}`}
             aria-label="Avancer"
           >
