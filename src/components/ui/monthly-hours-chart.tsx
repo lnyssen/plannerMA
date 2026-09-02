@@ -34,34 +34,49 @@ export function MonthlyHoursChart({ data }: { data: MonthlyHoursByStudio }) {
 
   return (
     <div className="rounded-lg border border-line p-4">
+      {/* Les libellés de mois sont sortis de la piste des barres : tant qu'ils
+          partageaient la même colonne flex, celle-ci n'avait pas de hauteur
+          définie et la hauteur en pourcentage des barres se résolvait contre
+          une hauteur de contenu quasi nulle — toutes les barres tombaient à
+          une dizaine de pixels quelle que soit leur valeur. */}
       <div className="flex h-44 items-end gap-1.5">
-        {data.map((m) => {
-          const { short, year } = monthLabel(m.month);
-          return (
-            <div key={m.month} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-              <div
-                title={
-                  m.total === 0
-                    ? `${short} ${year} — aucune heure`
-                    : `${short} ${year} — ${formatDurationFr(m.total)}\n` +
-                      m.studios.map((s) => `${s.studio.name} : ${formatDurationFr(s.minutes)}`).join("\n")
-                }
-                style={{ height: `${(m.total / peak) * 100}%` }}
-                className="flex w-full flex-col justify-end overflow-hidden rounded-t"
-              >
-                {m.studios.map((s) => (
-                  <div
-                    key={s.studio.id}
-                    style={{
-                      height: `${(s.minutes / m.total) * 100}%`,
-                      background: s.studio.fillHex,
-                      borderTop: `2px solid ${s.studio.colorHex}`,
-                    }}
-                  />
-                ))}
-              </div>
-              <span className="w-full truncate text-center text-2xs text-ink-muted">{short}</span>
+        {data.map((m) => (
+          <div key={m.month} className="flex h-full min-w-0 flex-1 flex-col justify-end">
+            <div
+              title={
+                m.total === 0
+                  ? `${monthLabel(m.month).short} — aucune heure`
+                  : `${monthLabel(m.month).short} — ${formatDurationFr(m.total)}\n` +
+                    m.studios.map((s) => `${s.studio.name} : ${formatDurationFr(s.minutes)}`).join("\n")
+              }
+              style={{ height: `${(m.total / peak) * 100}%` }}
+              className="flex w-full flex-col justify-end overflow-hidden rounded-t"
+            >
+              {m.studios.map((s) => (
+                <div
+                  key={s.studio.id}
+                  style={{
+                    height: `${(s.minutes / m.total) * 100}%`,
+                    background: s.studio.fillHex,
+                    borderTop: `2px solid ${s.studio.colorHex}`,
+                  }}
+                />
+              ))}
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* L'année n'apparaît qu'au changement d'année : répétée sur douze
+          colonnes étroites, elle ne servait qu'à faire tronquer le mois. */}
+      <div className="mt-1 flex gap-1.5">
+        {data.map((m, i) => {
+          const { short, year } = monthLabel(m.month);
+          const nouvelleAnnee = i === 0 || monthLabel(data[i - 1].month).year !== year;
+          return (
+            <span key={m.month} className="min-w-0 flex-1 truncate text-center text-2xs text-ink-muted">
+              {nouvelleAnnee ? `${short} ${year}` : short}
+            </span>
           );
         })}
       </div>
