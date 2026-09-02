@@ -1,7 +1,9 @@
 import { AlertTriangle, Download, Flag, LayoutDashboard } from "lucide-react";
 import { secondaryButtonClass } from "@/components/ui/buttons";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MonthlyHoursChart } from "@/components/ui/monthly-hours-chart";
 import { SectionHeading } from "@/components/ui/section-heading";
+import type { MonthlyHoursByStudio } from "@/lib/data/time-entries";
 import { formatShortFr, today } from "@/lib/planning/dates";
 import type { ProgressStatus } from "@/lib/planning/tasks";
 import { computeDashboardRows, formatDurationFr, type BudgetPace, type DashboardProjectInput } from "@/lib/planning/time";
@@ -76,11 +78,13 @@ export interface DashboardActivity {
 
 export function DashboardView({
   activity,
+  monthlyHours,
   projects,
   allStatuses,
   milestones,
 }: {
   activity: DashboardActivity;
+  monthlyHours: MonthlyHoursByStudio;
   projects: DashboardProjectInput[];
   allStatuses: ProgressStatus[];
   milestones: UpcomingMilestone[];
@@ -119,6 +123,11 @@ export function DashboardView({
         <StatTile label="Tâches en cours" value={activity.activeTasks} />
         <StatTile label="Tâches en retard" value={activity.lateTasks} alert={activity.lateTasks > 0} />
         <StatTile label="Tâches non attribuées" value={activity.unassignedTasks} alert={activity.unassignedTasks > 0} />
+      </div>
+
+      <div className="mb-8">
+        <SectionHeading>Heures enregistrées par mois</SectionHeading>
+        <MonthlyHoursChart data={monthlyHours} />
       </div>
 
       <div className="mb-8">

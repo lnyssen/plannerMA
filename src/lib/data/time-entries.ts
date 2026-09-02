@@ -87,3 +87,56 @@ export async function countProjectsOverBudget(): Promise<number> {
     return totalMinutes > (p.budgetHours ?? 0) * 60;
   }).length;
 }
+
+/**
+ * Heures enregistrées par mois et par studio, sur les `months` derniers mois
+ * (mois courant inclus).
+ *
+ * Le tableau de bord et Charge ne donnaient que des photos de l'instant : les
+ * écritures sont pourtant horodatées, et c'est précisément l'historique
+ * « heures par studio et par mois » qu'il faut produire pour justifier une
+ * subvention. Sans ça, il fallait sortir le CSV et le refaire à la main.
+ *
+ * L'agrégation se fait en mémoire plutôt qu'en SQL : le volume est celui
+ * d'une petite équipe sur douze mois, et rester en Prisma évite une requête
+ * brute à maintenir en parallèle du schéma.
+ */
+export async function listMonthlyHoursByStudio(months = 12) {
+  const now = new Date();
+  const firstMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
+
+  const entries = await db.timeEntry.findMany({
+    where: { startedAt: { gte: firstMonth } },
+    select: {
+      startedAt: true,
+      endedAt: true,
+      studio: { select: { id: true, name: true, fillHex: true, colorHex: true } },
+    },
+  });
+
+  const keys: string[] = [];
+  for (let i = 0; i < months; i++) {
+    const d = new Date(Date.UTC(firstMonth.getUTCFullYear(), firstMonth.getUTCMonth() + i, 1));
+    keys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+
+  const byMonth = new Map<string, Map<string, { studio: (typeof entries)[number]["studio"]; minutes: number }>>();
+  for (const key of keys) byMonth.set(key, new Map());
+
+  for (const e of entries) {
+    const key = `${e.startedAt.getUTCFullYear()}-${String(e.startedAt.getUTCMonth() + 1).padStart(2, "0")}`;
+    const bucket = byMonth.get(key);
+    if (!bucket) continue; // écriture hors fenêtre (mois entamé avant le premier)
+    const minutes = Math.max(0, Math.round(((e.endedAt ?? now).getTime() - e.startedAt.getTime()) / 60_000));
+    const current = bucket.get(e.studio.id);
+    if (current) current.minutes += minutes;
+    else bucket.set(e.studio.id, { studio: e.studio, minutes });
+  }
+
+  return keys.map((month) => {
+    const rows = [...byMonth.get(month)!.values()].sort((a, b) => b.minutes - a.minutes);
+    return { month, studios: rows, total: rows.reduce((sum, r) => sum + r.minutes, 0) };
+  });
+}
+
+export type MonthlyHoursByStudio = Awaited<ReturnType<typeof listMonthlyHoursByStudio>>;
