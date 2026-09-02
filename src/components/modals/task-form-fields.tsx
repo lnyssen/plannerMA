@@ -83,6 +83,11 @@ export function TaskFormFields({
     };
   }, [values.assigneeId, values.startDate, values.endDate, values.estimatedHalfDays, excludeTaskId]);
 
+  // Un réglage déjà posé ne doit jamais se retrouver caché derrière un repli.
+  const aDesOptions = Boolean(
+    values.dependsOnId || values.maxDurationDays || values.estimatedHalfDays || values.recurrenceFrequency,
+  );
+
   return (
     <div className="mb-4 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
@@ -191,21 +196,7 @@ export function TaskFormFields({
         </select>
       </div>
 
-      {tasks.length > 0 && (
-        <div className="sm:col-span-2">
-          <FieldLabel>Dépend de</FieldLabel>
-          <TaskCascadeFields
-            tasks={tasks}
-            value={values.dependsOnId}
-            onChange={(dependsOnId) => onChange({ dependsOnId })}
-            allowEmpty
-            emptyLabel="Aucune dépendance"
-            idPrefix="task-depends-on"
-          />
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4 sm:col-span-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:col-span-2">
         <div>
           <FieldLabel htmlFor="task-start">Du</FieldLabel>
           <input
@@ -226,33 +217,6 @@ export function TaskFormFields({
             onChange={(e) => onChange({ endDate: e.target.value })}
           />
         </div>
-        <div>
-          <FieldLabel htmlFor="task-max-duration">Max. (j)</FieldLabel>
-          <input
-            id="task-max-duration"
-            type="number"
-            min={1}
-            step={1}
-            className={fieldInputClass}
-            value={values.maxDurationDays}
-            onChange={(e) => onChange({ maxDurationDays: e.target.value })}
-            placeholder="—"
-          />
-        </div>
-        <div>
-          <FieldLabel htmlFor="task-effort">Estim. (demi-j)</FieldLabel>
-          <input
-            id="task-effort"
-            type="number"
-            min={0}
-            step={1}
-            className={fieldInputClass}
-            value={values.estimatedHalfDays}
-            onChange={(e) => onChange({ estimatedHalfDays: e.target.value })}
-            placeholder="—"
-            title="Effort réel estimé, distinct de la plage de dates — utilisé pour la vue Charge."
-          />
-        </div>
       </div>
 
       {capacityWarning && (
@@ -266,7 +230,63 @@ export function TaskFormFields({
         </div>
       )}
 
-      <div className="sm:col-span-2">
+      {/* Dépendance, bornes d'effort et récurrence : utiles, mais rarement.
+          Toujours dépliés, ils occupaient près de la moitié de la hauteur du
+          formulaire — dont trois sélecteurs pleine ligne pour « Dépend de ».
+          Le repli s'ouvre de lui-même dès qu'un de ces champs porte une
+          valeur, pour qu'un réglage existant ne se cache jamais. */}
+      <details className="sm:col-span-2" open={aDesOptions}>
+        <summary className="cursor-pointer list-none text-sm font-semibold text-heading underline-offset-2 hover:underline">
+          Options avancées
+          <span className="ml-1.5 text-2xs font-medium text-ink-muted">
+            dépendance, durée maximale, estimation, récurrence
+          </span>
+        </summary>
+
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {tasks.length > 0 && (
+            <div className="sm:col-span-2">
+              <FieldLabel>Dépend de</FieldLabel>
+              <TaskCascadeFields
+                tasks={tasks}
+                value={values.dependsOnId}
+                onChange={(dependsOnId) => onChange({ dependsOnId })}
+                allowEmpty
+                emptyLabel="Aucune dépendance"
+                idPrefix="task-depends-on"
+              />
+            </div>
+          )}
+
+          <div>
+            <FieldLabel htmlFor="task-max-duration">Durée maximale (jours)</FieldLabel>
+            <input
+              id="task-max-duration"
+              type="number"
+              min={1}
+              step={1}
+              className={fieldInputClass}
+              value={values.maxDurationDays}
+              onChange={(e) => onChange({ maxDurationDays: e.target.value })}
+              placeholder="—"
+            />
+          </div>
+          <div>
+            <FieldLabel htmlFor="task-effort">Estimation (demi-journées)</FieldLabel>
+            <input
+              id="task-effort"
+              type="number"
+              min={0}
+              step={1}
+              className={fieldInputClass}
+              value={values.estimatedHalfDays}
+              onChange={(e) => onChange({ estimatedHalfDays: e.target.value })}
+              placeholder="—"
+              title="Effort réel estimé, distinct de la plage de dates — utilisé pour la vue Charge."
+            />
+          </div>
+
+          <div className="sm:col-span-2">
         <FieldLabel htmlFor="task-recurrence">Récurrence</FieldLabel>
         <div className="flex flex-wrap items-center gap-3">
           <select
@@ -335,6 +355,9 @@ export function TaskFormFields({
           </p>
         )}
       </div>
+        </div>
+      </details>
+
     </div>
   );
 }

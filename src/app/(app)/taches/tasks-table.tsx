@@ -57,18 +57,32 @@ const ALL_COLUMNS: { key: SortKey; label: string }[] = [
   { key: "title", label: "Tâche" },
   { key: "studio", label: "Studio" },
   { key: "person", label: "Personne" },
-  { key: "dates", label: "Dates" },
+  { key: "dates", label: "Début → Échéance" },
   { key: "status", label: "Statut" },
 ];
 
+/**
+ * Plage de dates d'une tâche.
+ *
+ * « 09/07 → 10/07 » ne disait ni de quelle année il s'agissait, ni lequel des
+ * deux nombres était l'échéance. L'année n'apparaît que lorsqu'elle sort de
+ * l'année en cours — la répéter partout noierait l'information utile — et le
+ * libellé de colonne porte désormais le sens des deux bornes.
+ */
 function formatRange(start: Date, end: Date) {
   const a = toIsoDate(start);
   const b = toIsoDate(end);
+  const anneeCourante = today().slice(0, 4);
   const fmt = (iso: string) => {
-    const [, m, d] = iso.split("-");
-    return `${d}/${m}`;
+    const [y, m, d] = iso.split("-");
+    return y === anneeCourante ? `${d}/${m}` : `${d}/${m}/${y.slice(2)}`;
   };
   return a === b ? fmt(a) : `${fmt(a)} → ${fmt(b)}`;
+}
+
+/** Échéance dépassée sur une tâche non terminée. */
+function estEnRetard(t: { endDate: Date; status: { isDone: boolean } }) {
+  return !t.status.isDone && toIsoDate(t.endDate) < today();
 }
 
 export function TasksTable({
@@ -98,6 +112,10 @@ export function TasksTable({
   const [personFilter, setPersonFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState<string[]>([]);
+  // Filtre à part des quatre autres : ce n'est pas une valeur à choisir dans
+  // une liste mais un état calculé, et c'est la question la plus fréquente
+  // devant ce tableau — « qu'est-ce qui a débordé ? ».
+  const [seulementRetard, setSeulementRetard] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("dates");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -178,6 +196,7 @@ export function TasksTable({
     if (personFilter.length > 0) filtered = filtered.filter((t) => t.assigneeId != null && personFilter.includes(t.assigneeId));
     if (statusFilter.length > 0) filtered = filtered.filter((t) => statusFilter.includes(t.statusId));
     if (projectFilter.length > 0) filtered = filtered.filter((t) => t.projectId != null && projectFilter.includes(t.projectId));
+    if (seulementRetard) filtered = filtered.filter(estEnRetard);
 
     const value = (t: TaskListItem): string | number => {
       switch (sortKey) {
@@ -206,7 +225,7 @@ export function TasksTable({
       return 0;
     });
     return sorted;
-  }, [tasks, search, studioFilter, personFilter, statusFilter, projectFilter, sortKey, sortDir]);
+  }, [tasks, search, studioFilter, personFilter, statusFilter, projectFilter, seulementRetard, sortKey, sortDir]);
 
   return (
     <div>
@@ -216,6 +235,26 @@ export function TasksTable({
             précis, cohérent avec la nomenclature Client — Projet partout
             ailleurs dans l'appli. Recherche en dernier : les filtres à choix
             (qui bornent la liste à un ensemble connu) avant le champ libre. */}
+        {/* En tête des filtres : c'est la question la plus fréquente devant ce
+            tableau, et elle ne se pose pas comme les autres — un état, pas une
+            valeur à cocher dans une liste. */}
+        <button
+          type="button"
+          onClick={() => setSeulementRetard((v) => !v)}
+          aria-pressed={seulementRetard}
+          title="N’afficher que les tâches dont l’échéance est dépassée"
+          className="flex h-10 flex-shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-3 text-sm font-semibold transition-colors duration-100"
+          style={
+            seulementRetard
+              ? { background: "var(--color-alert)", borderColor: "var(--color-alert)", color: "#FFFFFF" }
+              : { borderColor: "var(--color-alert)", color: "var(--color-alert)" }
+          }
+        >
+          <AlertTriangle size={14} aria-hidden="true" />
+          En retard
+          <span className="tabular-nums">{tasks.filter(estEnRetard).length}</span>
+        </button>
+
         <MultiSelectField
           label="Tous les projets"
           selected={projectFilter}

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CalendarDays, Clock, Download, List, PieChart, Play, Plus, Square, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Clock, List, PieChart, Play, Plus, Square, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { addManualEntry, deleteTimeEntry, startTimer, stopTimer, type RunningTimer } from "@/lib/actions/time-entries";
@@ -9,7 +9,7 @@ import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskCategoryOption } from "@/lib/data/task-categories";
 import type { TaskOption } from "@/lib/data/tasks";
-import { formatLongFr, quandFr, toIsoDate, today } from "@/lib/planning/dates";
+import { formatLongFr, toIsoDate, today } from "@/lib/planning/dates";
 import { formatHourMinute } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { fieldInputClass, FieldLabel } from "@/components/modals/modal-shell";
@@ -19,6 +19,7 @@ import { useToast } from "@/components/ui/toast";
 import { EntryContextLabelParts } from "@/components/ui/task-context-label";
 import { EntryContextFields, type EntryContextValue } from "@/components/temps/entry-context-fields";
 import { SegmentedControl, type SegmentedOption } from "@/components/ui/segmented-control";
+import { TeamTimeView } from "@/components/temps/team-time-view";
 import { TimesheetPanel } from "@/components/temps/timesheet-panel";
 import type { MyTimesheet, PendingTimesheet } from "@/lib/actions/timesheets";
 import { TimeCalendar } from "./time-calendar";
@@ -477,14 +478,7 @@ export function TempsView({
       )}
 
       {tab === "team" && isAdmin && (
-        <div className="max-w-4xl">
-          <a
-            href="/api/export/time-entries"
-            className={`mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
-          >
-            <Download size={14} /> Exporter en CSV
-          </a>
-
+        <div>
           {overBudget.length > 0 && (
             <div className="mb-6 flex flex-col gap-2">
               {overBudget.map((p) => (
@@ -502,32 +496,10 @@ export function TempsView({
             </div>
           )}
 
-          {allEntries.length === 0 ? (
-            <EmptyState icon={Clock} title="Aucune écriture pour l’instant" description="Le temps enregistré par l’équipe apparaîtra ici." />
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              {allEntries.map((e) => (
-                <div key={e.id} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
-                  <span className="w-32 flex-shrink-0 truncate font-semibold text-heading">{e.person.name}</span>
-                  <div className="flex-1">
-                    <span className="text-ink">
-                      <EntryContextLabelParts entry={e} />
-                    </span>
-                  </div>
-                  <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">{quandFr(e.startedAt)}</span>
-                  <span className="flex-shrink-0 text-xs text-ink-muted tabular-nums">
-                    {formatHourMinute(e.startedAt)}–{e.endedAt ? formatHourMinute(e.endedAt) : "…"}
-                  </span>
-                  <span className="flex-shrink-0 text-xs font-semibold text-ink tabular-nums">
-                    {formatDurationFr(entryDurationMinutes(e, referenceNow))}
-                    {!e.endedAt && " (en cours)"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <TeamTimeView entries={allEntries} referenceNow={referenceNow} />
         </div>
       )}
+
     </div>
   );
 }
