@@ -10,6 +10,7 @@ import { listActiveProjectsForForms } from "@/lib/data/projects";
 import { listStudios } from "@/lib/data/studios";
 import { listTaskCategories } from "@/lib/data/task-categories";
 import { listActiveTasksForForms } from "@/lib/data/tasks";
+import { listMyTimesheets, listPendingTimesheets } from "@/lib/actions/timesheets";
 import { TempsView } from "./temps-view";
 
 export default async function TempsPage() {
@@ -17,7 +18,8 @@ export default async function TempsPage() {
   if (!session?.user) redirect("/connexion"); // filet de sécurité, le middleware couvre déjà ce cas
 
   const isAdmin = session.user.role === "ADMIN";
-  const [myEntries, runningTimer, tasks, studios, projects, categories, allEntries, projectsWithBudget] = await Promise.all([
+  const [myEntries, runningTimer, tasks, studios, projects, categories, allEntries, projectsWithBudget, myTimesheets, pendingTimesheets] =
+    await Promise.all([
     session.user.personId ? listTimeEntriesForPerson(session.user.personId) : Promise.resolve([]),
     getRunningTimer(),
     listActiveTasksForForms(),
@@ -26,6 +28,8 @@ export default async function TempsPage() {
     listTaskCategories(),
     isAdmin ? listAllTimeEntries() : Promise.resolve([]),
     isAdmin ? listProjectsWithBudget() : Promise.resolve([]),
+    listMyTimesheets(),
+    listPendingTimesheets(),
   ]);
 
   return (
@@ -38,6 +42,8 @@ export default async function TempsPage() {
       categories={categories}
       allEntries={allEntries}
       projectsWithBudget={projectsWithBudget}
+      myTimesheets={myTimesheets}
+      pendingTimesheets={pendingTimesheets}
       isAdmin={isAdmin}
       hasPerson={!!session.user.personId}
     />

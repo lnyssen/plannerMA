@@ -19,6 +19,8 @@ import { useToast } from "@/components/ui/toast";
 import { EntryContextLabelParts } from "@/components/ui/task-context-label";
 import { EntryContextFields, type EntryContextValue } from "@/components/temps/entry-context-fields";
 import { SegmentedControl, type SegmentedOption } from "@/components/ui/segmented-control";
+import { TimesheetPanel } from "@/components/temps/timesheet-panel";
+import type { MyTimesheet, PendingTimesheet } from "@/lib/actions/timesheets";
 import { TimeCalendar } from "./time-calendar";
 
 type MineView = "calendar" | "list" | "summary";
@@ -30,8 +32,13 @@ const MINE_VIEWS: SegmentedOption<MineView>[] = [
   { id: "summary", label: "Par projet", icon: PieChart },
 ];
 
-const SCOPES: SegmentedOption<"mine" | "team">[] = [
+type Scope = "mine" | "sheets" | "team";
+
+// « Feuilles » est visible de tout le monde — chacun remet les siennes ;
+// « Équipe » reste administrateur.
+const SCOPES: SegmentedOption<Scope>[] = [
   { id: "mine", label: "Mon temps" },
+  { id: "sheets", label: "Feuilles" },
   { id: "team", label: "Équipe" },
 ];
 
@@ -52,6 +59,8 @@ export function TempsView({
   categories,
   allEntries,
   projectsWithBudget,
+  myTimesheets,
+  pendingTimesheets,
   isAdmin,
   hasPerson,
 }: {
@@ -63,13 +72,15 @@ export function TempsView({
   categories: TaskCategoryOption[];
   allEntries: TimeEntryWithPerson[];
   projectsWithBudget: ProjectBudget[];
+  myTimesheets: MyTimesheet[];
+  pendingTimesheets: PendingTimesheet[];
   isAdmin: boolean;
   hasPerson: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
   const [, startTransition] = useTransition();
-  const [tab, setTab] = useState<"mine" | "team">("mine");
+  const [tab, setTab] = useState<Scope>("mine");
   const [mineView, setMineView] = useState<MineView>("calendar");
   const [context, setContext] = useState<EntryContextValue>({
     taskId: tasks[0]?.id ?? null,
@@ -209,7 +220,12 @@ export function TempsView({
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Temps
         </h1>
-        {isAdmin && <SegmentedControl ariaLabel="Périmètre" value={tab} onChange={setTab} options={SCOPES} />}
+        <SegmentedControl
+          ariaLabel="Périmètre"
+          value={tab}
+          onChange={setTab}
+          options={isAdmin ? SCOPES : SCOPES.filter((s) => s.id !== "team")}
+        />
       </div>
 
       {tab === "mine" && (
@@ -452,6 +468,12 @@ export function TempsView({
           </div>
         )}
         </>
+      )}
+
+      {tab === "sheets" && (
+        <div className="max-w-3xl">
+          <TimesheetPanel mine={myTimesheets} pending={pendingTimesheets} isAdmin={isAdmin} />
+        </div>
       )}
 
       {tab === "team" && isAdmin && (

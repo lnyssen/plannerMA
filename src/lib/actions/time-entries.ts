@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { createNotification } from "./notifications";
+import { timesheetLockFor } from "./timesheets";
 import { formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
@@ -136,6 +137,9 @@ export async function startTimer(input: z.infer<typeof entryContextSchema>): Pro
   if ("error" in resolved) return resolved;
 
   const now = new Date();
+  const locked = await timesheetLockFor(session.user.personId, now);
+  if (locked) return { error: locked };
+
   await db.$transaction([
     db.timeEntry.updateMany({ where: { personId: session.user.personId, endedAt: null }, data: { endedAt: now } }),
     db.timeEntry.create({
@@ -164,6 +168,10 @@ export async function stopTimer(entryId: string): Promise<{ error?: string }> {
     return { error: "Vous ne pouvez arrêter que votre propre minuteur." };
   }
 
+  // Volontairement pas de contrôle de verrou ici : un minuteur lancé avant
+  // que le mois ne soit remis doit pouvoir être arrêté, sinon il tournerait
+  // indéfiniment. Il ne peut de toute façon pas avoir été démarré dans un
+  // mois verrouillé (voir startTimer).
   await db.timeEntry.update({ where: { id: entryId }, data: { endedAt: new Date() } });
   await checkAndNotifyBudget(entry.projectId);
   revalidateTimeViews();
@@ -193,6 +201,9 @@ export async function addManualEntry(input: z.infer<typeof manualEntrySchema>): 
 
   const startedAt = new Date(`${date}T09:00:00.000Z`);
   const endedAt = new Date(startedAt.getTime() + (hours * 60 + minutes) * 60_000);
+
+  const locked = await timesheetLockFor(session.user.personId, startedAt);
+  if (locked) return { error: locked };
 
   await db.timeEntry.create({
     data: {
@@ -230,6 +241,9 @@ export async function createTimeEntryAt(input: z.infer<typeof createAtSchema>): 
   const { startedAt, endedAt } = parsed.data;
   const resolved = await resolveEntryContext(parsed.data);
   if ("error" in resolved) return resolved;
+
+  const locked = await timesheetLockFor(session.user.personId, new Date(startedAt));
+  if (locked) return { error: locked };
 
   await db.timeEntry.create({
     data: {
@@ -273,12 +287,22 @@ export async function updateTimeEntryTimes(input: z.infer<typeof moveEntrySchema
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Créneau invalide." };
   const { entryId, startedAt, endedAt, studioId } = parsed.data;
 
-  const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true, endedAt: true, projectId: true } });
+  const entry = await db.timeEntry.findUnique({
+    where: { id: entryId },
+    select: { personId: true, startedAt: true, endedAt: true, projectId: true },
+  });
   if (!entry) return { error: "Cette écriture n’existe plus." };
   if (entry.personId !== session.user.personId && session.user.role !== "ADMIN") {
     return { error: "Vous ne pouvez modifier que vos propres écritures." };
   }
   if (entry.endedAt === null) return { error: "Un minuteur en cours ne se déplace pas — arrêtez-le d’abord." };
+
+  // Les deux mois comptent : sortir une écriture d'un mois verrouillé le
+  // modifie autant que d'en poser une dedans.
+  for (const when of [entry.startedAt, new Date(startedAt)]) {
+    const locked = await timesheetLockFor(entry.personId, when);
+    if (locked) return { error: locked };
+  }
 
   let contextData: Partial<{ taskId: string | null; projectId: string | null; studioId: string; categoryId: string | null }> = {};
   if (studioId) {
@@ -300,11 +324,13 @@ export async function deleteTimeEntry(entryId: string): Promise<{ error?: string
   const session = await auth();
   if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
 
-  const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true } });
+  const entry = await db.timeEntry.findUnique({ where: { id: entryId }, select: { personId: true, startedAt: true } });
   if (!entry) return {};
   if (entry.personId !== session.user.personId && session.user.role !== "ADMIN") {
     return { error: "Vous ne pouvez retirer que vos propres écritures." };
   }
+  const locked = await timesheetLockFor(entry.personId, entry.startedAt);
+  if (locked) return { error: locked };
 
   await db.timeEntry.delete({ where: { id: entryId } });
   revalidateTimeViews();

@@ -181,6 +181,8 @@ model Person {
   notifications  Notification[]
   mentions       CommentMention[]
   timeEntries    TimeEntry[]
+  timesheets     TimesheetPeriod[]
+  timesheetsReviewed TimesheetPeriod[] @relation("TimesheetReviewer")
 
   @@map("people")
 }
@@ -475,6 +477,48 @@ model TaskCategory {
 /// par l'écriture plutôt que déduits d'une tâche. Démarrer un nouveau
 /// minuteur arrête automatiquement celui en cours pour la même personne —
 /// un seul actif à la fois, comme Clockify.
+/// État d'une feuille de temps mensuelle.
+/// `DRAFT` : le mois se remplit normalement. `SUBMITTED` : la personne l'a
+/// remise, elle ne peut plus la modifier ; un administrateur peut encore la
+/// rouvrir. `APPROVED` : validée, verrouillée pour tout le monde sauf
+/// réouverture explicite par un administrateur.
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+}
+
+/// Feuille de temps d'une personne pour un mois donné.
+///
+/// Rien ne verrouillait les écritures : un mois « clôturé » restait
+/// modifiable indéfiniment, ce qui empêchait de prouver, au moment d'un
+/// contrôle de subvention, que les chiffres remis n'avaient pas bougé
+/// depuis. Le verrou porte sur le couple personne/mois plutôt que sur chaque
+/// écriture : c'est le mois entier qu'on remet et qu'on valide, et une
+/// écriture nouvellement créée dans un mois validé doit être refusée elle
+/// aussi — un état par écriture ne l'aurait pas empêchée.
+///
+/// `month` est le premier jour du mois concerné, à minuit UTC.
+model TimesheetPeriod {
+  id           String          @id @default(cuid())
+  person       Person          @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId     String          @map("person_id")
+  month        DateTime        @db.Date
+  status       TimesheetStatus @default(DRAFT)
+  submittedAt  DateTime?       @map("submitted_at")
+  reviewedAt   DateTime?       @map("reviewed_at")
+  reviewedBy   Person?         @relation("TimesheetReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedById String?         @map("reviewed_by_id")
+  /// Motif d'une réouverture, pour que la personne sache quoi corriger.
+  note         String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  @@unique([personId, month])
+  @@index([status])
+  @@map("timesheet_periods")
+}
+
 model TimeEntry {
   id         String        @id @default(cuid())
   task       Task?         @relation(fields: [taskId], references: [id], onDelete: Cascade)
