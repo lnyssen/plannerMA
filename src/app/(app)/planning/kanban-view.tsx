@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { GripVertical, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
@@ -9,6 +9,7 @@ import { SearchField } from "@/components/ui/search-field";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import { PersonLabel } from "@/components/ui/person-avatar";
 import { useCreateModals } from "@/components/shell/create-modals-context";
+import { useCardDrag } from "@/components/planning/use-card-drag";
 import { updateTaskStatus } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -16,17 +17,38 @@ import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskListItem } from "@/lib/data/tasks";
 import { formatShortFr, toIsoDate } from "@/lib/planning/dates";
 
-function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) => void }) {
+function TaskCard({
+  task,
+  onOpen,
+  onGrab,
+  dragging,
+}: {
+  task: TaskListItem;
+  onOpen: (id: string) => void;
+  onGrab: (e: React.PointerEvent) => void;
+  dragging: boolean;
+}) {
   return (
     <div
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", task.id);
-        e.dataTransfer.effectAllowed = "move";
-      }}
       onClick={() => onOpen(task.id)}
-      className="cursor-grab rounded-lg border border-line bg-paper p-2.5 text-left transition-colors duration-100 hover:border-heading active:cursor-grabbing"
+      style={{ opacity: dragging ? 0.4 : 1 }}
+      className="relative cursor-pointer rounded-lg border border-line bg-paper p-2.5 pr-7 text-left transition-colors duration-100 hover:border-heading"
     >
+      {/* Seule la poignée coupe le défilement tactile : la colonne continue
+          de défiler au doigt, et un appui sur la carte ouvre la tâche. */}
+      <button
+        type="button"
+        aria-label={`Déplacer ${task.title}`}
+        title="Glisser vers une autre colonne"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          onGrab(e);
+        }}
+        className="absolute top-1.5 right-1 flex h-6 w-5 cursor-grab touch-none items-center justify-center rounded text-ink-muted transition-colors duration-100 hover:text-heading active:cursor-grabbing"
+      >
+        <GripVertical size={14} />
+      </button>
       <p className="mb-1.5 text-sm font-bold text-heading">{task.title}</p>
       {task.project && (
         <p className="mb-1.5 truncate text-2xs text-ink-muted">
@@ -69,7 +91,6 @@ export function KanbanView({
   const [search, setSearch] = useState("");
   const [studioFilter, setStudioFilter] = useState<string[]>([]);
   const [personFilter, setPersonFilter] = useState<string[]>([]);
-  const [dragOverStatusId, setDragOverStatusId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
@@ -109,6 +130,9 @@ export function KanbanView({
     });
   }
 
+  // Déclaré après moveTask : le glissement s'appuie dessus.
+  const cardDrag = useCardDrag((taskId, statusId) => moveTask(taskId, statusId));
+
   return (
     <div>
       <div className="mb-5 flex flex-wrap gap-3">
@@ -144,19 +168,9 @@ export function KanbanView({
         {columns.map(({ status, tasks: colTasks }) => (
           <div
             key={status.id}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOverStatusId(status.id);
-            }}
-            onDragLeave={() => setDragOverStatusId((s) => (s === status.id ? null : s))}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOverStatusId(null);
-              const taskId = e.dataTransfer.getData("text/plain");
-              if (taskId) moveTask(taskId, status.id);
-            }}
+            {...cardDrag.zoneAttrs(status.id)}
             className="flex min-h-[200px] w-72 flex-shrink-0 flex-col gap-2 rounded-lg border border-line bg-wash p-2.5"
-            style={{ outline: dragOverStatusId === status.id ? "2px solid var(--color-heading)" : undefined, outlineOffset: -2 }}
+            style={{ outline: cardDrag.drag?.over === status.id ? "2px solid var(--color-heading)" : undefined, outlineOffset: -2 }}
           >
             <div
               className="flex items-center justify-between px-1.5 py-1 text-xs font-bold tracking-wide uppercase"
@@ -166,7 +180,13 @@ export function KanbanView({
               <span className="tabular-nums">{colTasks.length}</span>
             </div>
             {colTasks.map((t) => (
-              <TaskCard key={t.id} task={t} onOpen={(id) => router.push(`/taches/${id}`)} />
+              <TaskCard
+                key={t.id}
+                task={t}
+                dragging={cardDrag.drag?.id === t.id}
+                onGrab={(e) => cardDrag.start(t.id, t.title, e)}
+                onOpen={(id) => router.push(`/taches/${id}`)}
+              />
             ))}
             {/* Le Kanban savait déplacer une tâche d'une colonne à l'autre
                 mais pas en créer : il fallait passer par le bouton global
@@ -183,9 +203,19 @@ export function KanbanView({
         ))}
       </ScrollFade>
 
+      {cardDrag.drag && (
+        <div
+          aria-hidden="true"
+          style={{ top: cardDrag.drag.y + 12, left: cardDrag.drag.x + 12 }}
+          className="pointer-events-none fixed z-50 max-w-[16rem] truncate rounded-lg border-[1.5px] border-heading bg-paper px-2.5 py-1.5 text-sm font-bold text-heading shadow-lg"
+        >
+          {cardDrag.drag.label}
+        </div>
+      )}
+
       <p className="mt-4 text-xs text-ink-muted">
-        Glissez une carte vers une autre colonne pour changer son statut (ordinateur uniquement) — sur mobile, ouvrez
-        la tâche pour changer son statut depuis la fiche.
+        Attrapez la poignée d’une carte et glissez-la vers une autre colonne pour changer son statut — à la souris
+        comme au doigt. Un appui sur la carte ouvre la tâche.
       </p>
     </div>
   );
