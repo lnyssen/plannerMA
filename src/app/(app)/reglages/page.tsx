@@ -5,13 +5,14 @@ import { listRecentJournalEntries } from "@/lib/data/journal";
 import { listStudios } from "@/lib/data/studios";
 import { listTaskCategories } from "@/lib/data/task-categories";
 import { listTaskStatuses } from "@/lib/data/task-statuses";
+import { getClockifyStatus } from "@/lib/actions/clockify";
 import { ReglagesView } from "./reglages-view";
 
 export default async function ReglagesPage() {
   const session = await auth();
   if (session?.user.role !== "ADMIN") redirect("/projets"); // filet de sécurité, le middleware couvre déjà ce cas
 
-  const [studios, statuses, categories, trashed, journal] = await Promise.all([
+  const [studios, statuses, categories, trashed, journal, clockify] = await Promise.all([
     listStudios(),
     listTaskStatuses(),
     listTaskCategories(),
@@ -21,6 +22,7 @@ export default async function ReglagesPage() {
       include: { project: true },
     }),
     listRecentJournalEntries(),
+    getClockifyStatus(),
   ]);
 
   return (
@@ -35,6 +37,7 @@ export default async function ReglagesPage() {
         trashedAt: t.trashedAt,
       }))}
       journal={journal}
+      clockify={clockify}
     />
   );
 }

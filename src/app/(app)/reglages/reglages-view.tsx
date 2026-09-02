@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Mail, Plus, RefreshCw, ScrollText, Settings, Tags, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Link2, Mail, Plus, RefreshCw, ScrollText, Settings, Tags, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -23,6 +23,8 @@ import {
 } from "@/lib/actions/task-statuses";
 import { destroyTask, restoreTask } from "@/lib/actions/tasks";
 import type { JournalEntrySummary } from "@/lib/data/journal";
+import type { ClockifyStatus } from "@/lib/actions/clockify";
+import { ClockifyPanel } from "@/components/reglages/clockify-panel";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskCategoryOption } from "@/lib/data/task-categories";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
@@ -48,16 +50,18 @@ export function ReglagesView({
   categories,
   trashedTasks,
   journal,
+  clockify,
 }: {
   studios: StudioSummary[];
   statuses: TaskStatusSummary[];
   categories: TaskCategoryOption[];
   trashedTasks: TrashedTask[];
   journal: JournalEntrySummary[];
+  clockify: ClockifyStatus | null;
 }) {
   const router = useRouter();
   const ask = useConfirm();
-  const [tab, setTab] = useState<"general" | "categories" | "corbeille" | "journal">("general");
+  const [tab, setTab] = useState<"general" | "categories" | "clockify" | "corbeille" | "journal">("general");
   const [, startTransition] = useTransition();
   const [newStudioName, setNewStudioName] = useState("");
   const [newStatusName, setNewStatusName] = useState("");
@@ -70,6 +74,7 @@ export function ReglagesView({
   const TABS = [
     { id: "general" as const, label: "Général", icon: Settings },
     { id: "categories" as const, label: "Catégories de tâches", icon: Tags },
+    { id: "clockify" as const, label: "Clockify", icon: Link2 },
     { id: "corbeille" as const, label: `Corbeille${trashedTasks.length ? ` (${trashedTasks.length})` : ""}`, icon: Trash2 },
     { id: "journal" as const, label: "Journal", icon: ScrollText },
   ];
@@ -374,6 +379,12 @@ export function ReglagesView({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === "clockify" && clockify && (
+        <div className="max-w-3xl">
+          <ClockifyPanel status={clockify} />
         </div>
       )}
 

@@ -195,6 +195,20 @@ fonctionne aujourd'hui, avec de vraies données en base :
   la tâche) mais "Autre activité" permet de logger du temps sans créer de
   tâche au préalable, pour rester rapide sur du travail non planifié.
 
+- **Clockify** (Réglages → Clockify, facultatif) : un seul sens par type de
+  donnée, donc aucune règle de conflit à arbitrer. Le **référentiel descend**
+  — clients et projets du planner créés ou renommés dans Clockify, pour que
+  l'équipe pointe sur les bons projets ; rien n'y est jamais supprimé, sinon
+  les heures déjà pointées partiraient avec. Les **heures remontent** —
+  import mois par mois, qui alimente budgets, Charge, feuilles de temps et
+  justificatifs de subvention. L'identifiant Clockify de chaque écriture sert
+  de clé d'idempotence : réimporter un mois ne double rien. Une écriture
+  posée sur un projet Clockify sans correspondance ici est écartée et
+  signalée plutôt que rattachée au hasard, et un mois dont la feuille est
+  déjà remise ou validée n'est pas réimporté — le verrou ne prouverait plus
+  rien. La clé d'API vit dans `CLOCKIFY_API_KEY` côté serveur, jamais dans
+  un champ de l'application ni en base : elle donne accès à tout l'espace de
+  travail. Voir `src/lib/clockify/`.
 - **Feuilles de temps mensuelles** (Temps → Feuilles) : chacun remet le mois
   écoulé, un administrateur valide ou rouvre. Une feuille remise puis validée
   verrouille les écritures du mois — démarrage de minuteur, saisie manuelle,

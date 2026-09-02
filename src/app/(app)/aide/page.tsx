@@ -337,6 +337,19 @@ export default function AidePage() {
             </li>
             <li><strong>Validée</strong> — verrouillée pour tout le monde, jusqu’à réouverture par un administrateur.</li>
           </Ul>
+          <H3>Clockify</H3>
+          <P>
+            Si l’équipe pointe dans Clockify, Réglages → Clockify relie les deux — un seul sens par type de donnée.
+          </P>
+          <Ul>
+            <li><strong>Relier les personnes</strong> — rapproche chaque fiche de son compte Clockify, par adresse courriel.</li>
+            <li><strong>Envoyer le référentiel</strong> — crée ou renomme dans Clockify les clients et projets du planner, pour pointer sur les bons projets. Rien n’y est supprimé.</li>
+            <li><strong>Importer les heures</strong> — reprend un mois de pointages. Réimporter le même mois ne double rien.</li>
+          </Ul>
+          <P>
+            Une écriture posée sur un projet Clockify sans équivalent ici est écartée et signalée, jamais rattachée au
+            hasard. Un mois dont la feuille est déjà remise ou validée n’est pas réimporté.
+          </P>
           <Steps title="Valider une feuille (administrateur)">
             <li>Temps → Feuilles → section « Feuilles remises et validées ».</li>
             <li>« Valider » verrouille le mois, « Rouvrir » le rend de nouveau modifiable.</li>

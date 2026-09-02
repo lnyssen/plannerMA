@@ -167,6 +167,11 @@ model Person {
   /// tâche) quand la personne n'a pas de compte de connexion lié (`User`).
   /// Si un compte existe, son courriel prévaut (voir notify.ts).
   email     String?
+  /// Utilisateur Clockify correspondant. Contrairement aux autres
+  /// identifiants Clockify, celui-ci n'est jamais créé par l'application :
+  /// les comptes existent déjà là-bas, on ne fait que les relier (voir
+  /// Réglages → Clockify).
+  clockifyUserId String? @unique @map("clockify_user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -238,6 +243,10 @@ model Client {
   notes        String?
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  /// Identifiant de l'objet correspondant dans Clockify. Posé au premier
+  /// envoi du référentiel et réutilisé ensuite comme clé de mise à jour —
+  /// voir src/lib/clockify/.
+  clockifyId   String?  @unique @map("clockify_id")
 
   projects Project[]
 
@@ -258,6 +267,10 @@ model Project {
   /// Nature du projet pour le suivi de temps — voir ProjectType.
   projectType ProjectType @default(EXTERNE) @map("project_type")
   archived    Boolean     @default(false)
+  /// Identifiant de l'objet correspondant dans Clockify. Posé au premier
+  /// envoi du référentiel et réutilisé ensuite comme clé de mise à jour —
+  /// voir src/lib/clockify/.
+  clockifyId  String?     @unique @map("clockify_id")
   /// Budget de temps estimé pour tout le projet (heures) — facultatif. Sert
   /// uniquement à l'avertissement de dépassement (fiche projet, Temps) ;
   /// distinct de `Task.estimatedHalfDays` qui reste une estimation par
@@ -534,6 +547,9 @@ model TimeEntry {
   startedAt  DateTime      @map("started_at")
   endedAt    DateTime?     @map("ended_at")
   note       String?
+  /// Écriture importée depuis Clockify — l'identifiant d'origine sert de clé
+  /// d'idempotence : réimporter la même période ne duplique rien.
+  clockifyId String?       @unique @map("clockify_id")
   createdAt  DateTime      @default(now()) @map("created_at")
 
   @@index([taskId])
