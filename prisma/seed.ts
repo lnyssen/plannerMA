@@ -149,29 +149,41 @@ async function main() {
     people[p.key] = person.id;
   }
 
-  console.log("Semis du compte administrateur (admin@media-animation.be / changez-moi)…");
-  await db.user.upsert({
-    where: { email: "admin@media-animation.be" },
-    update: {},
-    create: {
-      email: "admin@media-animation.be",
-      passwordHash: await bcrypt.hash("changez-moi", 12),
-      role: "ADMIN",
-      personId: people.elena,
-    },
-  });
+  // Les comptes de démonstration portent un mot de passe public ("changez-moi").
+  // Les créer sur une base distante reviendrait à ouvrir un accès
+  // administrateur en clair sur une URL publique : sur autre chose que
+  // localhost, on ne crée donc aucun compte. Ceux qui existent déjà ne sont de
+  // toute façon jamais modifiés (`update: {}`), un semis ne réinitialise
+  // jamais un mot de passe en service.
+  const baseLocale = /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL ?? "");
 
-  console.log("Semis d'un compte collaborateur (bilal@media-animation.be / changez-moi)…");
-  await db.user.upsert({
-    where: { email: "bilal@media-animation.be" },
-    update: {},
-    create: {
-      email: "bilal@media-animation.be",
-      passwordHash: await bcrypt.hash("changez-moi", 12),
-      role: "COLLABORATOR",
-      personId: people.bilal,
-    },
-  });
+  const COMPTES_DEMO = [
+    { email: "admin@media-animation.be", role: "ADMIN" as const, personKey: "elena" },
+    { email: "bilal@media-animation.be", role: "COLLABORATOR" as const, personKey: "bilal" },
+  ];
+
+  for (const compte of COMPTES_DEMO) {
+    const existant = await db.user.findUnique({ where: { email: compte.email }, select: { id: true } });
+    if (existant) {
+      console.log(`Compte ${compte.email} déjà présent — inchangé.`);
+      continue;
+    }
+    if (!baseLocale) {
+      console.warn(
+        `⚠️  Compte ${compte.email} NON créé : la base visée n'est pas locale, et ce compte aurait le mot de passe public « changez-moi ». Créez-le depuis Équipe, avec un vrai mot de passe.`,
+      );
+      continue;
+    }
+    console.log(`Semis du compte ${compte.email} (mot de passe : changez-moi)…`);
+    await db.user.create({
+      data: {
+        email: compte.email,
+        passwordHash: await bcrypt.hash("changez-moi", 12),
+        role: compte.role,
+        personId: people[compte.personKey],
+      },
+    });
+  }
 
   console.log("Semis des clients, projets et tâches…");
   const auj = today();
