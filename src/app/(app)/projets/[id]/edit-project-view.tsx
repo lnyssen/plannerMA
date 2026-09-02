@@ -1,6 +1,6 @@
 "use client";
 
-import type { ProjectType } from "@prisma/client";
+import type { ProjectPole } from "@prisma/client";
 import { AlertTriangle, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,7 +14,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import { formatShortFr, quandFr, toIsoDate, today } from "@/lib/planning/dates";
-import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
+import { PROJECT_POLE_LABELS } from "@/lib/planning/labels";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { recordRecentItem } from "@/lib/recent-items";
 import { ClientPicker } from "@/components/modals/client-picker";
@@ -48,8 +48,7 @@ export function EditProjectView({
   const [code, setCode] = useState(initialProject.code ?? "");
   const [clientId, setClientId] = useState<string | null>(initialProject.clientId);
   const [newClientName, setNewClientName] = useState<string | null>(null);
-  const [type, setType] = useState<"INTERNAL" | "EXTERNAL">(initialProject.type);
-  const [projectType, setProjectType] = useState<ProjectType>(initialProject.projectType);
+  const [pole, setPole] = useState<ProjectPole | "">(initialProject.pole ?? "");
   const [studioIds, setStudioIds] = useState<string[]>(initialProject.studios.map((s) => s.studioId));
   const [budgetHours, setBudgetHours] = useState(initialProject.budgetHours != null ? String(initialProject.budgetHours) : "");
   const [error, setError] = useState<string | null>(null);
@@ -76,8 +75,7 @@ export function EditProjectView({
       setName(p.name);
       setCode(p.code ?? "");
       setClientId(p.clientId);
-      setType(p.type);
-      setProjectType(p.projectType);
+      setPole(p.pole ?? "");
       setStudioIds(p.studios.map((s) => s.studioId));
       setBudgetHours(p.budgetHours != null ? String(p.budgetHours) : "");
     }
@@ -169,8 +167,7 @@ export function EditProjectView({
         code: code.trim() || null,
         clientId,
         newClientName,
-        type,
-        projectType,
+        pole: pole || null,
         studioIds,
         budgetHours: budgetHours ? Number(budgetHours) : null,
       });
@@ -340,24 +337,17 @@ export function EditProjectView({
               }}
             />
 
-            <FieldLabel>Type de client</FieldLabel>
-            <div className="mb-3 flex gap-4">
-              <label className="flex items-center gap-1.5 text-sm text-ink">
-                <input type="radio" checked={type === "INTERNAL"} onChange={() => setType("INTERNAL")} /> Interne
-              </label>
-              <label className="flex items-center gap-1.5 text-sm text-ink">
-                <input type="radio" checked={type === "EXTERNAL"} onChange={() => setType("EXTERNAL")} /> Externe
-              </label>
-            </div>
-
-            <FieldLabel htmlFor="edit-project-type">Type de projet (suivi de temps)</FieldLabel>
+            {/* Interne/externe se saisit sur la fiche du client : c'est une
+                propriété du client, pas de chacun de ses projets. */}
+            <FieldLabel htmlFor="edit-project-pole">Pôle</FieldLabel>
             <select
-              id="edit-project-type"
+              id="edit-project-pole"
               className={`${fieldInputClass} mb-3`}
-              value={projectType}
-              onChange={(e) => setProjectType(e.target.value as ProjectType)}
+              value={pole}
+              onChange={(e) => setPole(e.target.value as ProjectPole | "")}
             >
-              {Object.entries(PROJECT_TYPE_LABELS).map(([value, label]) => (
+              <option value="">Aucun pôle particulier</option>
+              {Object.entries(PROJECT_POLE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>

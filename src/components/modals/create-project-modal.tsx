@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { ProjectType } from "@prisma/client";
+import type { ProjectPole } from "@prisma/client";
 import { createProject } from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
-import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
+import { PROJECT_POLE_LABELS } from "@/lib/planning/labels";
 import { ClientPicker } from "./client-picker";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { FieldLabel, fieldInputClass } from "./modal-shell";
@@ -29,8 +29,7 @@ export function CreateProjectModal({
   const [code, setCode] = useState("");
   const [clientId, setClientId] = useState<string | null>(clients[0]?.id ?? null);
   const [newClientName, setNewClientName] = useState<string | null>(clients.length === 0 ? "" : null);
-  const [type, setType] = useState<"INTERNAL" | "EXTERNAL">("EXTERNAL");
-  const [projectType, setProjectType] = useState<ProjectType>("EXTERNE");
+  const [pole, setPole] = useState<ProjectPole | "">("");
   const [studioIds, setStudioIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +40,7 @@ export function CreateProjectModal({
   function submit() {
     setError(null);
     startTransition(async () => {
-      const result = await createProject({ name, code: code.trim() || null, clientId, newClientName, type, projectType, studioIds });
+      const result = await createProject({ name, code: code.trim() || null, clientId, newClientName, pole: pole || null, studioIds });
       if (result.error) {
         setError(result.error);
         return;
@@ -81,24 +80,18 @@ export function CreateProjectModal({
         }}
       />
 
-      <FieldLabel>Type de client</FieldLabel>
-      <div className="mb-3 flex gap-4">
-        <label className="flex items-center gap-1.5 text-sm text-ink">
-          <input type="radio" checked={type === "INTERNAL"} onChange={() => setType("INTERNAL")} /> Interne
-        </label>
-        <label className="flex items-center gap-1.5 text-sm text-ink">
-          <input type="radio" checked={type === "EXTERNAL"} onChange={() => setType("EXTERNAL")} /> Externe
-        </label>
-      </div>
-
-      <FieldLabel htmlFor="project-type">Type de projet (suivi de temps)</FieldLabel>
+      {/* Interne/externe ne se demande plus ici : c'est une propriété du
+          client, saisie sur sa fiche. Reste la seule question propre au
+          projet — quel pôle interne le porte. */}
+      <FieldLabel htmlFor="project-pole">Pôle</FieldLabel>
       <select
-        id="project-type"
+        id="project-pole"
         className={`${fieldInputClass} mb-3`}
-        value={projectType}
-        onChange={(e) => setProjectType(e.target.value as ProjectType)}
+        value={pole}
+        onChange={(e) => setPole(e.target.value as ProjectPole | "")}
       >
-        {Object.entries(PROJECT_TYPE_LABELS).map(([value, label]) => (
+        <option value="">Aucun pôle particulier</option>
+        {Object.entries(PROJECT_POLE_LABELS).map(([value, label]) => (
           <option key={value} value={value}>
             {label}
           </option>

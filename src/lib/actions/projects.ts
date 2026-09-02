@@ -30,13 +30,14 @@ async function resolveClientId(ref: z.infer<typeof clientRefSchema>): Promise<st
   return client.id;
 }
 
-const projectTypeSchema = z.enum(["EXTERNE", "EQUIPE_EDUCATIVE", "EUROPEEN", "FONCTIONNEMENT", "EP"]);
+// Le caractère interne/externe appartient au client, pas au projet : il
+// n'apparaît plus ici (voir Client.type dans le schéma).
+const poleSchema = z.enum(["FONCTIONNEMENT", "EQUIPE_EDUCATIVE", "EDUCATION_PERMANENTE", "EUROPEEN"]).nullable();
 
 const createProjectSchema = z.object({
   name: z.string().trim().min(1, "Le nom du projet est requis."),
   code: z.string().trim().nullable(),
-  type: z.enum(["INTERNAL", "EXTERNAL"]),
-  projectType: projectTypeSchema,
+  pole: poleSchema,
   studioIds: z.array(z.string()).min(1, "Choisissez au moins un studio."),
 }).and(clientRefSchema);
 
@@ -48,7 +49,7 @@ export async function createProject(input: CreateProjectInput): Promise<{ error?
 
   const parsed = createProjectSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { name, code, type, projectType, studioIds } = parsed.data;
+  const { name, code, pole, studioIds } = parsed.data;
   const clientId = await resolveClientId(parsed.data);
 
   const project = await db.project.create({
@@ -56,8 +57,7 @@ export async function createProject(input: CreateProjectInput): Promise<{ error?
       name,
       code: code || null,
       clientId,
-      type,
-      projectType,
+      pole,
       studios: { create: studioIds.map((studioId) => ({ studioId })) },
     },
   });
@@ -125,8 +125,7 @@ export async function duplicateProject(projectId: string): Promise<{ error?: str
         name: `${source.name} (copie)`,
         code: null,
         clientId: source.clientId,
-        type: source.type,
-        projectType: source.projectType,
+        pole: source.pole,
         budgetHours: source.budgetHours,
         studios: { create: source.studios.map((s) => ({ studioId: s.studioId })) },
       },
@@ -267,8 +266,7 @@ const updateProjectSchema = z.object({
   projectId: z.string(),
   name: z.string().trim().min(1, "Le nom du projet est requis."),
   code: z.string().trim().nullable(),
-  type: z.enum(["INTERNAL", "EXTERNAL"]),
-  projectType: projectTypeSchema,
+  pole: poleSchema,
   studioIds: z.array(z.string()).min(1, "Choisissez au moins un studio."),
   budgetHours: z.number().int().positive().nullable(),
 }).and(clientRefSchema);
@@ -281,7 +279,7 @@ export async function updateProject(input: UpdateProjectInput): Promise<{ error?
 
   const parsed = updateProjectSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { projectId, name, code, type, projectType, studioIds, budgetHours } = parsed.data;
+  const { projectId, name, code, pole, studioIds, budgetHours } = parsed.data;
   const clientId = await resolveClientId(parsed.data);
 
   await db.$transaction([
@@ -292,8 +290,7 @@ export async function updateProject(input: UpdateProjectInput): Promise<{ error?
         name,
         code: code || null,
         clientId,
-        type,
-        projectType,
+        pole,
         budgetHours,
         studios: { create: studioIds.map((studioId) => ({ studioId })) },
       },

@@ -6,7 +6,7 @@ export function listActiveProjectsForForms() {
     // Client puis Projet — même ordre que la nomenclature Client — Projet
     // affichée (voir src/lib/planning/labels.ts).
     orderBy: [{ client: { name: "asc" } }, { name: "asc" }],
-    select: { id: true, name: true, code: true, projectType: true, client: { select: { name: true } } },
+    select: { id: true, name: true, code: true, pole: true, client: { select: { name: true, type: true } } },
   });
 }
 

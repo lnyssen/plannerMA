@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { secondaryButtonClass } from "@/components/ui/buttons";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
+import { PROJECT_POLE_LABELS } from "@/lib/planning/labels";
 import type { ProgressStatus } from "@/lib/planning/tasks";
 import {
   computeDashboardRows,
@@ -15,7 +15,7 @@ import {
   type DashboardProjectRow,
 } from "@/lib/planning/time";
 
-const GRANT_TYPES = ["EP", "EUROPEEN"] as const;
+const GRANT_TYPES = ["EDUCATION_PERMANENTE", "EUROPEEN"] as const;
 
 const PACE_LABEL: Record<BudgetPace, string> = {
   ahead: "En avance",
@@ -155,7 +155,7 @@ export function SubventionsView({
   allStatuses: ProgressStatus[];
 }) {
   const rows = computeDashboardRows(projects, allStatuses);
-  const byType = Object.fromEntries(GRANT_TYPES.map((t) => [t, rows.filter((r) => r.projectType === t)])) as Record<
+  const byType = Object.fromEntries(GRANT_TYPES.map((t) => [t, rows.filter((r) => r.pole === t)])) as Record<
     (typeof GRANT_TYPES)[number],
     DashboardProjectRow[]
   >;
@@ -183,7 +183,7 @@ export function SubventionsView({
           description="Renseignez un budget d’heures sur un projet de type Éducation permanente ou Européen (fiche projet) pour le voir apparaître ici."
         />
       ) : (
-        GRANT_TYPES.map((type) => <GrantSection key={type} label={PROJECT_TYPE_LABELS[type]} rows={byType[type]} />)
+        GRANT_TYPES.map((type) => <GrantSection key={type} label={PROJECT_POLE_LABELS[type]} rows={byType[type]} />)
       )}
     </div>
   );

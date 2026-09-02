@@ -1,7 +1,7 @@
 // Calculs purs sur les écritures de temps (feuilles de temps) — même esprit
 // que src/lib/planning/tasks.ts : logique testable, indépendante de Prisma.
 
-import type { ProjectType } from "@prisma/client";
+import type { ProjectPole } from "@prisma/client";
 import { taskProgress, type ProgressStatus } from "./tasks";
 
 export interface TimeEntryDuration {
@@ -59,7 +59,7 @@ export interface DashboardProjectInput {
   id: string;
   name: string;
   clientName: string;
-  projectType: ProjectType;
+  pole: ProjectPole | null;
   budgetHours: number;
   timeEntries: TimeEntryDuration[];
   taskStatuses: ProgressStatus[];

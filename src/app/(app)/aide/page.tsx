@@ -243,7 +243,7 @@ export default function AidePage() {
           <P>Vue Tableau par défaut, ou Cartes (regroupées par client), avec un onglet Archives séparé.</P>
           <H3>Fiche projet</H3>
           <Ul>
-            <li>Nom, code, client (existant ou créé à la volée), type de client (interne/externe), type de projet (Externe / Équipe éducative / Européen / Fonctionnement / Éducation permanente), studios concernés.</li>
+            <li>Nom, code, client (existant ou créé à la volée), pôle interne qui porte le projet (Fonctionnement / Équipe éducative / Éducation permanente / Européen, ou aucun), studios concernés.</li>
             <li>Budget de temps facultatif, en heures — un bandeau d’alerte apparaît si le temps enregistré le dépasse.</li>
             <li>Liste des tâches du projet et de ses jalons, avec ajout direct depuis la fiche.</li>
             <li>Historique propre au projet (création, duplication, modification, archivage).</li>
@@ -251,7 +251,7 @@ export default function AidePage() {
           <Steps title="Créer un projet">
             <li>Bouton « Nouveau projet » (barre latérale, ou en haut de la liste Projets).</li>
             <li>Choisir un client existant ou taper un nouveau nom (créé à la volée).</li>
-            <li>Type de client, type de projet, studios concernés.</li>
+            <li>Pôle et studios concernés. Le caractère interne ou externe se saisit sur la fiche du client, pas ici.</li>
             <li>Enregistrer — la fiche s’ouvre, prête à recevoir des tâches et un budget.</li>
           </Steps>
           <Steps title="Dupliquer un projet">

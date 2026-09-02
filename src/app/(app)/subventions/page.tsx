@@ -4,7 +4,7 @@ import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { listProjectsWithBudget } from "@/lib/data/time-entries";
 import { SubventionsView } from "./subventions-view";
 
-const GRANT_TYPES = ["EP", "EUROPEEN"] as const;
+const GRANT_TYPES = ["EDUCATION_PERMANENTE", "EUROPEEN"] as const;
 
 export default async function SubventionsPage() {
   const session = await auth();
@@ -16,12 +16,12 @@ export default async function SubventionsPage() {
   return (
     <SubventionsView
       projects={projects
-        .filter((p) => (GRANT_TYPES as readonly string[]).includes(p.projectType))
+        .filter((p) => (GRANT_TYPES as readonly string[]).includes(p.pole ?? ""))
         .map((p) => ({
           id: p.id,
           name: p.name,
           clientName: p.client.name,
-          projectType: p.projectType,
+          pole: p.pole,
           budgetHours: p.budgetHours!,
           timeEntries: [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)],
           taskStatuses: p.tasks.map((t) => t.status),

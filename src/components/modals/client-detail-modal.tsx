@@ -29,6 +29,7 @@ export function ClientDetailModal({
   const [contactPhone, setContactPhone] = useState("");
   const [website, setWebsite] = useState("");
   const [notes, setNotes] = useState("");
+  const [type, setType] = useState<"INTERNAL" | "EXTERNAL">("EXTERNAL");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function ClientDetailModal({
         setContactPhone(c.contactPhone ?? "");
         setWebsite(c.website ?? "");
         setNotes(c.notes ?? "");
+        setType(c.type);
         setProjectCount(c._count.projects);
       }
       setLoading(false);
@@ -56,7 +58,7 @@ export function ClientDetailModal({
     setError(null);
     startTransition(async () => {
       if (clientId) {
-        const result = await updateClientDetail(clientId, { name, contactName, contactEmail, contactPhone, website, notes });
+        const result = await updateClientDetail(clientId, { name, contactName, contactEmail, contactPhone, website, notes, type });
         if (result.error) {
           setError(result.error);
           return;
@@ -68,7 +70,7 @@ export function ClientDetailModal({
           return;
         }
         if (created.id && (contactName || contactEmail || contactPhone || website || notes)) {
-          await updateClientDetail(created.id, { name, contactName, contactEmail, contactPhone, website, notes });
+          await updateClientDetail(created.id, { name, contactName, contactEmail, contactPhone, website, notes, type });
         }
       }
       router.refresh();
@@ -103,6 +105,19 @@ export function ClientDetailModal({
         <DetailSkeleton />
       ) : (
         <>
+          {/* Le caractère interne/externe se saisit ici : c'est une propriété
+              du client. Il était auparavant porté par chaque projet, si bien
+              que deux projets d'un même client pouvaient se contredire. */}
+          <FieldLabel>Type de client</FieldLabel>
+          <div className="mb-3 flex gap-4">
+            <label className="flex items-center gap-1.5 text-sm text-ink">
+              <input type="radio" checked={type === "INTERNAL"} onChange={() => setType("INTERNAL")} /> Interne (collègues)
+            </label>
+            <label className="flex items-center gap-1.5 text-sm text-ink">
+              <input type="radio" checked={type === "EXTERNAL"} onChange={() => setType("EXTERNAL")} /> Externe
+            </label>
+          </div>
+
           <FieldLabel htmlFor="client-name">Nom</FieldLabel>
           <input
             id="client-name"

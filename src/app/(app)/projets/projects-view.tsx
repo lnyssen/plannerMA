@@ -103,7 +103,7 @@ function ProjectCard({
               <AlertTriangle size={11} /> Budget
             </span>
           )}
-          <ClientTypeBadge type={project.type} />
+          <ClientTypeBadge type={project.client.type} />
         </div>
       </div>
       <div className="mb-3 text-sm text-ink">{project.client.name}</div>
@@ -225,8 +225,8 @@ export function ProjectsView({
       .filter((p) => view !== "table" || !studioFilter || p.studios.some((s) => s.studioId === studioFilter));
   }, [projects, search, studioFilter, view]);
 
-  const internal = filtered.filter((p) => p.type === "INTERNAL");
-  const external = filtered.filter((p) => p.type === "EXTERNAL");
+  const internal = filtered.filter((p) => p.client.type === "INTERNAL");
+  const external = filtered.filter((p) => p.client.type === "EXTERNAL");
 
   const rows = useMemo(
     () =>

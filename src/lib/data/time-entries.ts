@@ -57,7 +57,7 @@ export function listProjectsWithBudget() {
     select: {
       id: true,
       name: true,
-      projectType: true,
+      pole: true,
       budgetHours: true,
       client: { select: { name: true } },
       timeEntries: { select: { startedAt: true, endedAt: true } },

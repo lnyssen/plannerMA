@@ -54,6 +54,8 @@ const clientDetailSchema = z
     contactPhone: z.string().trim().nullable(),
     website: z.string().trim().nullable(),
     notes: z.string().trim().nullable(),
+    /** Interne (collègues) ou externe (commanditaire) — remonté du projet vers le client. */
+    type: z.enum(["INTERNAL", "EXTERNAL"]),
   })
   .refine((v) => !v.contactEmail || z.string().email().safeParse(v.contactEmail).success, {
     message: "Adresse courriel invalide.",
@@ -71,7 +73,7 @@ export async function updateClientDetail(
   if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
   const parsed = clientDetailSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
-  const { name, contactName, contactEmail, contactPhone, website, notes } = parsed.data;
+  const { name, contactName, contactEmail, contactPhone, website, notes, type } = parsed.data;
 
   await db.client.update({
     where: { id: clientId },
@@ -82,6 +84,7 @@ export async function updateClientDetail(
       contactPhone: contactPhone || null,
       website: website || null,
       notes: notes || null,
+      type,
     },
   });
 

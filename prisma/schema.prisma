@@ -213,19 +213,18 @@ enum ClientType {
   EXTERNAL
 }
 
-/// Nature du projet pour le reporting de temps (nomenclature transmise par
-/// l'équipe) — un axe distinct de ClientType : un projet européen ou pour
-/// l'équipe éducative peut très bien avoir un client interne ou externe.
-enum ProjectType {
-  EXTERNE
-  EQUIPE_EDUCATIVE
-  EUROPEEN
+/// Pôle interne responsable d'un projet — les équipes de Média Animation.
+/// Éducation permanente et Européen ne sont pas des catégories de
+/// financement mais des pôles, au même titre qu'Équipe éducative : ce sont
+/// des collègues. Un pôle peut travailler pour un commanditaire externe (le
+/// pôle Éducation permanente mène un projet pour la Ligue des familles), d'où
+/// un champ distinct du client. Nul quand aucun pôle particulier ne porte le
+/// projet.
+enum ProjectPole {
   FONCTIONNEMENT
-  /// Éducation permanente — reconnaissance/subvention du secteur associatif
-  /// belge, distincte d'ÉQUIPE_ÉDUCATIVE (qui désigne un pôle interne, pas
-  /// une catégorie de financement). Avec EUROPEEN, alimente le portail de
-  /// suivi des subsides (voir /subventions).
-  EP
+  EQUIPE_EDUCATIVE
+  EDUCATION_PERMANENTE
+  EUROPEEN
 }
 
 /// Client au sens organisation (ONG, fédération, service interne…), distinct
@@ -247,6 +246,11 @@ model Client {
   /// envoi du référentiel et réutilisé ensuite comme clé de mise à jour —
   /// voir src/lib/clockify/.
   clockifyId   String?  @unique @map("clockify_id")
+  /// Interne (les collègues : fonctionnement, éducation permanente…) ou
+  /// externe (commanditaire, partenaire). C'était porté par chaque projet, si
+  /// bien que deux projets d'un même client pouvaient se contredire — et le
+  /// badge affiché à côté du nom du client venait en réalité du projet.
+  type         ClientType @default(EXTERNAL)
 
   projects Project[]
 
@@ -263,9 +267,8 @@ model Project {
   code        String?
   client      Client      @relation(fields: [clientId], references: [id])
   clientId    String      @map("client_id")
-  type        ClientType
-  /// Nature du projet pour le suivi de temps — voir ProjectType.
-  projectType ProjectType @default(EXTERNE) @map("project_type")
+  /// Pôle interne qui porte le projet — voir ProjectPole.
+  pole        ProjectPole?
   archived    Boolean     @default(false)
   /// Identifiant de l'objet correspondant dans Clockify. Posé au premier
   /// envoi du référentiel et réutilisé ensuite comme clé de mise à jour —

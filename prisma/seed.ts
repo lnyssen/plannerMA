@@ -226,7 +226,7 @@ async function main() {
   ];
   const clients: Record<string, string> = {};
   for (const c of CLIENTS) {
-    const row = await db.client.upsert({ where: { name: c.name }, update: {}, create: { name: c.name } });
+    const row = await db.client.upsert({ where: { name: c.name }, update: { type: c.type }, create: { name: c.name, type: c.type } });
     clients[c.name] = row.id;
   }
 
@@ -234,15 +234,15 @@ async function main() {
   // au moins un projet : dans les temps, en avance, en retard de consommation,
   // et franchement dépassé.
   const PROJETS = [
-    { key: "vitrine", name: "Refonte du site vitrine", code: "SITE-1", client: CLIENTS[0].name, type: "INTERNAL" as const, projectType: "FONCTIONNEMENT" as const, budget: 220, studios: ["web", "graphisme"] },
-    { key: "oxfam", name: "Campagne de sensibilisation", code: "OXFAM-2", client: CLIENTS[1].name, type: "EXTERNAL" as const, projectType: "EXTERNE" as const, budget: 180, studios: ["video", "consultance"] },
-    { key: "mediaEduc", name: "Parcours d’éducation aux médias", code: "FWB-EDUC", client: CLIENTS[2].name, type: "EXTERNAL" as const, projectType: "EQUIPE_EDUCATIVE" as const, budget: 320, studios: ["consultance", "graphisme"] },
-    { key: "digicit", name: "DigiCitizen — capsules européennes", code: "EU-DIGI", client: CLIENTS[3].name, type: "EXTERNAL" as const, projectType: "EUROPEEN" as const, budget: 400, studios: ["video", "son", "web"] },
-    { key: "climat", name: "Mobilisation climat", code: "CNCD-CLIM", client: CLIENTS[4].name, type: "EXTERNAL" as const, projectType: "EXTERNE" as const, budget: 120, studios: ["graphisme"] },
-    { key: "parentalite", name: "Podcast parentalité", code: "LDF-POD", client: CLIENTS[5].name, type: "EXTERNAL" as const, projectType: "EP" as const, budget: 150, studios: ["son", "consultance"] },
-    { key: "ep2026", name: "Éducation permanente 2026", code: "EP-2026", client: CLIENTS[0].name, type: "INTERNAL" as const, projectType: "EP" as const, budget: 500, studios: ["consultance", "web", "video"] },
-    { key: "intranet", name: "Intranet — refonte", code: null, client: CLIENTS[0].name, type: "INTERNAL" as const, projectType: "FONCTIONNEMENT" as const, budget: null, studios: ["web"] },
-    { key: "archive", name: "Expo itinérante 2025", code: "EXPO-25", client: CLIENTS[2].name, type: "EXTERNAL" as const, projectType: "EXTERNE" as const, budget: 90, studios: ["graphisme", "video"], archived: true },
+    { key: "vitrine", name: "Refonte du site vitrine", code: "SITE-1", client: CLIENTS[0].name, pole: "FONCTIONNEMENT" as const, budget: 220, studios: ["web", "graphisme"] },
+    { key: "oxfam", name: "Campagne de sensibilisation", code: "OXFAM-2", client: CLIENTS[1].name, pole: null, budget: 180, studios: ["video", "consultance"] },
+    { key: "mediaEduc", name: "Parcours d’éducation aux médias", code: "FWB-EDUC", client: CLIENTS[2].name, pole: "EQUIPE_EDUCATIVE" as const, budget: 320, studios: ["consultance", "graphisme"] },
+    { key: "digicit", name: "DigiCitizen — capsules européennes", code: "EU-DIGI", client: CLIENTS[3].name, pole: "EUROPEEN" as const, budget: 400, studios: ["video", "son", "web"] },
+    { key: "climat", name: "Mobilisation climat", code: "CNCD-CLIM", client: CLIENTS[4].name, pole: null, budget: 120, studios: ["graphisme"] },
+    { key: "parentalite", name: "Podcast parentalité", code: "LDF-POD", client: CLIENTS[5].name, pole: "EDUCATION_PERMANENTE" as const, budget: 150, studios: ["son", "consultance"] },
+    { key: "ep2026", name: "Éducation permanente 2026", code: "EP-2026", client: CLIENTS[0].name, pole: "EDUCATION_PERMANENTE" as const, budget: 500, studios: ["consultance", "web", "video"] },
+    { key: "intranet", name: "Intranet — refonte", code: null, client: CLIENTS[0].name, pole: "FONCTIONNEMENT" as const, budget: null, studios: ["web"] },
+    { key: "archive", name: "Expo itinérante 2025", code: "EXPO-25", client: CLIENTS[2].name, pole: null, budget: 90, studios: ["graphisme", "video"], archived: true },
   ];
 
   const projets: Record<string, string> = {};
@@ -252,8 +252,7 @@ async function main() {
         name: p.name,
         code: p.code,
         clientId: clients[p.client],
-        type: p.type,
-        projectType: p.projectType,
+        pole: p.pole,
         budgetHours: p.budget,
         archived: p.archived ?? false,
         studios: { create: p.studios.map((s) => ({ studioId: studios[s] })) },

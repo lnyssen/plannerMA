@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { toIsoDate } from "@/lib/planning/dates";
-import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
+import { PROJECT_POLE_LABELS } from "@/lib/planning/labels";
 
 function csvCell(value: string): string {
   if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
@@ -31,24 +31,28 @@ export async function GET() {
     include: {
       person: { select: { name: true } },
       studio: { select: { name: true } },
-      project: { select: { name: true, code: true, projectType: true } },
+      project: { select: { name: true, code: true, pole: true, client: { select: { type: true } } } },
       category: { select: { name: true } },
     },
   });
 
-  const header = ["Personne", "Date", "Studio", "Projet", "Type_projet", "Type_tâche", "Heures", "Note"];
+  const header = ["Personne", "Date", "Studio", "Projet", "Client", "Pôle", "Type_tâche", "Heures", "Note"];
   let csv = csvRow(header);
 
   for (const e of entries) {
     const hours = ((e.endedAt!.getTime() - e.startedAt.getTime()) / 3_600_000).toFixed(2);
     const projet = e.project ? (e.project.code || e.project.name) : "AGENCE";
-    const typeProjet = e.project ? PROJECT_TYPE_LABELS[e.project.projectType] : PROJECT_TYPE_LABELS.FONCTIONNEMENT;
+    // Trois colonnes distinctes remplacent l'ancienne « type de projet », qui
+    // mélangeait le client, la nature du travail et le financement.
+    const clientInterne = e.project ? e.project.client.type === "INTERNAL" : true;
+    const pole = e.project?.pole ? PROJECT_POLE_LABELS[e.project.pole] : "";
     csv += csvRow([
       e.person.name,
       toIsoDate(e.startedAt),
       e.studio.name,
       projet,
-      typeProjet,
+      clientInterne ? "Interne" : "Externe",
+      pole,
       e.category?.name ?? "",
       hours,
       e.note ?? "",

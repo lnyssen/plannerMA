@@ -33,7 +33,7 @@ export async function GET() {
       id: p.id,
       name: p.name,
       clientName: p.client.name,
-      projectType: p.projectType,
+      pole: p.pole,
       budgetHours: p.budgetHours!,
       timeEntries: [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)],
       taskStatuses: p.tasks.map((t) => t.status),

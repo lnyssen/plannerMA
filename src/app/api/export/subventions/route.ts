@@ -6,11 +6,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { listProjectsWithBudget } from "@/lib/data/time-entries";
-import { PROJECT_TYPE_LABELS } from "@/lib/planning/labels";
+import { PROJECT_POLE_LABELS } from "@/lib/planning/labels";
 import { toIsoDate } from "@/lib/planning/dates";
 import { computeDashboardRows, formatDurationFr } from "@/lib/planning/time";
 
-const GRANT_TYPES = ["EP", "EUROPEEN"] as const;
+const GRANT_TYPES = ["EDUCATION_PERMANENTE", "EUROPEEN"] as const;
 const PACE_LABEL = { ahead: "En avance", onTrack: "Dans les temps", behind: "En retard" };
 
 function csvCell(value: string): string {
@@ -32,12 +32,12 @@ export async function GET() {
   const allStatuses = statuses.map((s) => ({ position: s.position, isDone: s.isDone }));
   const rows = computeDashboardRows(
     projects
-      .filter((p) => (GRANT_TYPES as readonly string[]).includes(p.projectType))
+      .filter((p) => (GRANT_TYPES as readonly string[]).includes(p.pole ?? ""))
       .map((p) => ({
         id: p.id,
         name: p.name,
         clientName: p.client.name,
-        projectType: p.projectType,
+        pole: p.pole,
         budgetHours: p.budgetHours!,
         timeEntries: [...p.timeEntries, ...p.tasks.flatMap((t) => t.timeEntries)],
         taskStatuses: p.tasks.map((t) => t.status),
@@ -50,7 +50,7 @@ export async function GET() {
 
   for (const r of rows) {
     csv += csvRow([
-      PROJECT_TYPE_LABELS[r.projectType],
+      r.pole ? PROJECT_POLE_LABELS[r.pole] : "",
       r.clientName,
       r.name,
       formatDurationFr(r.budgetMinutes),

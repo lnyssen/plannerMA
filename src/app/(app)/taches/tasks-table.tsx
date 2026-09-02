@@ -331,7 +331,7 @@ export function TasksTable({
                   {t.studios.map(({ studio }) => (
                     <StudioBadge key={studio.id} name={studio.name} fillHex={studio.fillHex} colorHex={studio.colorHex} />
                   ))}
-                  {t.project && <ClientTypeBadge type={t.project.type} />}
+                  {t.project && <ClientTypeBadge type={t.project.client.type} />}
                 </div>
                 <div className="flex items-center justify-between gap-2 text-xs text-ink-muted">
                   {!hidePersonColumn && <PersonLabel name={t.assignee?.name ?? null} />}
@@ -383,7 +383,7 @@ export function TasksTable({
                     t.project ? (
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-heading">{t.project.client.name}</span>
-                        <ClientTypeBadge type={t.project.type} className="flex-shrink-0" />
+                        <ClientTypeBadge type={t.project.client.type} className="flex-shrink-0" />
                       </div>
                     ) : (
                       "—"

@@ -1,4 +1,4 @@
-import type { ProjectType } from "@prisma/client";
+import type { ProjectPole } from "@prisma/client";
 
 /**
  * Couleur d'une barre/bloc de tâche selon ses studios — un seul garde
@@ -36,13 +36,12 @@ export function entryContextLabel(entry: EntryWithContext): string {
   return `${entry.project.client.name} — ${entry.project.name} — ${tail}`;
 }
 
-/** Libellés FR de ProjectType (nomenclature de suivi de temps) — voir prisma/schema.prisma. */
-export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
-  EXTERNE: "Externe",
-  EQUIPE_EDUCATIVE: "Équipe éducative",
-  EUROPEEN: "Européen",
+/** Libellés FR des pôles internes — voir ProjectPole dans prisma/schema.prisma. */
+export const PROJECT_POLE_LABELS: Record<ProjectPole, string> = {
   FONCTIONNEMENT: "Fonctionnement",
-  EP: "Éducation permanente",
+  EQUIPE_EDUCATIVE: "Équipe éducative",
+  EDUCATION_PERMANENTE: "Éducation permanente",
+  EUROPEEN: "Européen",
 };
 
 /** Heure locale-affichage (le stockage reste UTC, voir dates.ts) au format "9h05". */
