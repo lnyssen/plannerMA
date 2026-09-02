@@ -75,6 +75,9 @@ const COLLAPSE_STORAGE_KEY = "planning-studios:nav-collapsed";
 // se replie indépendamment, liste de noms de groupe en JSON.
 const GROUP_COLLAPSE_STORAGE_KEY = "planning-studios:nav-groups-collapsed";
 
+/** Largeur du rail replié — sert aussi à poser l'infobulle juste à sa droite. */
+const COLLAPSED_RAIL_WIDTH = 76;
+
 interface AppShellProps {
   studios: StudioSummary[];
   people: PersonSummary[];
@@ -179,6 +182,32 @@ export function AppShell({
     }
   }
 
+  /**
+   * Infobulle du rail replié : réduit aux icônes, plus rien ne dit ce que
+   * chacune ouvre, et l'attribut `title` du navigateur met une seconde à
+   * apparaître — trop lent pour parcourir un menu.
+   *
+   * Positionnée en `fixed` plutôt qu'en absolu dans le rail : celui-ci porte
+   * `overflow-x-hidden` et sa zone de navigation `overflow-y-auto`, qui rogne
+   * aussi l'axe horizontal — une bulle en absolu y serait coupée. Même
+   * raison que pour NotificationBell et GlobalSearch.
+   */
+  const [railTip, setRailTip] = useState<{ text: string; top: number } | null>(null);
+
+  function railTipHandlers(text: string, enabled: boolean) {
+    if (!enabled) return {};
+    const show = (el: HTMLElement) => {
+      const r = el.getBoundingClientRect();
+      setRailTip({ text, top: r.top + r.height / 2 });
+    };
+    return {
+      onMouseEnter: (e: React.MouseEvent<HTMLElement>) => show(e.currentTarget),
+      onMouseLeave: () => setRailTip(null),
+      onFocus: (e: React.FocusEvent<HTMLElement>) => show(e.currentTarget),
+      onBlur: () => setRailTip(null),
+    };
+  }
+
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
 
   useEffect(() => {
@@ -245,7 +274,10 @@ export function AppShell({
         href={href}
         onClick={() => setDrawerOpen(false)}
         aria-current={active ? "page" : undefined}
-        title={described ?? (isCollapsed ? label : undefined)}
+        {...railTipHandlers(described ?? label, isCollapsed)}
+        // Replié, l'infobulle maison remplace `title` : deux bulles pour le
+        // même élément se superposeraient.
+        title={isCollapsed ? undefined : (described ?? undefined)}
         className={`relative flex items-center gap-2.5 rounded-full font-[family-name:var(--font-body)] text-sm leading-5 transition-colors duration-100 ${
           isCollapsed ? "mx-auto h-9 w-9 justify-center" : "px-3 py-1.5"
         } ${active ? "" : "hover:bg-white/12 active:bg-white/20"}`}
@@ -350,6 +382,19 @@ export function AppShell({
   }
 
   function renderRail(isCollapsed: boolean, showCollapseToggle: boolean) {
+    const collapseToggle = showCollapseToggle ? (
+      <button
+        type="button"
+        onClick={() => setCollapsed(!isCollapsed)}
+        aria-label={isCollapsed ? "Déplier le menu" : "Replier le menu"}
+        {...railTipHandlers(isCollapsed ? "Déplier le menu" : "Replier le menu", isCollapsed)}
+        title={isCollapsed ? undefined : "Replier le menu"}
+        className={`hidden h-7 w-7 items-center justify-center md:flex ${iconButtonOnRailClass}`}
+      >
+        {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+      </button>
+    ) : null;
+
     return (
       <>
         <div className={`flex flex-shrink-0 items-start gap-2 px-5 pt-5 pb-4 ${isCollapsed ? "flex-col items-center" : "justify-between"}`}>
@@ -360,20 +405,16 @@ export function AppShell({
               <div className="mt-1.5 text-sm text-white/70">Studio planner</div>
             </div>
           )}
+          {/* Replié, le bouton de dépliage passe en tête : c'est la première
+              chose qu'on cherche quand le rail est réduit aux icônes, et le
+              logo qui tenait cette place a disparu. Réordonné dans le DOM
+              plutôt qu'avec `flex-col-reverse` : sinon l'ordre de tabulation
+              ne suivrait plus l'ordre visible. */}
           <div className={`flex items-center gap-1 ${isCollapsed ? "flex-col" : ""}`}>
+            {isCollapsed && collapseToggle}
             {isCollapsed && <GlobalSearch />}
             <NotificationBell />
-            {showCollapseToggle && (
-              <button
-                type="button"
-                onClick={() => setCollapsed(!isCollapsed)}
-                aria-label={isCollapsed ? "Déplier le menu" : "Replier le menu"}
-                title={isCollapsed ? "Déplier le menu" : "Replier le menu"}
-                className={`hidden h-7 w-7 items-center justify-center md:flex ${iconButtonOnRailClass}`}
-              >
-                {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
-              </button>
-            )}
+            {!isCollapsed && collapseToggle}
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
@@ -415,7 +456,8 @@ export function AppShell({
               setModal("task");
               setDrawerOpen(false);
             }}
-            title="Nouvelle tâche"
+            {...railTipHandlers("Nouvelle tâche", isCollapsed)}
+            title={isCollapsed ? undefined : "Nouvelle tâche"}
             className={`flex items-center justify-center gap-1.5 text-sm font-bold ${primaryOnRailButtonClass} ${isCollapsed ? "w-10 px-0" : "w-full"}`}
           >
             <ListPlus size={17} /> {!isCollapsed && "Nouvelle tâche"}
@@ -427,7 +469,8 @@ export function AppShell({
                 setModal("project");
                 setDrawerOpen(false);
               }}
-              title="Nouveau projet"
+              {...railTipHandlers("Nouveau projet", isCollapsed)}
+              title={isCollapsed ? undefined : "Nouveau projet"}
               className={`flex items-center justify-center gap-1.5 text-xs font-bold ${secondaryOnRailButtonClass} ${isCollapsed ? "w-10 px-0" : ""}`}
             >
               <FolderPlus size={15} /> {!isCollapsed && "Projet"}
@@ -438,7 +481,8 @@ export function AppShell({
                 setModal("request");
                 setDrawerOpen(false);
               }}
-              title="Nouvelle demande"
+              {...railTipHandlers("Nouvelle demande", isCollapsed)}
+              title={isCollapsed ? undefined : "Nouvelle demande"}
               className={`flex items-center justify-center gap-1.5 text-xs font-bold ${secondaryOnRailButtonClass} ${isCollapsed ? "w-10 px-0" : ""}`}
             >
               <ClipboardPlus size={15} /> {!isCollapsed && "Demande"}
@@ -563,6 +607,21 @@ export function AppShell({
       >
         {renderRail(collapsed, true)}
       </aside>
+
+      {railTip && (
+        <div
+          role="tooltip"
+          style={{
+            top: railTip.top,
+            left: COLLAPSED_RAIL_WIDTH + 8,
+            background: "var(--color-heading)",
+            color: "var(--color-paper)",
+          }}
+          className="pointer-events-none fixed z-50 hidden -translate-y-1/2 rounded-md px-2.5 py-1.5 text-sm font-semibold whitespace-nowrap shadow-lg md:block"
+        >
+          {railTip.text}
+        </div>
+      )}
 
       <header className="relative flex h-14 items-center justify-between bg-rail px-4 md:hidden">
         <button
