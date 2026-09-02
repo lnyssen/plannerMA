@@ -16,7 +16,6 @@ import {
   fromIsoDate,
   holidayName,
   isWeekend,
-  mondayOf,
   toIsoDate,
   today,
 } from "@/lib/planning/dates";
@@ -61,16 +60,16 @@ type CreateDragState = { row: number; a: number; b: number };
 const WEEK_CHOICES = [2, 4, 8, 12, 16];
 
 /**
- * Début de fenêtre qui garde aujourd'hui visible quelle que soit sa largeur :
- * un huitième de la fenêtre en amont, arrondi à la semaine inférieure.
+ * Début de fenêtre : aujourd'hui, exactement.
  *
- * Sur 8 semaines cela laisse une semaine de passé — le réglage d'origine.
- * Sur 2 semaines, aucune : la même semaine de contexte y plaçait aujourd'hui
- * au neuvième jour sur quatorze, c'est-à-dire presque au bord droit, et il ne
- * restait quasiment plus d'à-venir à lire.
+ * La vue s'ouvrait auparavant sur le lundi d'une semaine précédente, pour
+ * garder un peu de passé en contexte. Mais on ne vient pas ici relire ce qui
+ * est fait : la première colonne doit être le jour même, et toute la largeur
+ * disponible sert à l'à-venir. Pas de calage sur le lundi non plus — cela
+ * ramenait jusqu'à six jours de passé selon le jour de la semaine.
  */
-function anchorOnToday(weeks: number) {
-  return mondayOf(addDays(fromIsoDate(today()), -7 * Math.floor(weeks / 8)));
+function anchorOnToday() {
+  return fromIsoDate(today());
 }
 
 /** Pas des flèches ‹ › : une demi-fenêtre, pour garder du recouvrement d'un écran à l'autre. */
@@ -96,7 +95,7 @@ export function GanttView({
   }
 
   const [weeks, setWeeks] = useState(8);
-  const [weekStart, setWeekStart] = useState(() => anchorOnToday(8));
+  const [weekStart, setWeekStart] = useState(() => anchorOnToday());
   const [groupBy, setGroupBy] = useState<"project" | "person">("project");
   const [drag, setDrag] = useState<DragState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -423,17 +422,15 @@ export function GanttView({
   const rangeLabel = formatRangeFr(startIsoOfView, viewEndIso);
 
   /**
-   * Changer la largeur de la fenêtre déplace aussi son début — sinon on
-   * gardait le début calculé pour l'ancienne largeur et la date affichée ne
-   * bougeait pas : passer de 8 à 2 semaines laissait aujourd'hui coincé au
-   * bord droit. On ne réancre que si aujourd'hui est effectivement à l'écran :
-   * quelqu'un parti consulter mars prochain doit y rester.
+   * Changer la largeur de la fenêtre la réancre sur aujourd'hui — sauf si
+   * l'utilisateur est parti consulter une autre période, auquel cas on garde
+   * son point de départ plutôt que de le ramener de force au présent.
    */
   function changeWeeks(next: number) {
     const todayIso = today();
     const todayInView = startIsoOfView <= todayIso && todayIso <= viewEndIso;
     setWeeks(next);
-    if (todayInView) setWeekStart(anchorOnToday(next));
+    if (todayInView) setWeekStart(anchorOnToday());
   }
 
   // Équivalent clavier du glisser-déposer : Flèches pour décaler d'un jour,
@@ -492,7 +489,7 @@ export function GanttView({
           <input
             type="date"
             value={startIsoOfView}
-            onChange={(e) => e.target.value && setWeekStart(mondayOf(fromIsoDate(e.target.value)))}
+            onChange={(e) => e.target.value && setWeekStart(fromIsoDate(e.target.value))}
             aria-label="Aller à une date"
             className="h-10 rounded-md border-[1.5px] border-heading px-2.5 text-sm text-ink"
           />
@@ -506,7 +503,7 @@ export function GanttView({
           </button>
           <button
             type="button"
-            onClick={() => setWeekStart(anchorOnToday(weeks))}
+            onClick={() => setWeekStart(anchorOnToday())}
             className={`text-sm font-semibold text-heading underline-offset-2 hover:underline ${textButtonClass}`}
           >
             Aujourd’hui
