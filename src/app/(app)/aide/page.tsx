@@ -14,6 +14,7 @@ const SECTIONS = [
   { id: "reglages", label: "Réglages" },
   { id: "recherche", label: "Recherche et palette de commandes" },
   { id: "notifications", label: "Notifications" },
+  { id: "retours", label: "Retours et confirmations" },
   { id: "compte", label: "Mon compte et mot de passe" },
   { id: "roles", label: "Rôles et droits" },
 ];
@@ -210,7 +211,10 @@ export default function AidePage() {
           <P>Trois façons de voir les mêmes tâches, à choisir selon ce qu’on cherche (onglets en haut de la page) :</P>
           <Shot src="/docs/planning-kanban.png" alt="Planning en vue Kanban, colonnes par statut" />
           <Ul>
-            <li><strong>Kanban</strong> — colonnes par statut, glisser-déposer une tâche pour changer son statut.</li>
+            <li>
+              <strong>Kanban</strong> — colonnes par statut, glisser-déposer une tâche pour changer son statut. Le
+              bouton en bas de chaque colonne crée une tâche déjà dans ce statut.
+            </li>
             <li><strong>Semaine</strong> — grille jour par jour, une ligne par personne.</li>
             <li><strong>Gantt</strong> — barres sur une frise, dépendances affichées en trait reliant deux tâches, nombre de semaines réglable.</li>
           </Ul>
@@ -328,6 +332,10 @@ export default function AidePage() {
           </H2>
           <Shot src="/docs/charge.png" alt="Vue Charge : occupation par personne et par semaine" />
           <P>
+            Les cases se teintent avec la charge, et passent au rose au-delà du seuil de surcharge. Le « i » à côté du
+            titre détaille la façon dont le pourcentage est calculé.
+          </P>
+          <P>
             Occupation de chaque personne, semaine par semaine (4, 8 ou 12 semaines affichables, sélecteur en haut de
             page).
           </P>
@@ -434,6 +442,24 @@ export default function AidePage() {
             (menu du compte, en bas de la barre latérale) — la cloche reste active même si tous les courriels sont
             désactivés.
           </P>
+        </section>
+
+        <section className="mb-8">
+          <H2 id="retours">Ce que l’appli répond quand vous agissez</H2>
+          <Ul>
+            <li>
+              Chaque action réussie affiche une confirmation brève en bas à droite (« Tâche enregistrée »,
+              « Minuteur arrêté »…). Elle disparaît seule au bout de quelques secondes.
+            </li>
+            <li>
+              Les actions qui suppriment ou dupliquent demandent confirmation dans une fenêtre qui indique la
+              conséquence exacte — corbeille (restaurable) ou suppression définitive, notamment.
+            </li>
+            <li>
+              Les erreurs de formulaire restent affichées près du champ concerné, elles n’attendent pas que vous
+              lisiez la confirmation.
+            </li>
+          </Ul>
         </section>
 
         <section className="mb-8">
