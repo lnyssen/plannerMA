@@ -9,6 +9,7 @@ import { checkBulkReassignCapacity } from "@/lib/actions/capacity";
 import { bulkUpdateTasks } from "@/lib/actions/tasks";
 import { textButtonClass } from "@/components/ui/buttons";
 import { ClientTypeBadge } from "@/components/ui/client-type-badge";
+import { PersonLabel } from "@/components/ui/person-avatar";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { SearchField } from "@/components/ui/search-field";
@@ -334,7 +335,7 @@ export function TasksTable({
                   {t.project && <ClientTypeBadge type={t.project.type} />}
                 </div>
                 <div className="flex items-center justify-between gap-2 text-xs text-ink-muted">
-                  {!hidePersonColumn && <span className="truncate">{t.assignee?.name ?? "Non attribué"}</span>}
+                  {!hidePersonColumn && <PersonLabel name={t.assignee?.name ?? null} />}
                   <span className="flex flex-shrink-0 items-center gap-2">
                     <span
                       className="flex items-center gap-1 tabular-nums"
@@ -417,7 +418,7 @@ export function TasksTable({
                   </td>
                   {!hidePersonColumn && (
                     <td className="border-b border-line px-3 py-2.5 text-sm text-ink">
-                      {t.assignee?.name ?? "Non attribué"}
+                      <PersonLabel name={t.assignee?.name ?? null} />
                     </td>
                   )}
                   <td

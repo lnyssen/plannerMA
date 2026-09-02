@@ -7,6 +7,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskOption } from "@/lib/data/tasks";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { today } from "@/lib/planning/dates";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { ModalShell } from "./modal-shell";
@@ -17,6 +18,7 @@ export function CreateTaskModal({
   projects,
   people,
   tasks = [],
+  statuses = [],
   initialValues,
   onClose,
   onCreated,
@@ -25,6 +27,7 @@ export function CreateTaskModal({
   projects: ProjectOption[];
   people: PersonSummary[];
   tasks?: TaskOption[];
+  statuses?: TaskStatusSummary[];
   /** Pré-remplissage (ex. conversion d'une demande en tâche) — fusionné sur les valeurs par défaut. */
   initialValues?: Partial<TaskFormValues>;
   onClose: () => void;
@@ -63,6 +66,7 @@ export function CreateTaskModal({
         recurrenceFrequency: values.recurrenceFrequency ? (values.recurrenceFrequency as "WEEKLY" | "MONTHLY") : null,
         recurrenceInterval: values.recurrenceFrequency ? Number(values.recurrenceInterval) || 1 : null,
         recurrenceUntil: values.recurrenceFrequency && values.recurrenceUntil ? values.recurrenceUntil : null,
+        statusId: values.statusId || undefined,
       });
       if (result.error) {
         setError(result.error);
@@ -75,7 +79,20 @@ export function CreateTaskModal({
 
   return (
     <ModalShell title="Nouvelle tâche" onClose={onClose} size="lg">
-      <TaskFormFields values={values} onChange={patch} studios={studios} projects={projects} people={people} tasks={tasks} />
+      {/* Une tâche démarre normalement dans le premier statut, sans champ
+          « État » à la création. On ne l'affiche que si le geste d'ouverture
+          en a désigné un — créer depuis une colonne du Kanban, typiquement :
+          il faut alors pouvoir voir et corriger où la tâche va atterrir. */}
+      <TaskFormFields
+        values={values}
+        onChange={patch}
+        studios={studios}
+        projects={projects}
+        people={people}
+        tasks={tasks}
+        statuses={statuses}
+        showStatus={!!initialValues?.statusId}
+      />
 
       {error && (
         <p role="alert" className="mb-3 text-xs font-semibold text-alert">

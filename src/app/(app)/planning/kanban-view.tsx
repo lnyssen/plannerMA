@@ -1,11 +1,14 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { SearchField } from "@/components/ui/search-field";
 import { StudioBadge } from "@/components/ui/studio-badge";
+import { PersonLabel } from "@/components/ui/person-avatar";
+import { useCreateModals } from "@/components/shell/create-modals-context";
 import { updateTaskStatus } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -36,7 +39,7 @@ function TaskCard({ task, onOpen }: { task: TaskListItem; onOpen: (id: string) =
         ))}
       </div>
       <div className="flex items-center justify-between text-2xs text-ink-muted">
-        <span>{task.assignee?.name ?? "Non attribué"}</span>
+        <PersonLabel name={task.assignee?.name ?? null} />
         <span className="tabular-nums">{formatShortFr(toIsoDate(task.startDate))}</span>
       </div>
     </div>
@@ -55,6 +58,7 @@ export function KanbanView({
   statuses: TaskStatusSummary[];
 }) {
   const router = useRouter();
+  const openCreate = useCreateModals();
   const [tasks, setTasks] = useState(initialTasks);
   const [syncedInitial, setSyncedInitial] = useState(initialTasks);
   if (initialTasks !== syncedInitial) {
@@ -164,6 +168,17 @@ export function KanbanView({
             {colTasks.map((t) => (
               <TaskCard key={t.id} task={t} onOpen={(id) => router.push(`/taches/${id}`)} />
             ))}
+            {/* Le Kanban savait déplacer une tâche d'une colonne à l'autre
+                mais pas en créer : il fallait passer par le bouton global
+                puis rouvrir la fiche pour poser le bon statut. Ici la
+                colonne le désigne déjà. */}
+            <button
+              type="button"
+              onClick={() => openCreate("task", { statusId: status.id })}
+              className="mt-auto flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-line py-2 text-xs font-semibold text-ink-muted transition-colors duration-100 hover:border-heading hover:text-heading"
+            >
+              <Plus size={14} aria-hidden="true" /> Nouvelle tâche
+            </button>
           </div>
         ))}
       </ScrollFade>

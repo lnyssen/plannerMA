@@ -7,6 +7,7 @@ import { listClients } from "@/lib/data/clients";
 import { listPeople } from "@/lib/data/people";
 import { listActiveProjectsForForms } from "@/lib/data/projects";
 import { listStudios } from "@/lib/data/studios";
+import { listTaskStatuses } from "@/lib/data/task-statuses";
 import { listActiveTasksForForms } from "@/lib/data/tasks";
 import { countProjectsOverBudget } from "@/lib/data/time-entries";
 import { fromIsoDate, today } from "@/lib/planning/dates";
@@ -21,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     projects,
     clients,
     tasks,
+    statuses,
     account,
     mesTachesCount,
     demandesCount,
@@ -34,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     listActiveProjectsForForms(),
     listClients(),
     listActiveTasksForForms(),
+    listTaskStatuses(),
     db.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -81,6 +84,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       projects={projects}
       clients={clients}
       tasks={tasks}
+      statuses={statuses}
       userName={account?.person?.name ?? session.user.email ?? "—"}
       role={session.user.role}
       notifyOnAssignment={account?.notifyOnAssignment ?? true}

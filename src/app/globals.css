@@ -132,3 +132,17 @@ body {
     transform: none;
   }
 }
+
+/* Pastille de personne (voir src/components/ui/person-avatar.tsx) : la
+   teinte est dérivée du nom et posée en variable inline, les clartés
+   viennent du thème — une pastille pastel calculée une fois pour le mode
+   clair devient illisible sur fond sombre. */
+.person-avatar {
+  background: hsl(var(--avatar-h) 62% 88%);
+  color: hsl(var(--avatar-h) 55% 28%);
+}
+
+:root[data-theme="dark"] .person-avatar {
+  background: hsl(var(--avatar-h) 32% 26%);
+  color: hsl(var(--avatar-h) 72% 82%);
+}

@@ -39,6 +39,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskOption } from "@/lib/data/tasks";
+import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { signOutAction } from "./actions";
 import { CommandPalette } from "./command-palette";
 import { CreateModalsProvider, type CreateModalKind, type CreateModalPrefill } from "./create-modals-context";
@@ -80,6 +81,7 @@ interface AppShellProps {
   projects: ProjectOption[];
   clients: ClientSummary[];
   tasks: TaskOption[];
+  statuses: TaskStatusSummary[];
   userName: string;
   role: Role;
   notifyOnAssignment: boolean;
@@ -99,6 +101,7 @@ export function AppShell({
   projects,
   clients,
   tasks,
+  statuses,
   userName,
   role,
   notifyOnAssignment,
@@ -616,6 +619,7 @@ export function AppShell({
           projects={projects}
           people={people}
           tasks={tasks}
+          statuses={statuses}
           initialValues={taskPrefill}
           onClose={closeModal}
           onCreated={(id) => {

@@ -6,6 +6,7 @@ import { useCallback } from "react";
 import { useRangeDrag } from "@/components/planning/use-range-drag";
 import { useCreateModals } from "@/components/shell/create-modals-context";
 import { textButtonClass } from "@/components/ui/buttons";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import { addDays, formatShortFr, fromIsoDate, mondayOf, toIsoDate, today, type IsoDate } from "@/lib/planning/dates";
 import { studioBarStyle } from "@/lib/planning/labels";
 
@@ -170,8 +171,9 @@ function PersonRow({
 }) {
   return (
     <>
-      <div className="flex items-center border-r border-b border-line px-3 py-2.5 text-sm font-semibold text-ink">
-        {name}
+      <div className="flex items-center gap-2 border-r border-b border-line px-3 py-2.5 text-sm font-semibold text-ink">
+        <PersonAvatar name={rowKey === UNASSIGNED_ROW ? null : name} size="md" />
+        <span className="truncate">{name}</span>
       </div>
       {days.map((d, dayIndex) => {
         const iso = toIsoDate(d);

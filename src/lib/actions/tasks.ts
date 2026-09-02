@@ -110,7 +110,11 @@ const taskFieldsSchema = z.object({
   recurrenceUntil: isoDate.nullable(),
 });
 
-const createTaskSchema = withDurationChecks(taskFieldsSchema);
+// Le statut n'est demandé qu'en création depuis une colonne du Kanban :
+// partout ailleurs il reste absent et la tâche démarre dans le premier
+// statut configuré. Optionnel, donc, plutôt qu'un champ de formulaire de
+// plus dans le cas courant.
+const createTaskSchema = withDurationChecks(taskFieldsSchema.extend({ statusId: z.string().optional() }));
 
 export type CreateTaskInput = z.input<typeof createTaskSchema>;
 
@@ -134,13 +138,19 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
     recurrenceFrequency,
     recurrenceInterval,
     recurrenceUntil,
+    statusId: requestedStatusId,
   } = parsed.data;
 
-  // Une tâche démarre toujours dans le premier statut (Réglages → Statuts,
-  // ordre d'affichage) : pas de champ "état" à la création, comme avant la
-  // personnalisation des statuts.
+  // Sauf statut explicitement demandé (création depuis une colonne du
+  // Kanban), une tâche démarre dans le premier statut configuré
+  // (Réglages → Statuts, ordre d'affichage). L'identifiant reçu est vérifié
+  // en base plutôt que cru sur parole : il vient du client.
   const defaultStatus = await db.taskStatus.findFirst({ orderBy: { position: "asc" } });
   if (!defaultStatus) return { error: "Aucun statut configuré — contactez un administrateur." };
+  const requestedStatus = requestedStatusId
+    ? await db.taskStatus.findUnique({ where: { id: requestedStatusId }, select: { id: true } })
+    : null;
+  if (requestedStatusId && !requestedStatus) return { error: "Statut inconnu." };
 
   const task = await db.task.create({
     data: {
@@ -152,7 +162,7 @@ export async function createTask(input: CreateTaskInput): Promise<{ error?: stri
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       maxDurationDays,
-      statusId: defaultStatus.id,
+      statusId: requestedStatus?.id ?? defaultStatus.id,
       dependsOnId: dependsOnId || null,
       estimatedHalfDays,
       recurrenceFrequency,
