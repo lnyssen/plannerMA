@@ -40,6 +40,23 @@ async function main() {
   // chaque exécution. Studios, personnes et comptes restent stables (upsert
   // par clé naturelle) puisqu'on veut pouvoir re-semer sans casser les liens
   // déjà créés en développement.
+  // Garde-fou avant tout effacement. Le semis efface projets, tâches et
+  // écritures : pointé par erreur vers une base en service, il détruirait du
+  // travail réel. Le nombre d'écritures de temps est le meilleur indicateur —
+  // une base de démonstration en a peu, une base utilisée en a beaucoup, et
+  // ce sont elles qui justifient des subventions.
+  const ecrituresExistantes = await db.timeEntry.count();
+  const SEUIL = 100;
+  if (ecrituresExistantes > SEUIL && process.env.SEED_FORCE !== "1") {
+    console.error(
+      `\n⛔ Semis interrompu : cette base contient déjà ${ecrituresExistantes} écritures de temps (seuil : ${SEUIL}).\n` +
+        `   Elle semble être en service, et le semis effacerait ces heures.\n` +
+        `   Si vous êtes certain de vouloir tout remplacer, relancez avec SEED_FORCE=1.\n`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   console.log("Nettoyage des données de démonstration précédentes…");
   // Les notifications pointent vers des tâches (liens /taches?open=…) qui
   // vont être recréées avec de nouveaux identifiants ci-dessous : les garder
