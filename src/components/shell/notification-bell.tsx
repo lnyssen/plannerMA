@@ -26,6 +26,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   REQUEST: "Demande",
   BUDGET_EXCEEDED: "Budget dépassé",
   PROJECT_BEHIND: "Rythme budgétaire",
+  MILESTONE_LATE: "Jalon dépassé",
   COMMENT: "Commentaire",
 };
 
@@ -42,6 +43,7 @@ const TYPE_BADGE_BG: Record<NotificationType, string> = {
   REQUEST: "var(--color-line)",
   BUDGET_EXCEEDED: "color-mix(in srgb, var(--color-alert) 16%, transparent)",
   PROJECT_BEHIND: "color-mix(in srgb, var(--color-alert) 16%, transparent)",
+  MILESTONE_LATE: "color-mix(in srgb, var(--color-alert) 16%, transparent)",
 };
 
 const TYPE_BADGE_TEXT: Record<NotificationType, string> = {
@@ -50,6 +52,7 @@ const TYPE_BADGE_TEXT: Record<NotificationType, string> = {
   ASSIGNMENT: "var(--color-ink-muted)",
   REQUEST: "var(--color-ink-muted)",
   BUDGET_EXCEEDED: "var(--color-alert)",
+  MILESTONE_LATE: "var(--color-alert)",
   PROJECT_BEHIND: "var(--color-alert)",
 };
 

@@ -640,6 +640,10 @@ enum NotificationType {
   /// tâches (voir projectBudgetPace) — distinct de BUDGET_EXCEEDED : celui-ci
   /// alerte avant le dépassement franc, sur une dérive de rythme.
   PROJECT_BEHIND
+  /// Jalon dont l'échéance est dépassée sans qu'il soit atteint. Les tâches
+  /// en retard étaient signalées, pas les jalons — alors qu'un jalon manqué
+  /// sur un projet européen engage davantage qu'une tâche décalée.
+  MILESTONE_LATE
 }
 
 /// Notifications dans l'application (cloche de la barre latérale) — distinctes

@@ -5,7 +5,7 @@
 // appelle cette route une fois par jour ouvré avec le secret partagé.
 
 import { NextResponse } from "next/server";
-import { checkProjectPaceAlerts, runDailyDigest } from "@/lib/mail/notify";
+import { checkMilestoneAlerts, checkProjectPaceAlerts, runDailyDigest } from "@/lib/mail/notify";
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -14,6 +14,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 
-  const [digest, paceAlerts] = await Promise.all([runDailyDigest(), checkProjectPaceAlerts()]);
-  return NextResponse.json({ ...digest, ...paceAlerts });
+  const [digest, paceAlerts, milestoneAlerts] = await Promise.all([
+    runDailyDigest(),
+    checkProjectPaceAlerts(),
+    checkMilestoneAlerts(),
+  ]);
+  return NextResponse.json({ ...digest, ...paceAlerts, jalonsSignales: milestoneAlerts.alerted });
 }
