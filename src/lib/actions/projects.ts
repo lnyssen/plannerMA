@@ -78,11 +78,11 @@ export async function createProject(input: CreateProjectInput): Promise<{ error?
 /**
  * Duplique un projet — nom, client, type, budget, studios, et ses tâches
  * actives (hors corbeille) avec leurs sous-tâches, dépendances (remappées
- * vers les clones) et jalons. Sert de "modèle" léger pour un studio qui
+ * vers les clones) et dates clés. Sert de "modèle" léger pour un studio qui
  * refait souvent le même type de projet, sans introduire de notion de
  * modèle distincte en base — dupliquer un projet existant suffit.
  *
- * Statuts remis à zéro (premier statut de la liste) et sous-tâches/jalons
+ * Statuts remis à zéro (premier statut de la liste) et sous-tâches/dates clés
  * remis à "non fait" : un clone démarre un nouveau cycle, pas la suite de
  * l'ancien. Écritures de temps, commentaires, pièces jointes et récurrence
  * ne sont volontairement pas copiés — propres à l'historique de l'original.
@@ -342,7 +342,7 @@ const toggleTemplateSchema = z.object({ projectId: z.string(), isTemplate: z.boo
  * Dupliquer un projet existait déjà, mais il fallait d'abord retrouver
  * lequel ressemblait à ce qu'on voulait faire — ce qui suppose de connaître
  * l'historique. Un modèle reste un vrai projet, avec ses tâches et ses
- * jalons : rien de nouveau à entretenir, seulement de quoi le retrouver au
+ * dates clés : rien de nouveau à entretenir, seulement de quoi le retrouver au
  * bon moment.
  */
 export async function setProjectTemplate(input: z.infer<typeof toggleTemplateSchema>) {

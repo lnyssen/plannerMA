@@ -161,13 +161,13 @@ export async function runDailyDigest(): Promise<{ sent: number; skipped: number 
  * Un seul rappel par 24h par projet, même garde que checkAndNotifyBudget.
  */
 /**
- * Alerte sur les jalons dépassés, une fois par jour.
+ * Alerte sur les dates clés dépassées, une fois par jour.
  *
  * Les tâches en retard remontaient déjà — dans le menu, sur le tableau de
- * bord — mais pas les jalons, alors qu'un jalon manqué sur un projet européen
+ * bord — mais pas les dates clés, alors qu'une date clé manquée sur un projet européen
  * engage davantage qu'une tâche décalée de deux jours.
  *
- * Même garde-fou que l'alerte de rythme : on ne renvoie rien si le même jalon
+ * Même garde-fou que l'alerte de rythme : on ne renvoie rien si le même date clé
  * a déjà été signalé dans les vingt-quatre heures, sans quoi chaque passage
  * du récap quotidien empilerait la même ligne indéfiniment.
  */
@@ -186,22 +186,22 @@ export async function checkMilestoneAlerts(): Promise<{ alerted: number }> {
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   let alerted = 0;
-  for (const jalon of late) {
-    // Le lien porte l'identifiant du jalon : deux jalons dépassés sur un même
-    // projet doivent pouvoir être signalés séparément.
-    const link = `/projets/${jalon.project.id}#jalon-${jalon.id}`;
+  for (const echeance of late) {
+    // Le lien porte l'identifiant de la date clé : deux dates clés dépassées sur un même
+    // projet doivent pouvoir être signalées séparément.
+    const link = `/projets/${echeance.project.id}#date-cle-${echeance.id}`;
     const recent = await db.notification.findFirst({
       where: { type: "MILESTONE_LATE", link, createdAt: { gte: since } },
     });
     if (recent) continue;
 
-    const retard = Math.round((todayDate.getTime() - jalon.dueDate.getTime()) / 86_400_000);
+    const retard = Math.round((todayDate.getTime() - echeance.dueDate.getTime()) / 86_400_000);
     await Promise.all(
       adminIds.map((recipientId) =>
         createNotification({
           recipientId,
           type: "MILESTONE_LATE",
-          message: `Jalon dépassé depuis ${retard} jour${retard > 1 ? "s" : ""} : « ${jalon.title} » — ${jalon.project.client.name} — ${jalon.project.name}.`,
+          message: `Date clé dépassée depuis ${retard} jour${retard > 1 ? "s" : ""} : « ${echeance.title} » — ${echeance.project.client.name} — ${echeance.project.name}.`,
           link,
         }),
       ),

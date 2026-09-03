@@ -69,14 +69,14 @@ export function FieldLabel({ children, htmlFor }: { children: React.ReactNode; h
  * plutôt qu'en une seule colonne continue de labels de même poids.
  */
 /**
- * Bloc titré d'une fiche (sous-tâches, pièces jointes, activité, jalons…).
+ * Bloc titré d'une fiche (sous-tâches, pièces jointes, activité, dates clés…).
  *
  * L'intitulé était une micro-étiquette grise en capitales : ça se lit comme
  * une légende alors que ça structure la page. Il prend la même graisse que
  * les autres titres de section de l'appli, un cran sous le titre de la fiche.
  *
  * `count` et `meta` sortent du titre au lieu d'y être concaténés : à zéro ils
- * disparaissent, parce que « Jalons (0) » suivi de « Aucun jalon. » disait
+ * disparaissent, parce que « Dates clés (0) » suivi de « Aucune date clé. » disait
  * deux fois la même chose.
  */
 export function FieldSection({

@@ -26,7 +26,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   REQUEST: "Demande",
   BUDGET_EXCEEDED: "Budget dépassé",
   PROJECT_BEHIND: "Rythme budgétaire",
-  MILESTONE_LATE: "Jalon dépassé",
+  MILESTONE_LATE: "Date clé dépassée",
   COMMENT: "Commentaire",
 };
 

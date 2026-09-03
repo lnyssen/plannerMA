@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     listTaskStatuses(),
     // En retard (dueDate dépassée, pas faite) ou à venir sous 30 jours — pas
     // tout l'avenir : cette vue sert à voir venir la prochaine échéance sans
-    // ouvrir chaque fiche projet, pas à lister tous les jalons existants.
+    // ouvrir chaque fiche projet, pas à lister tous les dates clés existants.
     db.milestone.findMany({
       where: { isDone: false, dueDate: { lte: horizon }, project: { archived: false } },
       orderBy: { dueDate: "asc" },

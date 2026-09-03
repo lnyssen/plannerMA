@@ -245,7 +245,7 @@ export default function AidePage() {
           <Ul>
             <li>Nom, code, client (existant ou créé à la volée), pôle interne qui porte le projet (Fonctionnement / Équipe éducative / Éducation permanente / Européen, ou aucun), studios concernés.</li>
             <li>Budget de temps facultatif, en heures — un bandeau d’alerte apparaît si le temps enregistré le dépasse.</li>
-            <li>Liste des tâches du projet et de ses jalons, avec ajout direct depuis la fiche.</li>
+            <li>Liste des tâches du projet et de ses dates clés, avec ajout direct depuis la fiche.</li>
             <li>Historique propre au projet (création, duplication, modification, archivage).</li>
           </Ul>
           <Steps title="Créer un projet">
@@ -256,7 +256,7 @@ export default function AidePage() {
           </Steps>
           <Steps title="Dupliquer un projet">
             <li>Ouvrir le projet à dupliquer.</li>
-            <li>Cliquer « Dupliquer » — copie le projet et toutes ses tâches actives (sous-tâches, dépendances remappées, jalons).</li>
+            <li>Cliquer « Dupliquer » — copie le projet et toutes ses tâches actives (sous-tâches, dépendances remappées, dates clés).</li>
             <li>Dates décalées pour démarrer aujourd’hui, en conservant l’espacement relatif entre tâches.</li>
           </Steps>
         </section>
@@ -281,7 +281,7 @@ export default function AidePage() {
             Vue d’ensemble « budget de temps vs réalisé » : total budgété, réalisé, restant et écart, puis le détail
             par projet (barre de consommation, avancement des tâches, rythme — « en avance », « dans les temps » ou
             « en retard » selon que le budget se consomme plus vite ou moins vite que les tâches n’avancent). Une
-            section séparée liste les prochaines échéances (jalons) sous 30 jours, en retard ou à venir.
+            section séparée liste les dates clés des 30 prochains jours, en retard ou à venir.
           </P>
           <Steps title="Exporter en CSV">
             <li>Cliquer « Exporter en CSV », en haut de la page (n’apparaît que s’il y a au moins un projet avec budget).</li>

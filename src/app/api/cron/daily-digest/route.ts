@@ -19,5 +19,5 @@ export async function GET(request: Request) {
     checkProjectPaceAlerts(),
     checkMilestoneAlerts(),
   ]);
-  return NextResponse.json({ ...digest, ...paceAlerts, jalonsSignales: milestoneAlerts.alerted });
+  return NextResponse.json({ ...digest, ...paceAlerts, datesClesSignalees: milestoneAlerts.alerted });
 }

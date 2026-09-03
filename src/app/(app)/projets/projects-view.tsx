@@ -32,9 +32,8 @@ function averageProgress(project: ProjectWithCounts, allStatuses: TaskStatusSumm
 }
 
 /**
- * Santé des jalons d'un projet : le prochain jalon à venir (le plus proche,
- * non atteint) et le nombre de jalons en retard (non atteints, échéance
- * dépassée) — sert à trier la vue Tableau par urgence plutôt qu'ordre
+ * Santé des dates clés d'un projet : la prochaine date clé à venir (la plus proche,
+ * non atteinte) et le nombre de dates clés déjà dépassées — sert à trier la vue Tableau par urgence plutôt qu'ordre
  * alphabétique, et à afficher un repère visuel direct sans ouvrir chaque
  * projet.
  */
@@ -237,7 +236,7 @@ export function ProjectsView({
           overBudget: projectOverBudget(project),
           ...milestoneHealth(project, referenceDate),
         }))
-        // Les projets avec des jalons en retard remontent en premier, puis
+        // Les projets avec des dates clés dépassées remontent en premier, puis
         // les moins avancés — la vue Tableau sert à repérer ce qui a besoin
         // d'attention, pas à parcourir une liste triée alphabétiquement.
         .sort((a, b) => b.overdueCount - a.overdueCount || a.progress - b.progress),
@@ -269,7 +268,7 @@ export function ProjectsView({
             <p className="font-[family-name:var(--font-display)] text-2xl font-semibold text-heading">{rows.length}</p>
           </div>
           <div className="rounded-lg border border-line p-3">
-            <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Jalons en retard</p>
+            <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Dates clés dépassées</p>
             <p
               className="font-[family-name:var(--font-display)] text-2xl font-semibold"
               style={{ color: totalOverdue > 0 ? "var(--color-alert)" : "var(--color-heading)" }}
@@ -398,8 +397,8 @@ export function ProjectsView({
                 ),
             },
             {
-              key: "jalon",
-              label: "Prochain jalon",
+              key: "date clé",
+              label: "Prochaine date clé",
               sortValue: (r) => (r.next ? toIsoDate(r.next.dueDate) : "\uffff"),
               render: (r) =>
                 r.next ? (
@@ -409,7 +408,7 @@ export function ProjectsView({
                     <span className="text-2xs text-ink-muted tabular-nums">— {formatShortFr(toIsoDate(r.next.dueDate))}</span>
                   </span>
                 ) : (
-                  <span className="text-ink-muted">Aucun jalon à venir</span>
+                  <span className="text-ink-muted">Aucune date clé à venir</span>
                 ),
             },
             {
@@ -423,7 +422,7 @@ export function ProjectsView({
                   <span
                     className="inline-flex items-center gap-1 font-semibold"
                     style={{ color: "var(--color-alert)" }}
-                    title={`${r.overdueCount} jalon${r.overdueCount === 1 ? "" : "s"} en retard`}
+                    title={`${r.overdueCount} date clé${r.overdueCount === 1 ? "" : "s"} en retard`}
                   >
                     <AlertTriangle size={13} /> {r.overdueCount}
                   </span>

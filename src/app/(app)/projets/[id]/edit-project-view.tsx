@@ -212,7 +212,7 @@ export function EditProjectView({
   async function duplicate() {
     const ok = await ask({
       title: `Dupliquer « ${project.name} » ?`,
-      body: "Les tâches actives sont copiées avec leurs sous-tâches, dépendances et jalons, décalées pour démarrer aujourd’hui.",
+      body: "Les tâches actives sont copiées avec leurs sous-tâches, dépendances et dates clés, décalées pour démarrer aujourd’hui.",
       confirmLabel: "Dupliquer",
     });
     if (!ok) return;
@@ -479,7 +479,7 @@ export function EditProjectView({
 
           <div className="rounded-lg border border-line p-4">
             <h3 className="mb-3 flex items-baseline gap-1.5 font-[family-name:var(--font-display)] text-base font-semibold tracking-[-0.1px] text-heading">
-              <Flag size={14} className="self-center" aria-hidden="true" /> Jalons
+              <Flag size={14} className="self-center" aria-hidden="true" /> Dates clés
               {project.milestones.length > 0 && (
                 <span className="text-sm font-semibold text-ink-muted tabular-nums">{project.milestones.length}</span>
               )}
@@ -509,7 +509,7 @@ export function EditProjectView({
             <div className="mb-2 flex flex-wrap gap-2">
               <input
                 type="text"
-                placeholder="Nouveau jalon"
+                placeholder="Nouvelle date clé"
                 value={newMilestoneTitle}
                 onChange={(e) => setNewMilestoneTitle(e.target.value)}
                 className={`${fieldInputClass} min-w-[120px] flex-1`}
@@ -518,7 +518,7 @@ export function EditProjectView({
                 type="date"
                 value={newMilestoneDue}
                 onChange={(e) => setNewMilestoneDue(e.target.value)}
-                aria-label="Échéance du jalon"
+                aria-label="Date"
                 className={fieldInputClass}
               />
               <button

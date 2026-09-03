@@ -88,13 +88,13 @@ export function CreateProjectModal({
                 </span>
                 <span className="flex-shrink-0 text-2xs text-ink-muted tabular-nums">
                   {m._count.tasks} tâche{m._count.tasks === 1 ? "" : "s"}
-                  {m._count.milestones > 0 && ` · ${m._count.milestones} jalon${m._count.milestones === 1 ? "" : "s"}`}
+                  {m._count.milestones > 0 && ` · ${m._count.milestones} date clé${m._count.milestones === 1 ? "" : "s"}`}
                 </span>
               </button>
             ))}
           </div>
           <p className="mt-2 text-2xs text-ink-muted">
-            Copie les tâches, sous-tâches, dépendances et jalons, décalés pour démarrer aujourd’hui. Statuts remis à
+            Copie les tâches, sous-tâches, dépendances et dates clés, décalées pour démarrer aujourd’hui. Statuts remis à
             zéro. Vous pourrez tout ajuster ensuite.
           </p>
         </div>

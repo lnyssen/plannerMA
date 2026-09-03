@@ -139,7 +139,7 @@ export function DashboardView({
         <SectionHeading count={milestones.length}>Prochaines échéances (30 jours)</SectionHeading>
         {milestones.length === 0 ? (
           <p className="rounded-lg border border-line px-3 py-2.5 text-sm text-ink-muted">
-            Aucun jalon en retard ou à venir sous 30 jours.
+            Aucune date clé dépassée ni à venir sous 30 jours.
           </p>
         ) : (
           <div className="flex flex-col gap-1.5">

@@ -8,7 +8,7 @@
  * pas à un titre qui ouvre un bloc de contenu : elles se lisent comme une
  * légende, en retrait, alors qu'elles structurent la page.
  *
- * `count` disparaît à zéro : « Jalons (0) » suivi de « Aucun jalon. » disait
+ * `count` disparaît à zéro : « Dates clés (0) » suivi de « Aucune date clé. » disait
  * deux fois la même chose, l'état vide suffit.
  */
 export function SectionHeading({
