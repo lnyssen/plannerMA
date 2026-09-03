@@ -1,14 +1,21 @@
 "use client";
 
 import type { ProjectPole } from "@prisma/client";
-import { AlertTriangle, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
+import { AlertTriangle, BookmarkCheck, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createMilestone, deleteMilestone, setMilestoneDone } from "@/lib/actions/milestones";
-import { duplicateProject, getProjectDetail, setProjectArchived, updateProject, type ProjectDetail } from "@/lib/actions/projects";
+import {
+  duplicateProject,
+  getProjectDetail,
+  setProjectArchived,
+  setProjectTemplate,
+  updateProject,
+  type ProjectDetail,
+} from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
@@ -190,6 +197,18 @@ export function EditProjectView({
     });
   }
 
+  function toggleTemplate() {
+    startTransition(async () => {
+      const result = await setProjectTemplate({ projectId: project.id, isTemplate: !project.isTemplate });
+      if (result?.error) {
+        toast(result.error, "error");
+        return;
+      }
+      toast(project.isTemplate ? "Ce projet n’est plus un modèle." : "Projet marqué comme modèle.");
+      router.refresh();
+    });
+  }
+
   async function duplicate() {
     const ok = await ask({
       title: `Dupliquer « ${project.name} » ?`,
@@ -241,6 +260,23 @@ export function EditProjectView({
               className={`flex items-center gap-1.5 text-sm font-semibold text-heading disabled:opacity-60 ${textButtonClass}`}
             >
               <Copy size={14} /> Dupliquer
+            </button>
+            {/* Un modèle reste un projet ordinaire : la marque sert seulement
+                à le faire remonter au moment d'en créer un nouveau. */}
+            <button
+              type="button"
+              disabled={pending}
+              onClick={toggleTemplate}
+              title={
+                project.isTemplate
+                  ? "Ce projet est proposé comme point de départ à la création"
+                  : "Le proposer comme point de départ à la création d’un projet"
+              }
+              className={`flex items-center gap-1.5 text-sm font-semibold disabled:opacity-60 ${textButtonClass} ${
+                project.isTemplate ? "text-heading" : "text-ink-muted"
+              }`}
+            >
+              <BookmarkCheck size={14} /> {project.isTemplate ? "Modèle" : "Marquer comme modèle"}
             </button>
           </div>
         ) : (

@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { ProjectPole } from "@prisma/client";
-import { createProject } from "@/lib/actions/projects";
+import { createProject, duplicateProject, listProjectTemplates, type ProjectTemplate } from "@/lib/actions/projects";
 import type { ClientSummary } from "@/lib/data/clients";
 import type { StudioSummary } from "@/lib/data/studios";
 import { PROJECT_POLE_LABELS } from "@/lib/planning/labels";
@@ -32,6 +32,24 @@ export function CreateProjectModal({
   const [pole, setPole] = useState<ProjectPole | "">("");
   const [studioIds, setStudioIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Les modèles ne sont chargés qu'à l'ouverture du panneau : c'est une aide
+  // ponctuelle, pas une donnée dont la page a besoin pour s'afficher.
+  const [modeles, setModeles] = useState<ProjectTemplate[]>([]);
+  useEffect(() => {
+    void listProjectTemplates().then(setModeles);
+  }, []);
+
+  function partirDuModele(id: string) {
+    startTransition(async () => {
+      const result = await duplicateProject(id);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      router.refresh();
+      onCreated(result.id!);
+    });
+  }
 
   function toggleStudio(id: string) {
     setStudioIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -52,6 +70,36 @@ export function CreateProjectModal({
 
   return (
     <SidePanel title="Nouveau projet" onClose={onClose}>
+      {modeles.length > 0 && (
+        <div className="mb-4 rounded-lg border border-line p-3">
+          <p className="mb-2 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Partir d’un modèle</p>
+          <div className="flex flex-col gap-1.5">
+            {modeles.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                disabled={pending}
+                onClick={() => partirDuModele(m.id)}
+                className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-2 text-left text-sm transition-colors duration-100 hover:border-heading disabled:opacity-60"
+              >
+                <span className="min-w-0 flex-1 truncate">
+                  <span className="font-semibold text-heading">{m.name}</span>
+                  <span className="text-ink-muted"> — {m.client.name}</span>
+                </span>
+                <span className="flex-shrink-0 text-2xs text-ink-muted tabular-nums">
+                  {m._count.tasks} tâche{m._count.tasks === 1 ? "" : "s"}
+                  {m._count.milestones > 0 && ` · ${m._count.milestones} jalon${m._count.milestones === 1 ? "" : "s"}`}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-2xs text-ink-muted">
+            Copie les tâches, sous-tâches, dépendances et jalons, décalés pour démarrer aujourd’hui. Statuts remis à
+            zéro. Vous pourrez tout ajuster ensuite.
+          </p>
+        </div>
+      )}
+
       <FieldLabel htmlFor="project-name">Nom du projet</FieldLabel>
       <input
         id="project-name"

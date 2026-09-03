@@ -240,7 +240,7 @@ async function main() {
     { key: "digicit", name: "DigiCitizen — capsules européennes", code: "EU-DIGI", client: CLIENTS[3].name, pole: "EUROPEEN" as const, budget: 400, studios: ["video", "son", "web"] },
     { key: "climat", name: "Mobilisation climat", code: "CNCD-CLIM", client: CLIENTS[4].name, pole: null, budget: 120, studios: ["graphisme"] },
     { key: "parentalite", name: "Podcast parentalité", code: "LDF-POD", client: CLIENTS[5].name, pole: "EDUCATION_PERMANENTE" as const, budget: 150, studios: ["son", "consultance"] },
-    { key: "ep2026", name: "Éducation permanente 2026", code: "EP-2026", client: CLIENTS[0].name, pole: "EDUCATION_PERMANENTE" as const, budget: 500, studios: ["consultance", "web", "video"] },
+    { key: "ep2026", name: "Éducation permanente 2026", code: "EP-2026", client: CLIENTS[0].name, pole: "EDUCATION_PERMANENTE" as const, budget: 500, studios: ["consultance", "web", "video"], modele: true },
     { key: "intranet", name: "Intranet — refonte", code: null, client: CLIENTS[0].name, pole: "FONCTIONNEMENT" as const, budget: null, studios: ["web"] },
     { key: "archive", name: "Expo itinérante 2025", code: "EXPO-25", client: CLIENTS[2].name, pole: null, budget: 90, studios: ["graphisme", "video"], archived: true },
   ];
@@ -255,6 +255,7 @@ async function main() {
         pole: p.pole,
         budgetHours: p.budget,
         archived: p.archived ?? false,
+        isTemplate: (p as { modele?: boolean }).modele ?? false,
         studios: { create: p.studios.map((s) => ({ studioId: studios[s] })) },
       },
     });

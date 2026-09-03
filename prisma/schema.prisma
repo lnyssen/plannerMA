@@ -270,6 +270,12 @@ model Project {
   /// Pôle interne qui porte le projet — voir ProjectPole.
   pole        ProjectPole?
   archived    Boolean     @default(false)
+  /// Projet servant de point de départ à d'autres. Dupliquer existait déjà,
+  /// mais il fallait d'abord retrouver un projet qui ressemble à ce qu'on
+  /// veut : marquer celui-ci le fait remonter à la création. Un modèle n'est
+  /// pas un objet à part — c'est un vrai projet, avec ses tâches et ses
+  /// jalons, ce qui évite d'entretenir deux notions en parallèle.
+  isTemplate  Boolean     @default(false) @map("is_template")
   /// Identifiant de l'objet correspondant dans Clockify. Posé au premier
   /// envoi du référentiel et réutilisé ensuite comme clé de mise à jour —
   /// voir src/lib/clockify/.

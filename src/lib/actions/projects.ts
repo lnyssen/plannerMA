@@ -333,3 +333,53 @@ export async function setProjectArchived(input: z.infer<typeof toggleArchiveSche
   revalidatePath("/projets");
   return { ok: true };
 }
+
+const toggleTemplateSchema = z.object({ projectId: z.string(), isTemplate: z.boolean() });
+
+/**
+ * Marque un projet comme modèle, ou lève la marque.
+ *
+ * Dupliquer un projet existait déjà, mais il fallait d'abord retrouver
+ * lequel ressemblait à ce qu'on voulait faire — ce qui suppose de connaître
+ * l'historique. Un modèle reste un vrai projet, avec ses tâches et ses
+ * jalons : rien de nouveau à entretenir, seulement de quoi le retrouver au
+ * bon moment.
+ */
+export async function setProjectTemplate(input: z.infer<typeof toggleTemplateSchema>) {
+  const session = await auth();
+  if (!session?.user) return { error: "Session expirée. Reconnectez-vous." };
+  if (session.user.role !== "ADMIN") return { error: "Réservé aux administrateurs." };
+  const { projectId, isTemplate } = toggleTemplateSchema.parse(input);
+
+  const project = await db.project.update({ where: { id: projectId }, data: { isTemplate } });
+  await db.journalEntry.create({
+    data: {
+      actorId: session.user.personId,
+      actorName: await currentActorName(session),
+      action: `Projet « ${project.name} » ${isTemplate ? "marqué comme modèle" : "n’est plus un modèle"}`,
+      projectId,
+    },
+  });
+
+  revalidatePath("/projets");
+  return { ok: true };
+}
+
+/** Modèles disponibles, pour le choix proposé à la création d'un projet. */
+export async function listProjectTemplates() {
+  const session = await auth();
+  if (!session?.user) return [];
+  return db.project.findMany({
+    where: { isTemplate: true, archived: false },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      client: { select: { name: true } },
+      _count: { select: { tasks: { where: { trashedAt: null } }, milestones: true } },
+    },
+  });
+}
+
+export type ProjectTemplate = Awaited<ReturnType<typeof listProjectTemplates>>[number];
