@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, MessageSquare, Paperclip, X } from "lucide-react";
+import { AlertTriangle, SlidersHorizontal, MessageSquare, Paperclip, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
@@ -112,10 +112,13 @@ export function TasksTable({
   // une liste mais un état calculé, et c'est la question la plus fréquente
   // devant ce tableau — « qu'est-ce qui a débordé ? ».
   const [seulementRetard, setSeulementRetard] = useState(false);
+  const [filtresOuverts, setFiltresOuverts] = useState(false);
   // « Mes tâches » et « Tâches » étaient deux entrées de menu pour le même
   // tableau, à ce filtre près. Une seule entrée, et la vue s'ouvre sur son
   // propre travail — ce qu'on vient chercher le plus souvent.
   const [seulementMoi, setSeulementMoi] = useState(Boolean(currentPersonId));
+  const nbFiltresActifs =
+    projectFilter.length + studioFilter.length + personFilter.length + statusFilter.length;
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkPending, startBulkTransition] = useTransition();
 
@@ -237,6 +240,25 @@ export function TasksTable({
           <span className="tabular-nums">{tasks.filter(estEnRetard).length}</span>
         </button>
 
+        {/* Sur téléphone, ces quatre listes s'empilaient sur quatre rangées et
+            repoussaient la première tâche hors de l'écran. Elles se replient
+            derrière un bouton, tandis que la bascule Mes tâches/Toute
+            l'équipe et le filtre « En retard » — les deux plus utilisés —
+            restent toujours visibles. */}
+        <button
+          type="button"
+          onClick={() => setFiltresOuverts((v) => !v)}
+          aria-expanded={filtresOuverts}
+          className="flex h-10 items-center gap-1.5 rounded-full border-[1.5px] border-heading px-3 text-sm font-semibold text-heading sm:hidden"
+        >
+          <SlidersHorizontal size={14} aria-hidden="true" />
+          Filtres
+          {nbFiltresActifs > 0 && (
+            <span className="rounded-full bg-heading px-1.5 text-2xs font-bold text-paper tabular-nums">{nbFiltresActifs}</span>
+          )}
+        </button>
+
+        <div className={`${filtresOuverts ? "flex" : "hidden"} w-full flex-wrap gap-3 sm:flex sm:w-auto sm:contents`}>
         <MultiSelectField
           label="Tous les projets"
           selected={projectFilter}
@@ -267,8 +289,9 @@ export function TasksTable({
           options={statuses.map((s) => ({ id: s.id, label: s.name }))}
           className="max-w-[180px]"
         />
-        <span className="flex-1" />
-        <SearchField value={search} onChange={setSearch} className="max-w-md" />
+        </div>
+        <span className="hidden flex-1 sm:block" />
+        <SearchField value={search} onChange={setSearch} placeholder="Filtrer ces tâches…" className="max-w-md" />
       </div>
 
       {selectedIds.length > 0 && (

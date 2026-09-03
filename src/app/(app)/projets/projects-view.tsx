@@ -311,7 +311,7 @@ export function ProjectsView({
           </div>
         )}
         <span className="flex-1" />
-        <SearchField value={search} onChange={setSearch} className="max-w-md" />
+        <SearchField value={search} onChange={setSearch} placeholder="Filtrer ces projets…" className="max-w-md" />
       </div>
 
       {projects.length === 0 ? (

@@ -151,7 +151,7 @@ export function KanbanView({
           className="max-w-[200px]"
         />
         <span className="flex-1" />
-        <SearchField value={search} onChange={setSearch} className="max-w-md" />
+        <SearchField value={search} onChange={setSearch} placeholder="Filtrer ces tâches…" className="max-w-md" />
       </div>
 
       {error && (

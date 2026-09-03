@@ -28,16 +28,33 @@ export function SearchField({
     if (open) inputRef.current?.focus();
   }, [open]);
 
+  // Sur téléphone, l'icône seule entrait en concurrence avec la loupe de la
+  // recherche globale, dans l'en-tête : deux loupes à l'écran, sans rien pour
+  // les distinguer. Le champ y est donc toujours déployé, avec un intitulé
+  // qui dit ce qu'il filtre. Sur grand écran l'icône reste, la place y étant
+  // disputée par les filtres.
   if (!open && !value) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={placeholder}
-        className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-heading text-heading transition-colors duration-100 hover:bg-heading/10 active:bg-heading/15 ${className}`}
-      >
-        <Search size={16} />
-      </button>
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={placeholder}
+          className={`hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-[1.5px] border-heading text-heading transition-colors duration-100 hover:bg-heading/10 active:bg-heading/15 sm:flex ${className}`}
+        >
+          <Search size={16} />
+        </button>
+        <div className="relative w-full sm:hidden">
+          <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+          <input
+            type="text"
+            value=""
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="h-10 w-full rounded-md border-[1.5px] border-heading bg-paper py-2 pr-3 pl-9 text-sm text-ink"
+          />
+        </div>
+      </>
     );
   }
 
