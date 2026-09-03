@@ -89,6 +89,11 @@ export function KanbanView({
   }
 
   const [search, setSearch] = useState("");
+  // Sur téléphone, un tableau à colonnes fixes de 288 px n'en laisse voir
+  // qu'une seule : il fallait faire défiler toutes les cartes d'une colonne
+  // avant de pouvoir glisser vers la suivante. On y montre donc une colonne
+  // à la fois, choisie dans une rangée de pastilles.
+  const [colonneMobile, setColonneMobile] = useState<string | null>(null);
   const [studioFilter, setStudioFilter] = useState<string[]>([]);
   const [personFilter, setPersonFilter] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -164,12 +169,44 @@ export function KanbanView({
           un tableau Kanban classique) : si elles ne tiennent pas toutes,
           la rangée défile horizontalement plutôt que d'empiler les colonnes
           les unes sous les autres. */}
+      {/* Rangée de choix de colonne — téléphone uniquement. */}
+      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 sm:hidden">
+        {columns.map(({ status, tasks: colTasks }) => {
+          const actif = (colonneMobile ?? columns[0]?.status.id) === status.id;
+          return (
+            <button
+              key={status.id}
+              type="button"
+              onClick={() => setColonneMobile(status.id)}
+              aria-pressed={actif}
+              // La pastille est aussi une zone de dépôt : une seule colonne
+              // étant visible sur téléphone, le glisser n'aurait sinon aucune
+              // cible et la tâche ne pourrait plus changer de statut au doigt.
+              {...cardDrag.zoneAttrs(status.id)}
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap"
+              style={
+                cardDrag.drag?.over === status.id
+                  ? { background: status.fillHex, color: status.colorHex, outline: "2px solid var(--color-heading)" }
+                  : actif
+                    ? { background: status.fillHex, color: status.colorHex, outline: `1.5px solid ${status.colorHex}` }
+                    : { background: "var(--color-wash)", color: "var(--color-ink-muted)" }
+              }
+            >
+              {status.name}
+              <span className="tabular-nums">{colTasks.length}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <ScrollFade className="flex gap-4 pb-2">
         {columns.map(({ status, tasks: colTasks }) => (
           <div
             key={status.id}
             {...cardDrag.zoneAttrs(status.id)}
-            className="flex min-h-[200px] w-72 flex-shrink-0 flex-col gap-2 rounded-lg border border-line bg-wash p-2.5"
+            className={`min-h-[200px] w-full flex-col gap-2 rounded-lg border border-line bg-wash p-2.5 sm:flex sm:w-72 sm:flex-shrink-0 ${
+              (colonneMobile ?? columns[0]?.status.id) === status.id ? "flex" : "hidden"
+            }`}
             style={{ outline: cardDrag.drag?.over === status.id ? "2px solid var(--color-heading)" : undefined, outlineOffset: -2 }}
           >
             <div
