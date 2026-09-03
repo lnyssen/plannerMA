@@ -208,18 +208,18 @@ export function ChargeView({
           <table className="border-collapse">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-paper px-3 py-2 text-left text-xs font-semibold text-ink-muted uppercase">
+                <th className="sticky left-0 z-10 border-b-2 border-heading font-[family-name:var(--font-display)] font-medium tracking-[-0.1px] text-heading bg-paper px-3 py-2.5 text-left text-sm">
                   Personne
                 </th>
                 {weekStarts.map((w, i) => (
-                  <th key={i} className="min-w-[64px] px-1 py-2 text-center text-2xs font-semibold text-ink-muted tabular-nums">
+                  <th key={i} className="min-w-[64px] border-b-2 border-heading font-[family-name:var(--font-display)] font-medium tracking-[-0.1px] text-heading px-1 py-2.5 text-center text-2xs tabular-nums">
                     {w.getUTCDate()}/{w.getUTCMonth() + 1}
                   </th>
                 ))}
-                <th className="min-w-[64px] border-l border-line px-1 py-2 text-center text-2xs font-semibold text-ink-muted uppercase">
+                <th className="min-w-[64px] border-b-2 border-heading font-[family-name:var(--font-display)] font-medium tracking-[-0.1px] text-heading px-1 py-2.5 text-center text-2xs">
                   Moyenne
                 </th>
-                <th className="min-w-[72px] px-1 py-2 text-center text-2xs font-semibold text-ink-muted uppercase">
+                <th className="min-w-[72px] border-b-2 border-heading font-[family-name:var(--font-display)] font-medium tracking-[-0.1px] text-heading px-1 py-2.5 text-center text-2xs">
                   Temps réel
                 </th>
               </tr>

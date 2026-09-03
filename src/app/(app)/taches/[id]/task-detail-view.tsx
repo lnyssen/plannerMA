@@ -22,6 +22,7 @@ import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/li
 import { recordRecentItem } from "@/lib/recent-items";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import { SearchField } from "@/components/ui/search-field";
@@ -665,54 +666,73 @@ export function TaskDetailView({
               </div>
             )}
             {task.attachments.length > 0 && (
-              <div className="mb-3 overflow-x-auto rounded-lg border border-line">
-                <table className="w-full min-w-[480px] border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-line bg-wash text-left text-2xs font-semibold text-ink-muted uppercase">
-                      <th className="px-2.5 py-1.5">Fichier</th>
-                      <th className="px-2.5 py-1.5">Taille</th>
-                      <th className="px-2.5 py-1.5">Déposé par</th>
-                      <th className="px-2.5 py-1.5">Déposé le</th>
-                      <th className="w-8 px-2.5 py-1.5" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAttachments.map((a) => (
-                      <tr key={a.id} className="border-b border-line last:border-b-0">
-                        <td className="px-2.5 py-1.5">
-                          <a
-                            href={a.kind === "LINK" ? (a.url ?? "#") : `/api/attachments/${a.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-1.5 text-heading underline-offset-2 hover:underline"
-                          >
-                            {a.kind === "LINK" ? (
-                              <ExternalLink size={13} className="flex-shrink-0" aria-hidden="true" />
-                            ) : (
-                              <Paperclip size={13} className="flex-shrink-0" aria-hidden="true" />
-                            )}
-                            <span className="truncate">{a.name}</span>
-                          </a>
-                        </td>
-                        <td className="px-2.5 py-1.5 text-ink-muted tabular-nums">
-                          {a.sizeBytes != null ? formatFileSize(a.sizeBytes) : "—"}
-                        </td>
-                        <td className="px-2.5 py-1.5 text-ink-muted">{a.uploadedBy?.name ?? "—"}</td>
-                        <td className="px-2.5 py-1.5 text-ink-muted tabular-nums">{quandFr(a.createdAt)}</td>
-                        <td className="px-2.5 py-1.5">
-                          <button
-                            type="button"
-                            onClick={() => removeAttachment(a.id)}
-                            aria-label={`Retirer ${a.name}`}
-                            className={`p-0.5 text-ink-muted hover:text-alert ${textButtonClass}`}
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mb-3">
+                <DataTable
+                  rows={filteredAttachments}
+                  getRowId={(a) => a.id}
+                  storageKey="planning-studios:colonnes:pieces-jointes"
+                  columns={[
+                    {
+                      key: "fichier",
+                      label: "Fichier",
+                      required: true,
+                      sortValue: (a) => a.name,
+                      render: (a) => (
+                        <a
+                          href={a.kind === "LINK" ? (a.url ?? "#") : `/api/attachments/${a.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 text-heading underline-offset-2 hover:underline"
+                        >
+                          {a.kind === "LINK" ? (
+                            <ExternalLink size={13} className="flex-shrink-0" aria-hidden="true" />
+                          ) : (
+                            <Paperclip size={13} className="flex-shrink-0" aria-hidden="true" />
+                          )}
+                          <span className="truncate">{a.name}</span>
+                        </a>
+                      ),
+                    },
+                    {
+                      key: "taille",
+                      label: "Taille",
+                      sortValue: (a) => a.sizeBytes ?? 0,
+                      cellClassName: "text-ink-muted tabular-nums",
+                      render: (a) => (a.sizeBytes != null ? formatFileSize(a.sizeBytes) : "—"),
+                    },
+                    {
+                      key: "auteur",
+                      label: "Déposé par",
+                      sortValue: (a) => a.uploadedBy?.name ?? "",
+                      cellClassName: "text-ink-muted",
+                      render: (a) => a.uploadedBy?.name ?? "—",
+                    },
+                    {
+                      key: "date",
+                      label: "Déposé le",
+                      sortValue: (a) => a.createdAt.getTime(),
+                      cellClassName: "text-ink-muted tabular-nums",
+                      render: (a) => quandFr(a.createdAt),
+                    },
+                    {
+                      key: "retirer",
+                      label: "Retirer",
+                      // Toujours visible : masquer l'action de suppression
+                      // laisserait une pièce jointe sans moyen de la retirer.
+                      required: true,
+                      render: (a) => (
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(a.id)}
+                          aria-label={`Retirer ${a.name}`}
+                          className={`p-0.5 text-ink-muted hover:text-alert ${textButtonClass}`}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      ),
+                    },
+                  ]}
+                />
               </div>
             )}
             {addingAttachment && (
