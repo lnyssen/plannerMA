@@ -282,7 +282,8 @@ async function main() {
   // volontairement en retard ou non attribuées, pour que les compteurs
   // d'alerte du menu et du Tableau de bord aient de quoi signaler.
   const TACHES: {
-    projet: string;
+    /** Nul = travail hors projet (« AGENCE ») — Task.projectId est facultatif. */
+    projet: string | null;
     title: string;
     studios: string[];
     qui: string | null;
@@ -290,6 +291,10 @@ async function main() {
     fin: number;
     statut: keyof typeof statuses;
     demiJours?: number;
+    /** Nul = pas d'estimation : la vue Charge compte alors la plage entière comme occupée. */
+    maxJours?: number;
+    /** Jours écoulés depuis la mise à la corbeille. */
+    corbeille?: number;
     sousTaches?: [string, number, boolean][];
   }[] = [
     { projet: "vitrine", title: "Arborescence et wireframes", studios: ["web"], qui: "bilal", debut: -34, fin: -22, statut: "delivered", demiJours: 8, sousTaches: [["Page d’accueil", -30, true], ["Pages studios", -24, true]] },
@@ -321,6 +326,42 @@ async function main() {
     { projet: "ep2026", title: "Bilan quantitatif", studios: ["consultance"], qui: "elena", debut: 24, fin: 30, statut: "todo", demiJours: 6 },
     { projet: "intranet", title: "Recueil des besoins", studios: ["web"], qui: "bilal", debut: -3, fin: 5, statut: "todo", demiJours: 5 },
     { projet: "intranet", title: "Maquette", studios: ["graphisme"], qui: null, debut: 9, fin: 16, statut: "todo", demiJours: 6 },
+
+    // --- Cas de figure volontairement représentés, pour que chaque écran ait
+    // --- de quoi montrer son comportement en démonstration.
+
+    // Hors projet : Task.projectId est facultatif (réunions, administratif).
+    { projet: null, title: "Revue de presse hebdomadaire", studios: ["consultance"], qui: "driss", debut: -2, fin: 2, statut: "inProgress", demiJours: 2 },
+    { projet: null, title: "Entretiens annuels", studios: ["consultance"], qui: null, debut: 10, fin: 24, statut: "todo", demiJours: 6 },
+
+    // Sans estimation : la Charge compte alors toute la plage comme occupée.
+    { projet: "digicit", title: "Veille sur les usages numériques des jeunes", studios: ["consultance"], qui: "elena", debut: -1, fin: 20, statut: "inProgress" },
+    { projet: "climat", title: "Retouches après retour client", studios: ["graphisme"], qui: "amelie", debut: 1, fin: 3, statut: "todo" },
+
+    // Durée maximale : borne l'étalement, distincte de l'estimation d'effort.
+    { projet: "oxfam", title: "Validation juridique des images", studios: ["consultance"], qui: "driss", debut: 4, fin: 11, statut: "todo", demiJours: 2, maxJours: 5 },
+    { projet: "parentalite", title: "Mixage final", studios: ["son"], qui: "chloe", debut: 14, fin: 18, statut: "todo", demiJours: 4, maxJours: 3 },
+
+    // À la corbeille : Réglages → Corbeille était vide.
+    { projet: "vitrine", title: "Bannière animée (abandonnée)", studios: ["graphisme"], qui: "amelie", debut: -25, fin: -18, statut: "todo", demiJours: 3, corbeille: 9 },
+    { projet: "oxfam", title: "Version longue du spot (annulée)", studios: ["video"], qui: "chloe", debut: -14, fin: -7, statut: "todo", demiJours: 5, corbeille: 3 },
+
+    // Trois studios sur une même tâche, et un titre volontairement long pour
+    // éprouver la troncature des colonnes.
+    { projet: "ep2026", title: "Journée de lancement — captation, sonorisation et supports imprimés pour l’ensemble des ateliers", studios: ["video", "son", "graphisme"], qui: "chloe", debut: 16, fin: 17, statut: "todo", demiJours: 4 },
+
+    // Studio Son, sous-représenté jusqu'ici.
+    { projet: "digicit", title: "Nettoyage des prises de son", studios: ["son"], qui: "chloe", debut: -9, fin: -5, statut: "delivered", demiJours: 3 },
+    { projet: "parentalite", title: "Génériques et jingles", studios: ["son"], qui: "chloe", debut: 5, fin: 9, statut: "todo", demiJours: 3, sousTaches: [["Générique d’ouverture", 6, false], ["Virgules sonores", 8, false], ["Générique de fin", 9, false]] },
+
+    // Tâche longue, pour que le Gantt ait une barre qui traverse la fenêtre.
+    { projet: "ep2026", title: "Accompagnement des groupes locaux", studios: ["consultance"], qui: "driss", debut: -30, fin: 60, statut: "inProgress", demiJours: 30 },
+
+    // Tâche d'une seule journée, à l'opposé.
+    { projet: "mediaEduc", title: "Comité de lecture", studios: ["consultance"], qui: "elena", debut: 6, fin: 6, statut: "todo", demiJours: 1 },
+
+    // Sous-tâches partiellement faites, pour un avancement intermédiaire.
+    { projet: "vitrine", title: "Accessibilité et tests", studios: ["web"], qui: "bilal", debut: 2, fin: 12, statut: "todo", demiJours: 6, sousTaches: [["Contrastes", 4, true], ["Navigation clavier", 7, false], ["Lecteurs d’écran", 11, false]] },
   ];
 
   const tachesParTitre: Record<string, string> = {};
@@ -328,12 +369,14 @@ async function main() {
     const row = await db.task.create({
       data: {
         title: t.title,
-        projectId: projets[t.projet],
+        projectId: t.projet ? projets[t.projet] : null,
         studios: { create: t.studios.map((s) => ({ studioId: studios[s] })) },
         assigneeId: t.qui ? people[t.qui] : null,
         startDate: new Date(addDaysIso(auj, t.debut)),
         endDate: new Date(addDaysIso(auj, t.fin)),
         estimatedHalfDays: t.demiJours ?? null,
+        maxDurationDays: t.maxJours ?? null,
+        trashedAt: t.corbeille != null ? new Date(addDaysIso(auj, -t.corbeille)) : null,
         statusId: statuses[t.statut],
         subtasks: t.sousTaches
           ? { create: t.sousTaches.map(([title, jours, done], i) => ({ title, dueDate: new Date(addDaysIso(auj, jours)), done, position: i })) }
@@ -369,6 +412,34 @@ async function main() {
   });
   await db.task.create({
     data: {
+      title: "Point quotidien du studio Web",
+      projectId: projets.intranet,
+      studios: { create: [{ studioId: studios.web }] },
+      assigneeId: people.bilal,
+      startDate: new Date(auj),
+      endDate: new Date(auj),
+      statusId: statuses.todo,
+      estimatedHalfDays: 1,
+      recurrenceFrequency: "DAILY",
+      recurrenceInterval: 1,
+    },
+  });
+  await db.task.create({
+    data: {
+      title: "Facturation du mois",
+      studios: { create: [{ studioId: studios.consultance }] },
+      assigneeId: people.elena,
+      startDate: new Date(addDaysIso(auj, 12)),
+      endDate: new Date(addDaysIso(auj, 12)),
+      statusId: statuses.todo,
+      estimatedHalfDays: 1,
+      recurrenceFrequency: "MONTHLY",
+      recurrenceInterval: 1,
+      recurrenceMonthlyMode: "BY_DATE",
+    },
+  });
+  await db.task.create({
+    data: {
       title: "Comité de pilotage EP",
       projectId: projets.ep2026,
       studios: { create: [{ studioId: studios.consultance }] },
@@ -387,6 +458,10 @@ async function main() {
   // des écritures à une tâche précise plutôt qu'au projet en bloc.
   const tachesParProjet: Record<string, string[]> = {};
   for (const t of TACHES) {
+    // Les tâches hors projet et celles à la corbeille ne reçoivent pas
+    // d'écritures : les premières n'ont pas de projet où les rattacher, les
+    // secondes ne doivent pas peser dans les budgets.
+    if (!t.projet || t.corbeille != null) continue;
     (tachesParProjet[t.projet] ??= []).push(tachesParTitre[t.title]);
   }
 
@@ -542,7 +617,7 @@ async function main() {
   });
 
   console.log(
-    `Terminé. ${PROJETS.length} projets, ${TACHES.length + 2} tâches, ${ecritures.length} écritures de temps.`,
+    `Terminé. ${PROJETS.length} projets, ${TACHES.length + 4} tâches, ${ecritures.length} écritures de temps.`,
   );
 }
 
