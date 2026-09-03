@@ -27,7 +27,7 @@ export async function getTaskDetail(taskId: string) {
   const task = await db.task.findUnique({
     where: { id: taskId },
     include: {
-      project: true,
+      project: { include: { client: true } },
       studios: { include: { studio: true } },
       assignee: true,
       attachments: { orderBy: { createdAt: "desc" }, include: { uploadedBy: { select: { name: true } } } },

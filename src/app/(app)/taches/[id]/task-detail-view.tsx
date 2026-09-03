@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, AtSign, Copy, ExternalLink, History, ListChecks, MessageSquare, Paperclip, Plus, RotateCcw, Square, Timer, Trash2, X } from "lucide-react";
+import { AlertTriangle, AtSign, Copy, ExternalLink, History, ListChecks, MessageSquare, Paperclip, Pencil, Plus, RotateCcw, Square, Timer, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -17,11 +17,13 @@ import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskOption } from "@/lib/data/tasks";
 import { formatFileSize } from "@/lib/format";
-import { quandFr, toIsoDate, today } from "@/lib/planning/dates";
+import { formatShortFr, quandFr, toIsoDate, today } from "@/lib/planning/dates";
 import { entryDurationMinutes, formatDurationFr, sumDurationMinutes } from "@/lib/planning/time";
 import { recordRecentItem } from "@/lib/recent-items";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass, textButtonClass } from "@/components/ui/buttons";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { StudioBadge } from "@/components/ui/studio-badge";
 import { SearchField } from "@/components/ui/search-field";
 import { fieldInputClass, FieldSection } from "@/components/modals/modal-shell";
 import { TaskFormFields, type TaskFormValues } from "@/components/modals/task-form-fields";
@@ -36,6 +38,89 @@ function AddToggle({ open, onToggle, label }: { open: boolean; onToggle: () => v
     >
       {open ? <X size={12} /> : <Plus size={12} />} {open ? "Fermer" : label}
     </button>
+  );
+}
+
+/** Valeurs de formulaire correspondant à une tâche — sert aussi à annuler une édition. */
+function formValuesOf(t: TaskDetail): TaskFormValues {
+  return {
+    title: t.title,
+    description: t.description ?? "",
+    studioIds: t.studios.map((s) => s.studioId),
+    projectId: t.projectId ?? "",
+    assigneeId: t.assigneeId ?? "",
+    startDate: toIsoDate(t.startDate),
+    endDate: toIsoDate(t.endDate),
+    maxDurationDays: t.maxDurationDays != null ? String(t.maxDurationDays) : "",
+    statusId: t.statusId,
+    dependsOnId: t.dependsOnId ?? "",
+    estimatedHalfDays: t.estimatedHalfDays != null ? String(t.estimatedHalfDays) : "",
+    recurrenceFrequency: t.recurrenceFrequency ?? "",
+    recurrenceInterval: t.recurrenceInterval != null ? String(t.recurrenceInterval) : "1",
+    recurrenceMonthlyMode: t.recurrenceMonthlyMode ?? "BY_DATE",
+    recurrenceUntil: t.recurrenceUntil ? toIsoDate(t.recurrenceUntil) : "",
+  };
+}
+
+/** Une ligne du résumé — intitulé à gauche, valeur à droite. */
+function Ligne({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-line py-2 last:border-0">
+      <span className="w-32 flex-shrink-0 text-2xs font-semibold tracking-wide text-ink-muted uppercase">{label}</span>
+      <span className="min-w-0 flex-1 text-sm text-ink">{children}</span>
+    </div>
+  );
+}
+
+/**
+ * La fiche en lecture.
+ *
+ * On ouvre une tâche pour savoir où elle en est bien plus souvent que pour la
+ * modifier ; l'écran présentait pourtant quatorze champs bordés d'emblée, qui
+ * noyaient l'information sous des contrôles. Les champs vides ne sont pas
+ * affichés du tout : une ligne « Dépend de : — » n'apprend rien.
+ */
+function TaskSummary({ task }: { task: TaskDetail }) {
+  return (
+    <div className="mb-6">
+      {task.description ? (
+        <p className="mb-4 text-sm whitespace-pre-wrap text-ink">{task.description}</p>
+      ) : (
+        <p className="mb-4 text-sm text-ink-muted">Aucune description.</p>
+      )}
+
+      <Ligne label="État">
+        <StatusBadge status={task.status} />
+      </Ligne>
+      <Ligne label="Studios">
+        <span className="flex flex-wrap gap-1">
+          {task.studios.map(({ studio }) => (
+            <StudioBadge key={studio.id} name={studio.name} fillHex={studio.fillHex} colorHex={studio.colorHex} />
+          ))}
+        </span>
+      </Ligne>
+      <Ligne label="Projet">
+        {task.project ? `${task.project.client.name} — ${task.project.name}` : <span className="text-ink-muted">Sans projet</span>}
+      </Ligne>
+      <Ligne label="Attribuée à">
+        {task.assignee?.name ?? <span className="text-ink-muted">Non attribuée</span>}
+      </Ligne>
+      <Ligne label="Dates">
+        <span className="tabular-nums">
+          {formatShortFr(toIsoDate(task.startDate))} → {formatShortFr(toIsoDate(task.endDate))}
+        </span>
+      </Ligne>
+      {task.estimatedHalfDays != null && (
+        <Ligne label="Estimation">{task.estimatedHalfDays} demi-journée{task.estimatedHalfDays > 1 ? "s" : ""}</Ligne>
+      )}
+      {task.dependsOn && <Ligne label="Dépend de">{task.dependsOn.title}</Ligne>}
+      {task.recurrenceFrequency && (
+        <Ligne label="Récurrence">
+          {task.recurrenceFrequency === "DAILY" ? "Chaque jour" : task.recurrenceFrequency === "WEEKLY" ? "Chaque semaine" : "Chaque mois"}
+          {task.recurrenceInterval && task.recurrenceInterval > 1 ? ` (tous les ${task.recurrenceInterval})` : ""}
+        </Ligne>
+      )}
+    </div>
   );
 }
 
@@ -64,24 +149,12 @@ export function TaskDetailView({
   const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [task, setTask] = useState<TaskDetail>(initialTask);
-  const [values, setValues] = useState<TaskFormValues>({
-    title: initialTask.title,
-    description: initialTask.description ?? "",
-    studioIds: initialTask.studios.map((s) => s.studioId),
-    projectId: initialTask.projectId ?? "",
-    assigneeId: initialTask.assigneeId ?? "",
-    startDate: toIsoDate(initialTask.startDate),
-    endDate: toIsoDate(initialTask.endDate),
-    maxDurationDays: initialTask.maxDurationDays != null ? String(initialTask.maxDurationDays) : "",
-    statusId: initialTask.statusId,
-    dependsOnId: initialTask.dependsOnId ?? "",
-    estimatedHalfDays: initialTask.estimatedHalfDays != null ? String(initialTask.estimatedHalfDays) : "",
-    recurrenceFrequency: initialTask.recurrenceFrequency ?? "",
-    recurrenceInterval: initialTask.recurrenceInterval != null ? String(initialTask.recurrenceInterval) : "1",
-    recurrenceMonthlyMode: initialTask.recurrenceMonthlyMode ?? "BY_DATE",
-    recurrenceUntil: initialTask.recurrenceUntil ? toIsoDate(initialTask.recurrenceUntil) : "",
-  });
+  const [values, setValues] = useState<TaskFormValues>(() => formValuesOf(initialTask));
   const [error, setError] = useState<string | null>(null);
+  // On ouvre une fiche pour lire bien plus souvent que pour éditer : quatorze
+  // champs bordés d'emblée noyaient l'information qu'on venait chercher.
+  // L'édition reste à un clic.
+  const [editing, setEditing] = useState(false);
   const [linkName, setLinkName] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [attachmentSearch, setAttachmentSearch] = useState("");
@@ -139,7 +212,8 @@ export function TaskDetailView({
         return;
       }
       toast("Tâche enregistrée.");
-      router.push("/taches");
+      setEditing(false);
+      await refreshTask();
       router.refresh();
     });
   }
@@ -435,17 +509,41 @@ export function TaskDetailView({
           </div>
         )}
         <div className="flex gap-2.5">
-          <Link href="/taches" className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}>
-            Retour à la liste
-          </Link>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={save}
-            className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
-          >
-            {pending ? "Enregistrement…" : "Enregistrer"}
-          </button>
+          {editing ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setValues(formValuesOf(task));
+                  setEditing(false);
+                }}
+                className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={save}
+                className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
+              >
+                {pending ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/taches" className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}>
+                Retour à la liste
+              </Link>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
+              >
+                <Pencil size={14} /> Modifier
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -473,17 +571,21 @@ export function TaskDetailView({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
-          <TaskFormFields
-            values={values}
-            onChange={patch}
-            studios={studios}
-            projects={projects}
-            people={people}
-            statuses={statuses}
-            tasks={dependencyOptions}
-            showStatus
-            excludeTaskId={task.id}
-          />
+          {editing ? (
+            <TaskFormFields
+              values={values}
+              onChange={patch}
+              studios={studios}
+              projects={projects}
+              people={people}
+              statuses={statuses}
+              tasks={dependencyOptions}
+              showStatus
+              excludeTaskId={task.id}
+            />
+          ) : (
+            <TaskSummary task={task} />
+          )}
 
           <FieldSection
             title="Sous-tâches"
