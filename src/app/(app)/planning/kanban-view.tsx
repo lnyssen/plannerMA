@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical, Plus } from "lucide-react";
+import { GripVertical, MoveRight, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
@@ -21,21 +21,27 @@ function TaskCard({
   task,
   onOpen,
   onGrab,
+  onMove,
+  statuses,
   dragging,
 }: {
   task: TaskListItem;
   onOpen: (id: string) => void;
   onGrab: (e: React.PointerEvent) => void;
+  onMove: (statusId: string) => void;
+  statuses: TaskStatusSummary[];
   dragging: boolean;
 }) {
+  const [menuOuvert, setMenuOuvert] = useState(false);
   return (
     <div
       onClick={() => onOpen(task.id)}
       style={{ opacity: dragging ? 0.4 : 1 }}
       className="relative cursor-pointer rounded-lg border border-line bg-paper p-2.5 pr-7 text-left transition-colors duration-100 hover:border-heading"
     >
-      {/* Seule la poignée coupe le défilement tactile : la colonne continue
-          de défiler au doigt, et un appui sur la carte ouvre la tâche. */}
+      {/* Grand écran : poignée de glissement. Seule elle coupe le défilement
+          tactile, si bien que la colonne continue de défiler au doigt et
+          qu'un appui sur la carte ouvre la tâche. */}
       <button
         type="button"
         aria-label={`Déplacer ${task.title}`}
@@ -45,10 +51,53 @@ function TaskCard({
           e.stopPropagation();
           onGrab(e);
         }}
-        className="absolute top-1.5 right-1 flex h-6 w-5 cursor-grab touch-none items-center justify-center rounded text-ink-muted transition-colors duration-100 hover:text-heading active:cursor-grabbing"
+        className="absolute top-1.5 right-1 hidden h-6 w-5 cursor-grab touch-none items-center justify-center rounded text-ink-muted transition-colors duration-100 hover:text-heading active:cursor-grabbing sm:flex"
       >
         <GripVertical size={14} />
       </button>
+
+      {/* Téléphone : le glisser n'a pas de sens ici — il faudrait traîner la
+          carte jusqu'en haut de l'écran à travers une liste qui défile. Un
+          menu tapable fait le même travail, sûrement, et permet aussi de
+          reculer d'un statut, ce que le glisser vers l'avant ne donnait pas. */}
+      <button
+        type="button"
+        aria-label={`Changer le statut de ${task.title}`}
+        aria-expanded={menuOuvert}
+        onClick={(e) => {
+          e.stopPropagation();
+          setMenuOuvert((v) => !v);
+        }}
+        className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-full text-ink-muted sm:hidden"
+      >
+        <MoveRight size={15} />
+      </button>
+      {menuOuvert && (
+        <div
+          className="absolute top-8 right-1 z-20 w-44 overflow-hidden rounded-lg border-[1.5px] border-heading bg-paper shadow-lg sm:hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="px-2.5 pt-2 pb-1 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Déplacer vers</p>
+          {statuses.map((st) => (
+            <button
+              key={st.id}
+              type="button"
+              disabled={st.id === task.statusId}
+              onClick={() => {
+                setMenuOuvert(false);
+                onMove(st.id);
+              }}
+              className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-sm text-ink disabled:opacity-40"
+            >
+              <span
+                className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                style={{ background: st.fillHex, outline: `1.5px solid ${st.colorHex}` }}
+              />
+              {st.name}
+            </button>
+          ))}
+        </div>
+      )}
       <p className="mb-1.5 text-sm font-bold text-heading">{task.title}</p>
       {task.project && (
         <p className="mb-1.5 truncate text-2xs text-ink-muted">
@@ -170,7 +219,7 @@ export function KanbanView({
           la rangée défile horizontalement plutôt que d'empiler les colonnes
           les unes sous les autres. */}
       {/* Rangée de choix de colonne — téléphone uniquement. */}
-      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 sm:hidden">
+      <div className="mb-3 flex flex-wrap gap-1.5 sm:hidden">
         {columns.map(({ status, tasks: colTasks }) => {
           const actif = (colonneMobile ?? columns[0]?.status.id) === status.id;
           return (
@@ -183,7 +232,7 @@ export function KanbanView({
               // étant visible sur téléphone, le glisser n'aurait sinon aucune
               // cible et la tâche ne pourrait plus changer de statut au doigt.
               {...cardDrag.zoneAttrs(status.id)}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap"
+              className="flex flex-shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold whitespace-nowrap"
               style={
                 cardDrag.drag?.over === status.id
                   ? { background: status.fillHex, color: status.colorHex, outline: "2px solid var(--color-heading)" }
@@ -204,13 +253,13 @@ export function KanbanView({
           <div
             key={status.id}
             {...cardDrag.zoneAttrs(status.id)}
-            className={`min-h-[200px] w-full flex-col gap-2 rounded-lg border border-line bg-wash p-2.5 sm:flex sm:w-72 sm:flex-shrink-0 ${
+            className={`min-h-[200px] w-full flex-col gap-2 p-0 sm:flex sm:w-72 sm:flex-shrink-0 sm:rounded-lg sm:border sm:border-line sm:bg-wash sm:p-2.5 ${
               (colonneMobile ?? columns[0]?.status.id) === status.id ? "flex" : "hidden"
             }`}
             style={{ outline: cardDrag.drag?.over === status.id ? "2px solid var(--color-heading)" : undefined, outlineOffset: -2 }}
           >
             <div
-              className="flex items-center justify-between px-1.5 py-1 text-xs font-bold tracking-wide uppercase"
+              className="hidden items-center justify-between px-1.5 py-1 text-xs font-bold tracking-wide uppercase sm:flex"
               style={{ background: status.fillHex, color: status.colorHex }}
             >
               <span>{status.name}</span>
@@ -220,8 +269,10 @@ export function KanbanView({
               <TaskCard
                 key={t.id}
                 task={t}
+                statuses={statuses}
                 dragging={cardDrag.drag?.id === t.id}
                 onGrab={(e) => cardDrag.start(t.id, t.title, e)}
+                onMove={(statusId) => moveTask(t.id, statusId)}
                 onOpen={(id) => router.push(`/taches/${id}`)}
               />
             ))}
@@ -232,7 +283,7 @@ export function KanbanView({
             <button
               type="button"
               onClick={() => openCreate("task", { statusId: status.id })}
-              className="mt-auto flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-line py-2 text-xs font-semibold text-ink-muted transition-colors duration-100 hover:border-heading hover:text-heading"
+              className="order-first flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-line py-2 text-xs font-semibold text-ink-muted transition-colors duration-100 hover:border-heading hover:text-heading sm:order-last sm:mt-auto"
             >
               <Plus size={14} aria-hidden="true" /> Nouvelle tâche
             </button>

@@ -642,17 +642,14 @@ export function AppShell({
           alt="Média Animation"
           className="absolute left-1/2 h-6 w-auto -translate-x-1/2"
         />
+        {/* Pas de bouton de création ici : la plupart des écrans en portent
+            déjà un, intitulé et à sa place (« Nouvelle tâche » sur Tâches,
+            « Nouveau projet » sur Projets), et le menu latéral couvre les
+            autres. Ce rond blanc sans libellé faisait donc doublon tout en
+            prenant la moitié de l'en-tête. */}
         <div className="flex items-center gap-1">
           <GlobalSearch />
           <NotificationBell />
-          <button
-            type="button"
-            onClick={() => setModal("task")}
-            aria-label="Nouvelle tâche"
-            className={`flex w-10 items-center justify-center ${primaryOnRailButtonClass}`}
-          >
-            <ListPlus size={18} />
-          </button>
         </div>
       </header>
 
