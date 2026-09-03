@@ -6,7 +6,7 @@
 
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type NotificationType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { addDaysIso, today } from "../src/lib/planning/dates";
 
@@ -617,8 +617,81 @@ async function main() {
     },
   });
 
+  console.log("Semis des notifications…");
+  // Adressées au compte administrateur réel plutôt qu'à une personne du semis :
+  // c'est celui avec lequel on ouvre la démonstration, et une notification
+  // qu'on ne voit pas ne démontre rien. On relit son `personId` au lieu de le
+  // supposer — il diffère d'un environnement à l'autre.
+  const compteAdmin = await db.user.findFirst({ where: { role: "ADMIN" }, select: { personId: true } });
+  const destinataire = compteAdmin?.personId ?? people.elena;
+
+  const NOTIFICATIONS: { type: NotificationType; message: string; lien: string | null; lue: boolean; heures: number }[] = [
+    {
+      type: "MILESTONE_LATE",
+      message: `Jalon dépassé depuis 6 jours : « Livraison du pilote » — Commission européenne — DG CONNECT — DigiCitizen — capsules européennes.`,
+      lien: `/projets/${projets.digicit}`,
+      lue: false,
+      heures: 2,
+    },
+    {
+      type: "BUDGET_EXCEEDED",
+      message: `Le projet « Refonte du site vitrine » dépasse son budget de temps.`,
+      lien: `/projets/${projets.vitrine}`,
+      lue: false,
+      heures: 5,
+    },
+    {
+      type: "MENTION",
+      message: `Bilal Haddouchi vous a mentionné sur « Intégration front ».`,
+      lien: `/taches/${tachesParTitre["Intégration front"]}`,
+      lue: false,
+      heures: 20,
+    },
+    {
+      type: "REQUEST",
+      message: `Nouvelle demande : « Bannière pour la newsletter de novembre » (Graphisme).`,
+      lien: `/demandes`,
+      lue: false,
+      heures: 26,
+    },
+    {
+      type: "PROJECT_BEHIND",
+      message: `Le projet « Podcast parentalité » consomme son budget plus vite qu’il n’avance.`,
+      lien: `/projets/${projets.parentalite}`,
+      lue: true,
+      heures: 50,
+    },
+    {
+      type: "COMMENT",
+      message: `Amélie Verstraeten a commenté « Maquettes des supports ».`,
+      lien: `/taches/${tachesParTitre["Maquettes des supports"]}`,
+      lue: true,
+      heures: 74,
+    },
+    {
+      type: "ASSIGNMENT",
+      message: `« Comité de lecture » vous a été attribuée (du 08/09 au 08/09).`,
+      lien: `/taches/${tachesParTitre["Comité de lecture"]}`,
+      lue: true,
+      heures: 96,
+    },
+  ];
+
+  for (const n of NOTIFICATIONS) {
+    await db.notification.create({
+      data: {
+        recipientId: destinataire,
+        type: n.type,
+        message: n.message,
+        link: n.lien,
+        read: n.lue,
+        createdAt: new Date(Date.now() - n.heures * 3_600_000),
+      },
+    });
+  }
+
   console.log(
-    `Terminé. ${PROJETS.length} projets, ${TACHES.length + 4} tâches, ${ecritures.length} écritures de temps.`,
+    `Terminé. ${PROJETS.length} projets, ${TACHES.length + 4} tâches, ${ecritures.length} écritures de temps, ${NOTIFICATIONS.length} notifications.`,
   );
 }
 
