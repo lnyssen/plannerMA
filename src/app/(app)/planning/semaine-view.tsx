@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRangeDrag } from "@/components/planning/use-range-drag";
 import { useCreateModals } from "@/components/shell/create-modals-context";
 import { textButtonClass } from "@/components/ui/buttons";
@@ -36,8 +36,25 @@ export function SemaineView({
 }) {
   const router = useRouter();
   const openCreate = useCreateModals();
+  // Sur téléphone, la grille de cinq jours ne laissait voir qu'une colonne à
+  // la fois derrière un défilement horizontal, sans rien pour dire qu'il
+  // fallait faire glisser. On y choisit donc le jour, et il occupe toute la
+  // largeur — même principe que le Kanban.
+  const [jourMobile, setJourMobile] = useState(0);
+  const [estMobile, setEstMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setEstMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
   const days = Array.from({ length: 5 }, (_, i) => addDays(fromIsoDate(monday), i));
   const covers = (t: WeekTask, dayIso: string) => toIsoDate(t.startDate) <= dayIso && dayIso <= toIsoDate(t.endDate);
+  // Un seul jour sur téléphone, les cinq sinon. `decalage` ramène l'index
+  // affiché à l'index réel dans la semaine, dont dépendent les dates posées
+  // par le glisser.
+  const joursAffiches = estMobile ? [days[jourMobile]] : days;
+  const decalage = estMobile ? jourMobile : 0;
 
   // Tirer sur les jours d'une ligne crée directement la tâche pour cette
   // personne sur ces dates : le geste porte déjà les trois informations
@@ -100,13 +117,38 @@ export function SemaineView({
         </button>
       </div>
 
+      {/* Choix du jour — téléphone uniquement. */}
+      <div className="mb-3 flex gap-1.5 sm:hidden">
+        {days.map((d, i) => {
+          const iso = toIsoDate(d);
+          const actif = i === jourMobile;
+          return (
+            <button
+              key={iso}
+              type="button"
+              onClick={() => setJourMobile(i)}
+              aria-pressed={actif}
+              className={`flex flex-1 flex-col items-center rounded-lg border-[1.5px] py-1.5 ${
+                actif ? "border-heading bg-heading text-paper" : "border-line text-ink-muted"
+              }`}
+            >
+              <span className="text-2xs font-semibold uppercase">{JOUR_LABEL[d.getUTCDay() - 1]?.slice(0, 3)}</span>
+              <span className="text-sm font-bold tabular-nums">{d.getUTCDate()}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="overflow-x-auto">
         <div
           className="grid border-t border-l border-line"
-          style={{ gridTemplateColumns: `170px repeat(5, minmax(140px,1fr))`, minWidth: 860 }}
+          style={{
+            gridTemplateColumns: `${estMobile ? 118 : 170}px repeat(${joursAffiches.length}, minmax(${estMobile ? 0 : 140}px,1fr))`,
+            minWidth: estMobile ? undefined : 860,
+          }}
         >
           <div className="border-r border-b border-line bg-wash" />
-          {days.map((d) => {
+          {joursAffiches.map((d) => {
             const iso = toIsoDate(d);
             return (
               <div key={iso} className="border-r border-b border-line bg-wash px-3 py-2.5">
@@ -125,7 +167,8 @@ export function SemaineView({
               key={p.id}
               rowKey={p.id}
               name={p.name}
-              days={days}
+              days={joursAffiches}
+              decalage={decalage}
               tasks={tasks.filter((t) => t.assigneeId === p.id)}
               covers={covers}
               drag={drag}
@@ -135,7 +178,8 @@ export function SemaineView({
           <PersonRow
             rowKey={UNASSIGNED_ROW}
             name="Non attribué"
-            days={days}
+            days={joursAffiches}
+            decalage={decalage}
             tasks={tasks.filter((t) => !t.assigneeId)}
             covers={covers}
             drag={drag}
@@ -156,6 +200,7 @@ function PersonRow({
   rowKey,
   name,
   days,
+  decalage,
   tasks,
   covers,
   drag,
@@ -164,6 +209,8 @@ function PersonRow({
   rowKey: string;
   name: string;
   days: Date[];
+  /** Index, dans la semaine complète, du premier jour affiché — voir joursAffiches. */
+  decalage: number;
   tasks: WeekTask[];
   covers: (t: WeekTask, dayIso: string) => boolean;
   drag: ReturnType<typeof useRangeDrag>;
@@ -180,16 +227,18 @@ function PersonRow({
         const items = tasks.filter((t) => covers(t, iso));
         const overloaded = items.length > 2;
         const inSelection =
-          drag.selection?.rowKey === rowKey && dayIndex >= drag.selection.from && dayIndex <= drag.selection.to;
+          drag.selection?.rowKey === rowKey &&
+          decalage + dayIndex >= drag.selection.from &&
+          decalage + dayIndex <= drag.selection.to;
         return (
           <div
             key={iso}
-            {...drag.cellAttrs(rowKey, dayIndex)}
+            {...drag.cellAttrs(rowKey, decalage + dayIndex)}
             onPointerDown={(e) => {
               // Le glissement ne part que du fond de la case : sur une barre
               // de tâche, le pointeur sert déjà à l'ouvrir.
               if ((e.target as HTMLElement).closest("button")) return;
-              drag.start(rowKey, dayIndex);
+              drag.start(rowKey, decalage + dayIndex);
             }}
             title={`Créer une tâche pour ${name} le ${formatShortFr(iso)} — glissez pour couvrir plusieurs jours`}
             className={`group relative flex min-h-[56px] cursor-cell touch-none flex-col gap-1 border-r border-b border-line p-1.5 transition-colors duration-75 ${

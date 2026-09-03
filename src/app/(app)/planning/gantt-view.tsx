@@ -156,6 +156,17 @@ export function GanttView({
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // Sur téléphone, la colonne des libellés prenait 230 px sur 375 : il ne
+  // restait que deux jours de frise, ce qui ôte tout intérêt à un Gantt. Elle
+  // démarre donc étroite sur petit écran — l'utilisateur peut toujours
+  // l'élargir à la poignée, on ne fixe que le point de départ.
+  useEffect(() => {
+    if (window.innerWidth < 640) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- largeur de fenêtre inconnue au rendu serveur
+      setLabelWidth(LABEL_WIDTH_MIN);
+    }
+  }, []);
+
   useEffect(() => {
     if (!resizingLabel) return;
     function onMove(e: MouseEvent) {
