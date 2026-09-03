@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { CreateButton } from "@/components/shell/create-button";
 import { listPeople } from "@/lib/data/people";
 import { listActiveProjectsForForms } from "@/lib/data/projects";
@@ -18,6 +19,8 @@ export default async function TachesPage({
   // src/lib/mail/templates.ts. Les nouveaux liens pointent directement sur
   // /taches/[id] ; ce redirect garde les anciens fonctionnels indéfiniment.
   if (open) redirect(`/taches/${open}`);
+
+  const session = await auth();
 
   const [tasks, studios, people, projects, statuses] = await Promise.all([
     listActiveTasksForListing(),
@@ -42,6 +45,7 @@ export default async function TachesPage({
         projects={projects}
         statuses={statuses}
         initialProjectFilter={projet ? [projet] : []}
+        currentPersonId={session?.user.personId ?? null}
       />
     </div>
   );

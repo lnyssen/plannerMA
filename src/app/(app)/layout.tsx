@@ -25,9 +25,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     statuses,
     account,
     mesTachesCount,
+    mesTachesLateCount,
     demandesCount,
-    tasksActiveCount,
-    tasksLateCount,
     projectsActiveCount,
     projectsOverBudgetCount,
   ] = await Promise.all([
@@ -62,16 +61,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           where: { trashedAt: null, assigneeId: session.user.personId, status: { isDone: false } },
         })
       : Promise.resolve(0),
+    // Les miennes dont l'échéance est dépassée — la puce d'alerte reflète ce
+    // que l'écran Tâches montre par défaut, c'est-à-dire votre travail.
+    session.user.personId
+      ? db.task.count({
+          where: {
+            trashedAt: null,
+            assigneeId: session.user.personId,
+            status: { isDone: false },
+            endDate: { lt: fromIsoDate(today()) },
+          },
+        })
+      : Promise.resolve(0),
     // Demandes en file : la table Request ne garde que ce qui n'a pas encore
     // été converti en tâche (voir src/lib/actions/requests.ts) — son compte
     // total est donc déjà "en attente", pas besoin d'un filtre de statut.
     session.user.role === "ADMIN" ? db.request.count() : Promise.resolve(0),
-    // Tâches en cours : hors corbeille, pas encore terminées — toute l'équipe (pas seulement "Mes tâches").
-    db.task.count({ where: { trashedAt: null, status: { isDone: false } } }),
-    // Tâches en retard : échéance dépassée, pas encore terminées, hors corbeille.
-    db.task.count({
-      where: { trashedAt: null, status: { isDone: false }, endDate: { lt: fromIsoDate(today()) } },
-    }),
     // Projets en cours : non archivés.
     db.project.count({ where: { archived: false } }),
     countProjectsOverBudget(),
@@ -96,9 +101,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       theme={account?.theme ?? "LIGHT"}
       counts={{
         mesTaches: mesTachesCount,
+        mesTachesLate: mesTachesLateCount,
         demandes: demandesCount,
-        tasksActive: tasksActiveCount,
-        tasksLate: tasksLateCount,
         projectsActive: projectsActiveCount,
         projectsOverBudget: projectsOverBudgetCount,
       }}

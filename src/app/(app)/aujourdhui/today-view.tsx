@@ -17,6 +17,7 @@ import { entryDurationMinutes, formatDurationFr } from "@/lib/planning/time";
 interface TodayTask {
   id: string;
   title: string;
+  startDate: string;
   endDate: string;
   project: { name: string; client: { name: string } } | null;
   studios: { id: string; name: string; fillHex: string; colorHex: string }[];
@@ -33,6 +34,36 @@ interface TodayAbsence {
   mine: boolean;
 }
 
+/** Une tâche, rendue à l'identique dans les trois fenêtres de l'écran. */
+function TaskRow({ task, late = false, showStart = false }: { task: TodayTask; late?: boolean; showStart?: boolean }) {
+  return (
+    <Link
+      href={`/taches/${task.id}`}
+      className="flex flex-wrap items-center gap-3 rounded-lg border p-3 transition-colors duration-100 hover:border-heading active:bg-wash"
+      style={late ? { borderColor: "var(--color-alert)", background: "var(--color-alert-wash)" } : { borderColor: "var(--color-line)" }}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-heading">{task.title}</p>
+        <p className="truncate text-2xs text-ink-muted">
+          {task.project ? `${task.project.client.name} — ${task.project.name}` : "Sans projet"}
+        </p>
+      </div>
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+        {task.studios.map((s) => (
+          <StudioBadge key={s.id} name={s.name} fillHex={s.fillHex} colorHex={s.colorHex} />
+        ))}
+        <StatusBadge status={task.status} />
+        <span
+          className="text-2xs tabular-nums"
+          style={late ? { color: "var(--color-alert)", fontWeight: 600 } : { color: "var(--color-ink-muted)" }}
+        >
+          {showStart ? `dès le ${formatShortFr(task.startDate)}` : `échéance ${formatShortFr(task.endDate)}`}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 /**
  * Page d'accueil personnelle — remplace Projets comme destination par
  * défaut pour un compte non-admin (voir src/app/page.tsx) : ses tâches du
@@ -41,12 +72,16 @@ interface TodayAbsence {
  */
 export function TodayView({
   userName,
+  lateTasks,
   tasks,
+  soonTasks,
   runningTimer,
   absences,
 }: {
   userName: string;
+  lateTasks: TodayTask[];
   tasks: TodayTask[];
+  soonTasks: TodayTask[];
   runningTimer: RunningTimer;
   absences: TodayAbsence[];
 }) {
@@ -91,35 +126,59 @@ export function TodayView({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
-          <SectionHeading count={tasks.length}>Tâches du jour</SectionHeading>
-          {tasks.length === 0 ? (
-            <EmptyState icon={CheckSquare} title="Rien de planifié aujourd’hui" description="Profitez-en, ou consultez Mes tâches pour la suite." />
-          ) : (
-            <div className="flex flex-col gap-2">
-              {tasks.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/taches/${t.id}`}
-                  className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3 transition-colors duration-100 hover:border-heading active:bg-wash"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-heading">{t.title}</p>
-                    <p className="truncate text-2xs text-ink-muted">
-                      {t.project ? `${t.project.client.name} — ${t.project.name}` : "Sans projet"}
-                    </p>
-                  </div>
-                  {t.studios.map((s) => (
-                    <StudioBadge key={s.id} name={s.name} fillHex={s.fillHex} colorHex={s.colorHex} />
-                  ))}
-                  <StatusBadge status={t.status} />
-                  {t.endDate < todayIso && (
-                    <span className="flex items-center gap-1 text-2xs font-semibold text-alert">
-                      <AlertTriangle size={11} /> échéance dépassée
-                    </span>
-                  )}
-                </Link>
-              ))}
+          {/* Ce qui a débordé passe avant tout le reste : c'est la question
+              du matin, et elle n'apparaissait nulle part sur cet écran —
+              il fallait aller la chercher dans Tâches. */}
+          {lateTasks.length > 0 && (
+            <div className="mb-6">
+              <h2 className="mb-2 flex items-center gap-2 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px]" style={{ color: "var(--color-alert)" }}>
+                <AlertTriangle size={17} aria-hidden="true" />
+                En retard
+                <span className="text-sm tabular-nums">{lateTasks.length}</span>
+              </h2>
+              <div className="flex flex-col gap-2">
+                {lateTasks.map((t) => (
+                  <TaskRow key={t.id} task={t} late />
+                ))}
+              </div>
             </div>
+          )}
+
+          <div className="mb-6">
+            <SectionHeading>Aujourd’hui</SectionHeading>
+            {tasks.length === 0 ? (
+              <p className="rounded-lg border border-line px-3 py-2.5 text-sm text-ink-muted">
+                Rien de planifié aujourd’hui.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {tasks.map((t) => (
+                  <TaskRow key={t.id} task={t} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sans cette troisième fenêtre, l'écran était vide les jours sans
+              tâche planifiée — c'est-à-dire souvent, et précisément quand on
+              aurait aimé savoir ce qui arrive. */}
+          {soonTasks.length > 0 && (
+            <div className="mb-6">
+              <SectionHeading count={soonTasks.length}>Dans les sept jours</SectionHeading>
+              <div className="flex flex-col gap-2">
+                {soonTasks.map((t) => (
+                  <TaskRow key={t.id} task={t} showStart />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {lateTasks.length === 0 && tasks.length === 0 && soonTasks.length === 0 && (
+            <EmptyState
+              icon={CheckSquare}
+              title="Rien ne vous attend"
+              description="Aucune tâche en retard, aujourd’hui, ni dans les sept prochains jours."
+            />
           )}
         </div>
 

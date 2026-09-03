@@ -13,6 +13,7 @@ import { PersonLabel } from "@/components/ui/person-avatar";
 import { MultiSelectField } from "@/components/ui/multi-select-field";
 import { DataTable } from "@/components/ui/data-table";
 import { SearchField } from "@/components/ui/search-field";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { StudioBadge } from "@/components/ui/studio-badge";
 import type { PersonSummary } from "@/lib/data/people";
@@ -83,6 +84,7 @@ export function TasksTable({
   statuses,
   hidePersonFilter = false,
   initialProjectFilter = [],
+  currentPersonId = null,
   hidePersonColumn = false,
 }: {
   tasks: TaskListItem[];
@@ -92,6 +94,8 @@ export function TasksTable({
   statuses: TaskStatusSummary[];
   /** Vue "Mes tâches" : filtrer/afficher par personne n'a pas de sens quand tout appartient déjà à la même personne. */
   hidePersonFilter?: boolean;
+  /** Personne connectée — active la bascule « Mes tâches / Toute l'équipe ». */
+  currentPersonId?: string | null;
   /** Filtre projet posé par l'URL — voir le compte de tâches cliquable dans la liste Projets. */
   initialProjectFilter?: string[];
   hidePersonColumn?: boolean;
@@ -108,6 +112,10 @@ export function TasksTable({
   // une liste mais un état calculé, et c'est la question la plus fréquente
   // devant ce tableau — « qu'est-ce qui a débordé ? ».
   const [seulementRetard, setSeulementRetard] = useState(false);
+  // « Mes tâches » et « Tâches » étaient deux entrées de menu pour le même
+  // tableau, à ce filtre près. Une seule entrée, et la vue s'ouvre sur son
+  // propre travail — ce qu'on vient chercher le plus souvent.
+  const [seulementMoi, setSeulementMoi] = useState(Boolean(currentPersonId));
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkPending, startBulkTransition] = useTransition();
 
@@ -180,12 +188,13 @@ export function TasksTable({
     if (statusFilter.length > 0) filtered = filtered.filter((t) => statusFilter.includes(t.statusId));
     if (projectFilter.length > 0) filtered = filtered.filter((t) => t.projectId != null && projectFilter.includes(t.projectId));
     if (seulementRetard) filtered = filtered.filter(estEnRetard);
+    if (seulementMoi && currentPersonId) filtered = filtered.filter((t) => t.assigneeId === currentPersonId);
 
     // Ordre par défaut : par date de début. Le tri par colonne appartient
     // désormais au tableau commun (DataTable), qui prend le relais dès qu'on
     // clique un en-tête.
     return [...filtered].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-  }, [tasks, search, studioFilter, personFilter, statusFilter, projectFilter, seulementRetard]);
+  }, [tasks, search, studioFilter, personFilter, statusFilter, projectFilter, seulementRetard, seulementMoi, currentPersonId]);
 
   return (
     <div>
@@ -195,6 +204,19 @@ export function TasksTable({
             précis, cohérent avec la nomenclature Client — Projet partout
             ailleurs dans l'appli. Recherche en dernier : les filtres à choix
             (qui bornent la liste à un ensemble connu) avant le champ libre. */}
+        {currentPersonId && (
+          <SegmentedControl
+            ariaLabel="Périmètre des tâches"
+            size="sm"
+            value={seulementMoi ? "moi" : "equipe"}
+            onChange={(v) => setSeulementMoi(v === "moi")}
+            options={[
+              { id: "moi", label: "Mes tâches" },
+              { id: "equipe", label: "Toute l’équipe" },
+            ]}
+          />
+        )}
+
         {/* En tête des filtres : c'est la question la plus fréquente devant ce
             tableau, et elle ne se pose pas comme les autres — un état, pas une
             valeur à cocher dans une liste. */}

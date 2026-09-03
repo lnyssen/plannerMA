@@ -11,13 +11,12 @@ import {
   LayoutDashboard,
   ListChecks,
   Settings,
-  Table2,
   Users,
   type LucideIcon,
 } from "lucide-react";
 
 /** Clé vers un compteur calculé côté serveur (voir NavCounts) — absent = pas de puce. */
-export type NavCountKey = "mesTaches" | "demandes" | "tasksActive" | "projectsActive";
+export type NavCountKey = "mesTaches" | "demandes" | "projectsActive";
 
 export type NavGroup = "Travail" | "Projets" | "Suivi" | "Équipe" | "Paramètres";
 
@@ -34,10 +33,9 @@ export interface NavEntry {
 /** Compteurs affichés en puce sur les entrées correspondantes — voir (app)/layout.tsx. */
 export interface NavCounts {
   mesTaches: number;
+  /** Sous-ensemble de mesTaches dont l'échéance est dépassée — puce d'alerte. */
+  mesTachesLate: number;
   demandes: number;
-  tasksActive: number;
-  /** Sous-ensemble de tasksActive (échéance dépassée) — affiché dans sa propre puce d'alerte, voir NavBadges. */
-  tasksLate: number;
   projectsActive: number;
   /** Sous-ensemble de projectsActive (budget de temps dépassé) — même principe que tasksLate. */
   projectsOverBudget: number;
@@ -67,23 +65,19 @@ export interface NavBadges {
 const s = (n: number) => (n > 1 ? "s" : "");
 
 export const NAV_COUNT_META: Record<NavCountKey, (counts: NavCounts) => NavBadges> = {
-  tasksActive: (c) => ({
-    total: c.tasksActive,
-    totalLabel: `${c.tasksActive} tâche${s(c.tasksActive)} en cours`,
-    alert: c.tasksLate,
-    alertLabel: `${c.tasksLate} en retard`,
-  }),
   projectsActive: (c) => ({
     total: c.projectsActive,
     totalLabel: `${c.projectsActive} projet${s(c.projectsActive)} en cours`,
     alert: c.projectsOverBudget,
     alertLabel: `${c.projectsOverBudget} au-delà de son budget de temps`,
   }),
+  // La puce reflète ce que l'écran montre par défaut : votre travail. Un
+  // total d'équipe à côté d'une vue personnelle ne se comprendrait pas.
   mesTaches: (c) => ({
     total: c.mesTaches,
     totalLabel: `${c.mesTaches} tâche${s(c.mesTaches)} qui vous ${c.mesTaches > 1 ? "sont" : "est"} attribuée${s(c.mesTaches)}, pas encore terminée${s(c.mesTaches)}`,
-    alert: 0,
-    alertLabel: "",
+    alert: c.mesTachesLate,
+    alertLabel: `${c.mesTachesLate} dont l’échéance est dépassée`,
   }),
   demandes: (c) => ({
     total: c.demandes,
@@ -100,11 +94,11 @@ export const NAV_COUNT_META: Record<NavCountKey, (counts: NavCounts) => NavBadge
 // encore réordonnées et pour filtrer par rôle.
 export const NAV_ENTRIES: NavEntry[] = [
   { href: "/aujourdhui", label: "Aujourd’hui", icon: Home, adminOnly: false, group: "Travail" },
-  // Son propre travail avant celui de tout le monde : "Mes tâches" est
-  // l'écran ouvert plusieurs fois par jour, "Tâches" (tout le studio) sert
-  // surtout à chercher ou arbitrer.
-  { href: "/mes-taches", label: "Mes tâches", icon: CheckSquare, adminOnly: false, countKey: "mesTaches", group: "Travail" },
-  { href: "/taches", label: "Tâches", icon: Table2, adminOnly: false, countKey: "tasksActive", group: "Travail" },
+  // Une seule entrée : "Mes tâches" et "Tâches" étaient le même tableau à un
+  // filtre près. La bascule vit désormais dans l'écran, ouvert par défaut sur
+  // son propre travail. La puce compte ce qui vous est attribué — le nombre
+  // qu'on regarde le matin — et l'alerte, ce qui déborde dans toute l'équipe.
+  { href: "/taches", label: "Tâches", icon: CheckSquare, adminOnly: false, countKey: "mesTaches", group: "Travail" },
   { href: "/planning", label: "Planning", icon: Columns3, adminOnly: false, group: "Travail" },
   { href: "/projets", label: "Projets", icon: ListChecks, adminOnly: false, countKey: "projectsActive", group: "Projets" },
   { href: "/clients", label: "Clients", icon: Building2, adminOnly: false, group: "Projets" },

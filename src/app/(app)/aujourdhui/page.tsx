@@ -11,18 +11,39 @@ export default async function TodayPage() {
   const todayDate = fromIsoDate(today());
   const horizon = addDays(todayDate, 14);
 
-  const [myTasks, runningTimer, absences, person] = await Promise.all([
+  // Trois fenêtres plutôt qu'une : ce qui a débordé, ce qui est prévu
+  // aujourd'hui, ce qui arrive. L'écran d'accueil ne montrait que la fenêtre
+  // du milieu — donc rien du tout les jours sans tâche planifiée, alors même
+  // que des échéances étaient dépassées.
+  const TASK_INCLUDE = {
+    project: { include: { client: true } },
+    studios: { include: { studio: true } },
+    status: true,
+  } as const;
+  const mine = { assigneeId: personId ?? "", trashedAt: null, status: { isDone: false } };
+  const semaine = addDays(todayDate, 7);
+
+  const [lateTasks, myTasks, soonTasks, runningTimer, absences, person] = await Promise.all([
     personId
       ? db.task.findMany({
-          where: {
-            assigneeId: personId,
-            trashedAt: null,
-            status: { isDone: false },
-            startDate: { lte: todayDate },
-            endDate: { gte: todayDate },
-          },
+          where: { ...mine, endDate: { lt: todayDate } },
           orderBy: { endDate: "asc" },
-          include: { project: { include: { client: true } }, studios: { include: { studio: true } }, status: true },
+          include: TASK_INCLUDE,
+        })
+      : Promise.resolve([]),
+    personId
+      ? db.task.findMany({
+          where: { ...mine, startDate: { lte: todayDate }, endDate: { gte: todayDate } },
+          orderBy: { endDate: "asc" },
+          include: TASK_INCLUDE,
+        })
+      : Promise.resolve([]),
+    personId
+      ? db.task.findMany({
+          where: { ...mine, startDate: { gt: todayDate, lte: semaine } },
+          orderBy: { startDate: "asc" },
+          take: 8,
+          include: TASK_INCLUDE,
         })
       : Promise.resolve([]),
     getRunningTimer(),
@@ -39,17 +60,22 @@ export default async function TodayPage() {
     personId ? db.person.findUnique({ where: { id: personId }, select: { name: true } }) : Promise.resolve(null),
   ]);
 
+  const toTask = (t: (typeof myTasks)[number]) => ({
+    id: t.id,
+    title: t.title,
+    startDate: toIsoDate(t.startDate),
+    endDate: toIsoDate(t.endDate),
+    project: t.project ? { name: t.project.name, client: { name: t.project.client.name } } : null,
+    studios: t.studios.map((s) => ({ id: s.studio.id, name: s.studio.name, fillHex: s.studio.fillHex, colorHex: s.studio.colorHex })),
+    status: { name: t.status.name, fillHex: t.status.fillHex, colorHex: t.status.colorHex },
+  });
+
   return (
     <TodayView
       userName={person?.name ?? session?.user.email ?? "—"}
-      tasks={myTasks.map((t) => ({
-        id: t.id,
-        title: t.title,
-        endDate: toIsoDate(t.endDate),
-        project: t.project ? { name: t.project.name, client: { name: t.project.client.name } } : null,
-        studios: t.studios.map((s) => ({ id: s.studio.id, name: s.studio.name, fillHex: s.studio.fillHex, colorHex: s.studio.colorHex })),
-        status: { name: t.status.name, fillHex: t.status.fillHex, colorHex: t.status.colorHex },
-      }))}
+      lateTasks={lateTasks.map(toTask)}
+      tasks={myTasks.map(toTask)}
+      soonTasks={soonTasks.map(toTask)}
       runningTimer={runningTimer}
       absences={absences.map((a) => ({
         id: a.id,
