@@ -475,7 +475,7 @@ export function TaskDetailView({
   ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
   return (
-    <div className="px-8 py-8">
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
       <Breadcrumb items={[{ label: "Tâches", href: "/taches" }, { label: task.title }]} />
       <h1 className="mb-4 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
         {task.title}

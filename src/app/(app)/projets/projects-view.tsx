@@ -245,7 +245,7 @@ export function ProjectsView({
   const totalOverdue = rows.reduce((sum, r) => sum + r.overdueCount, 0);
 
   return (
-    <div className="px-8 py-8">
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Projets

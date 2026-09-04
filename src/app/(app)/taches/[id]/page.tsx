@@ -21,7 +21,7 @@ export default async function TacheDetailPage({ params }: { params: Promise<{ id
 
   if (!task) {
     return (
-      <div className="px-8 py-8">
+      <div className="px-4 py-6 sm:px-8 sm:py-8">
         <h1 className="mb-3 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
           Tâche introuvable
         </h1>

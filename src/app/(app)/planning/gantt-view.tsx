@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCreateModals, type CreateModalPrefill } from "@/components/shell/create-modals-context";
 import { textButtonClass } from "@/components/ui/buttons";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { GanttMobile } from "./gantt-mobile";
 import type { GanttTask } from "@/lib/data/gantt";
 import { rescheduleTask } from "@/lib/actions/tasks";
 import {
@@ -156,15 +157,14 @@ export function GanttView({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Sur téléphone, la colonne des libellés prenait 230 px sur 375 : il ne
-  // restait que deux jours de frise, ce qui ôte tout intérêt à un Gantt. Elle
-  // démarre donc étroite sur petit écran — l'utilisateur peut toujours
-  // l'élargir à la poignée, on ne fixe que le point de départ.
+  // Sous 640 px, la frise laisse place à une lecture chronologique : voir
+  // GanttMobile, et le commentaire qui l'accompagne.
+  const [estMobile, setEstMobile] = useState(false);
   useEffect(() => {
-    if (window.innerWidth < 640) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- largeur de fenêtre inconnue au rendu serveur
-      setLabelWidth(LABEL_WIDTH_MIN);
-    }
+    const check = () => setEstMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   useEffect(() => {
@@ -404,6 +404,7 @@ export function GanttView({
     return out;
   }, [tasks, rowIndexByTaskId, positionOf]);
 
+  const titreParId = useMemo(() => new Map(tasks.map((t) => [t.id, t.title])), [tasks]);
   const width = days.length * dayWidth;
   const height = Math.max(rows.length * ROW_HEIGHT, 80);
 
@@ -536,6 +537,13 @@ export function GanttView({
         </p>
       )}
 
+      {estMobile ? (
+        <GanttMobile
+          tasks={tasks.filter((t) => toIsoDate(t.endDate) >= startIsoOfView && toIsoDate(t.startDate) <= viewEndIso)}
+          overlappingTaskIds={overlappingTaskIds}
+          titreParId={titreParId}
+        />
+      ) : (
       <div className="flex border border-line">
         <div style={{ width: labelWidth, flexShrink: 0 }} className="border-r border-line">
           <div
@@ -764,7 +772,9 @@ export function GanttView({
           </div>
         </div>
       </div>
-      <p className="mt-3 text-xs text-ink-muted">
+      )}
+
+      <p className="mt-3 hidden text-xs text-ink-muted sm:block">
         Glissez une barre pour décaler la tâche, sa poignée droite pour la durée (souris ou tactile), double-cliquez
         pour l’ouvrir. Glissez sur une zone vide pour créer une tâche sur ces dates, déjà rattachée au projet (ou à la
         personne) de la ligne. Colonnes teintées : jours fériés. Trait pointillé rouge : chevauchement de dépendance. Contour

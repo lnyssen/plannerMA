@@ -85,7 +85,7 @@ function Shot({ src, alt }: { src: string; alt: string }) {
  */
 export default function AidePage() {
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <h1 className="mb-2 font-[family-name:var(--font-display)] text-xl font-semibold tracking-[-0.1px] text-heading">
         Documentation
       </h1>
@@ -219,6 +219,12 @@ export default function AidePage() {
             <li><strong>Semaine</strong> — grille jour par jour, une ligne par personne.</li>
             <li><strong>Gantt</strong> — barres sur une frise, dépendances affichées en trait reliant deux tâches, nombre de semaines réglable.</li>
           </Ul>
+          <P>
+            Sur téléphone, la frise devient une liste chronologique groupée par semaine : un diagramme de Gantt suppose
+            de la largeur, puisqu’on y compare des barres côte à côte. La liste garde ce que la frise apprend — l’ordre
+            des choses, ce qui chevauche, ce qui attend quoi — mais écrit les dates au lieu de les dessiner et nomme la
+            tâche dont on dépend au lieu d’y tirer un trait.
+          </P>
           <H3>Créer une tâche en tirant sur la grille</H3>
           <Shot src="/docs/planning-semaine.png" alt="Planning en vue Semaine, une ligne par personne" />
           <P>

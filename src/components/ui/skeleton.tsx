@@ -5,7 +5,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 /** Pour les `loading.tsx` des fiches tâche/projet (page dédiée, plus la fenêtre d'un modal) — même silhouette que la vraie page : fil d'Ariane, titre, barre d'actions, corps deux colonnes. */
 export function PageDetailSkeleton() {
   return (
-    <div className="px-8 py-8">
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
       <Skeleton className="mb-3 h-4 w-40" />
       <Skeleton className="mb-6 h-8 w-72" />
       <Skeleton className="mb-6 h-14 w-full" />
@@ -34,7 +34,7 @@ export function PageDetailSkeleton() {
  */
 export function ListPageSkeleton() {
   return (
-    <div className="px-8 py-8">
+    <div className="px-4 py-6 sm:px-8 sm:py-8">
       <Skeleton className="mb-6 h-8 w-48" />
       <div className="mb-5 flex flex-wrap gap-3">
         <Skeleton className="h-10 w-40" />
