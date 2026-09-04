@@ -387,7 +387,23 @@ export function AppShell({
     );
   }
 
-  function renderRail(isCollapsed: boolean, showCollapseToggle: boolean) {
+  /**
+   * Le rail sert deux contextes : la barre latérale permanente sur grand
+   * écran, et le tiroir coulissant sur téléphone. Sur téléphone, l'en-tête
+   * porte déjà la recherche et les notifications en permanence — les
+   * reprendre dans le tiroir affichait deux cloches et deux recherches à
+   * l'écran en même temps.
+   */
+  function renderRail({
+    isCollapsed,
+    showCollapseToggle,
+    showHeaderActions,
+  }: {
+    isCollapsed: boolean;
+    showCollapseToggle: boolean;
+    /** Faux dans le tiroir mobile, où l'en-tête les porte déjà. */
+    showHeaderActions: boolean;
+  }) {
     const collapseToggle = showCollapseToggle ? (
       <button
         type="button"
@@ -418,8 +434,8 @@ export function AppShell({
               ne suivrait plus l'ordre visible. */}
           <div className={`flex items-center gap-1 ${isCollapsed ? "flex-col" : ""}`}>
             {isCollapsed && collapseToggle}
-            {isCollapsed && <GlobalSearch />}
-            <NotificationBell />
+            {isCollapsed && showHeaderActions && <GlobalSearch />}
+            {showHeaderActions && <NotificationBell />}
             {!isCollapsed && collapseToggle}
             <button
               type="button"
@@ -435,7 +451,7 @@ export function AppShell({
         {/* Aligné sur les pastilles de navigation (même px-3) plutôt que sur
             le logo, pour que le champ et les entrées partagent un seul bord
             gauche. */}
-        {!isCollapsed && (
+        {!isCollapsed && showHeaderActions && (
           <div className="flex-shrink-0 px-3 pb-3">
             <GlobalSearch variant="field" />
           </div>
@@ -624,7 +640,7 @@ export function AppShell({
         // écran passaient ainsi par-dessus le panneau de notifications.
         className={`hidden bg-rail transition-[width] duration-150 md:sticky md:top-0 md:z-20 md:flex md:h-screen md:flex-shrink-0 md:flex-col md:overflow-x-hidden ${collapsed ? "md:w-[76px]" : "md:w-[260px]"}`}
       >
-        {renderRail(collapsed, true)}
+        {renderRail({ isCollapsed: collapsed, showCollapseToggle: true, showHeaderActions: true })}
       </aside>
 
       {railTip && (
@@ -681,7 +697,7 @@ export function AppShell({
             className="absolute inset-0 bg-rail/70"
           />
           <aside className="absolute inset-y-0 left-0 flex w-[280px] flex-col bg-rail">
-            {renderRail(false, false)}
+            {renderRail({ isCollapsed: false, showCollapseToggle: false, showHeaderActions: false })}
           </aside>
         </div>
       )}
