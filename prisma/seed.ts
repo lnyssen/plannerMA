@@ -262,7 +262,7 @@ async function main() {
     projets[p.key] = row.id;
   }
 
-  // Jalons : quelques-uns dépassés (le Tableau de bord les remonte en rouge),
+  // Dates clés : quelques-unes dépassées (le Tableau de bord les remonte en rouge),
   // d'autres à venir dans les trente jours, d'autres déjà faits.
   const JALONS = [
     { projet: "digicit", title: "Livraison du pilote", jours: -6, fait: false },
@@ -628,7 +628,7 @@ async function main() {
   const NOTIFICATIONS: { type: NotificationType; message: string; lien: string | null; lue: boolean; heures: number }[] = [
     {
       type: "MILESTONE_LATE",
-      message: `Jalon dépassé depuis 6 jours : « Livraison du pilote » — Commission européenne — DG CONNECT — DigiCitizen — capsules européennes.`,
+      message: `Date clé dépassée depuis 6 jours : « Livraison du pilote » — Commission européenne — DG CONNECT — DigiCitizen — capsules européennes.`,
       lien: `/projets/${projets.digicit}`,
       lue: false,
       heures: 2,

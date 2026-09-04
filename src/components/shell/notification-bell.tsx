@@ -17,7 +17,7 @@ import { iconButtonOnRailClass, textButtonClass } from "@/components/ui/buttons"
 // fond violet foncé --color-rail : une seule variante d'icône suffit.
 
 const POLL_MS = 30_000;
-const PANEL_WIDTH = 320;
+const PANEL_WIDTH = 360;
 const VIEWPORT_MARGIN = 12;
 
 const TYPE_LABEL: Record<NotificationType, string> = {
@@ -139,7 +139,7 @@ export function NotificationBell() {
         <Bell size={20} />
         {count > 0 && (
           <span
-            className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center bg-alert px-1 text-[10px] font-bold text-white"
+            className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-alert px-1 text-[10px] font-bold text-white tabular-nums ring-2 ring-rail"
             aria-label={`${count} non lues`}
           >
             {count > 9 ? "9+" : count}
@@ -152,9 +152,9 @@ export function NotificationBell() {
           <button type="button" aria-label="Fermer" className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div
             style={{ top: coords.top, left: coords.left, width: PANEL_WIDTH }}
-            className="fixed z-40 flex max-h-[70vh] flex-col overflow-y-auto border border-heading bg-paper shadow-none"
+            className="fixed z-40 flex max-h-[70vh] flex-col overflow-hidden rounded-xl border border-line bg-paper shadow-[0_16px_40px_-12px_rgba(68,68,68,0.3)]"
           >
-            <div className="flex items-center justify-between border-b border-line px-3 py-2">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-line px-4 py-2.5">
               <span className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Notifications</span>
               {items.some((n) => !n.read) && (
                 <button type="button" onClick={onMarkAll} className={`text-xs font-semibold text-heading ${textButtonClass}`}>
@@ -163,28 +163,40 @@ export function NotificationBell() {
               )}
             </div>
             {items.length === 0 ? (
-              <p className="px-3 py-4 text-sm text-ink-muted">Aucune notification.</p>
+              <p className="px-4 py-5 text-sm text-ink-muted">Aucune notification.</p>
             ) : (
-              items.map((n) => (
-                <Link
-                  key={n.id}
-                  href={n.link ?? "#"}
-                  onClick={() => onClickItem(n)}
-                  className="flex flex-col gap-0.5 border-b border-line px-3 py-2.5 text-left transition-colors duration-100 hover:bg-wash active:bg-tint"
-                  style={{ background: n.read ? "transparent" : "var(--color-tint)" }}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className="rounded-full px-1.5 py-0.5 text-2xs font-semibold tracking-wide uppercase"
-                      style={{ background: TYPE_BADGE_BG[n.type], color: TYPE_BADGE_TEXT[n.type] }}
-                    >
-                      {TYPE_LABEL[n.type]}
+              // Le défilement porte sur la liste seule : l'en-tête et « Tout
+              // marquer lu » restent atteignables quand la liste est longue.
+              <div className="divide-y divide-line overflow-y-auto">
+                {items.map((n) => (
+                  <Link
+                    key={n.id}
+                    href={n.link ?? "#"}
+                    onClick={() => onClickItem(n)}
+                    // Le non-lu se signale par un filet à gauche sur un fond
+                    // très clair : l'aplat --color-tint qu'on avait avant
+                    // couvrait toute la ligne et rendait le message pénible à
+                    // lire, alors qu'il ne s'agit que de dire « celle-ci est
+                    // nouvelle ».
+                    className="flex flex-col gap-1 border-l-[3px] px-4 py-3 text-left transition-colors duration-100 hover:bg-wash active:bg-line"
+                    style={{
+                      borderLeftColor: n.read ? "transparent" : "var(--color-heading)",
+                      background: n.read ? "transparent" : "var(--color-wash)",
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="rounded-full px-2 py-0.5 text-2xs font-semibold tracking-wide uppercase"
+                        style={{ background: TYPE_BADGE_BG[n.type], color: TYPE_BADGE_TEXT[n.type] }}
+                      >
+                        {TYPE_LABEL[n.type]}
+                      </span>
+                      <span className="text-2xs text-ink-muted">{quandFr(n.createdAt)}</span>
                     </span>
-                    <span className="text-2xs text-ink-muted">{quandFr(n.createdAt)}</span>
-                  </span>
-                  <span className="text-sm text-ink">{n.message}</span>
-                </Link>
-              ))
+                    <span className="text-sm leading-snug text-ink">{n.message}</span>
+                  </Link>
+                ))}
+              </div>
             )}
           </div>
         </>
