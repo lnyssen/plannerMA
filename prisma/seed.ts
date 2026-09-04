@@ -675,7 +675,91 @@ async function main() {
       lue: true,
       heures: 96,
     },
+    {
+      type: "MENTION",
+      message: `Chloé Dubois vous a mentionné sur « Montage et étalonnage » : « le premier étalonnage est prêt, tu veux le voir avant l\u2019export ? »`,
+      lien: `/taches/${tachesParTitre["Montage et étalonnage"]}`,
+      lue: false,
+      heures: 8,
+    },
+    {
+      type: "MILESTONE_LATE",
+      message: `Date clé dans 2 jours : « Dépôt du dossier EP » — Média Animation — Éducation permanente.`,
+      lien: `/projets/${projets.ep2026}`,
+      lue: false,
+      heures: 11,
+    },
+    {
+      type: "COMMENT",
+      message: `Driss El Amrani a commenté « Accompagnement des groupes locaux » : « trois groupes ont décalé leur date, je réajuste. »`,
+      lien: `/taches/${tachesParTitre["Accompagnement des groupes locaux"]}`,
+      lue: false,
+      heures: 15,
+    },
+    {
+      type: "REQUEST",
+      message: `Nouvelle demande : « Captation vidéo de la conférence du 12 » (Vidéo, Son).`,
+      lien: `/demandes`,
+      lue: false,
+      heures: 30,
+    },
+    {
+      type: "ASSIGNMENT",
+      message: `« Sous-titrage multilingue » vous a été attribuée (du 21/09 au 02/10).`,
+      lien: `/taches/${tachesParTitre["Sous-titrage multilingue"]}`,
+      lue: false,
+      heures: 34,
+    },
+    {
+      type: "BUDGET_EXCEEDED",
+      message: `Le projet « Mobilisation climat » dépasse son budget de temps (198 h sur 160 h prévues).`,
+      lien: `/projets/${projets.climat}`,
+      lue: true,
+      heures: 62,
+    },
+    {
+      type: "MENTION",
+      message: `Amélie Verstraeten vous a mentionné sur « Affiches et déclinaisons ».`,
+      lien: `/taches/${tachesParTitre["Affiches et déclinaisons"]}`,
+      lue: true,
+      heures: 80,
+    },
+    {
+      type: "COMMENT",
+      message: `Bilal Haddouchi a commenté « Accessibilité et tests » : « il reste deux régressions sur le formulaire d\u2019inscription. »`,
+      lien: `/taches/${tachesParTitre["Accessibilité et tests"]}`,
+      lue: true,
+      heures: 104,
+    },
+    {
+      type: "PROJECT_BEHIND",
+      message: `Le projet « Intranet — refonte » consomme son budget plus vite qu\u2019il n\u2019avance.`,
+      lien: `/projets/${projets.intranet}`,
+      lue: true,
+      heures: 130,
+    },
+    {
+      type: "REQUEST",
+      message: `Demande acceptée : « Habillage sonore du podcast » — confiée au studio Son.`,
+      lien: `/demandes`,
+      lue: true,
+      heures: 158,
+    },
+    {
+      type: "ASSIGNMENT",
+      message: `« Validation juridique des images » vous a été attribuée (du 15/09 au 17/09).`,
+      lien: `/taches/${tachesParTitre["Validation juridique des images"]}`,
+      lue: true,
+      heures: 186,
+    },
   ];
+
+  // Un titre mal orthographié donnait silencieusement « /taches/undefined » —
+  // un lien mort dans la démonstration, invisible tant qu'on ne clique pas.
+  const liensMorts = NOTIFICATIONS.filter((n) => n.lien?.includes("undefined")).map((n) => n.message);
+  if (liensMorts.length > 0) {
+    throw new Error(`Notifications pointant vers un identifiant inconnu :\n- ${liensMorts.join("\n- ")}`);
+  }
 
   for (const n of NOTIFICATIONS) {
     await db.notification.create({

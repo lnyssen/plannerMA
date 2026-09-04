@@ -11,7 +11,7 @@ import { slugify } from "@/lib/planning/slug";
 // l'est pas — un placeholder neutre, à corriger avant tout usage réel si un
 // sixième studio est vraiment créé.
 const PLACEHOLDER_FILL = "#e5e5e5";
-const PLACEHOLDER_COLOR = "#444444";
+const PLACEHOLDER_COLOR = "#2d1592";
 
 function revalidateStudioViews() {
   revalidatePath("/reglages");

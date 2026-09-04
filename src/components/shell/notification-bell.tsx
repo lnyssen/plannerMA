@@ -12,6 +12,7 @@ import {
 } from "@/lib/actions/notifications";
 import { quandFr } from "@/lib/planning/dates";
 import { iconButtonOnRailClass, textButtonClass } from "@/components/ui/buttons";
+import { popoverHeaderClass, popoverSurfaceClass, popoverTitleClass } from "@/components/ui/popover";
 
 // Utilisée sur la barre latérale et l'en-tête mobile, toutes deux sur le
 // fond violet foncé --color-rail : une seule variante d'icône suffit.
@@ -152,10 +153,10 @@ export function NotificationBell() {
           <button type="button" aria-label="Fermer" className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div
             style={{ top: coords.top, left: coords.left, width: PANEL_WIDTH }}
-            className="fixed z-40 flex max-h-[70vh] flex-col overflow-hidden rounded-xl border border-line bg-paper shadow-[0_16px_40px_-12px_rgba(68,68,68,0.3)]"
+            className={`fixed z-40 flex max-h-[70vh] flex-col ${popoverSurfaceClass}`}
           >
-            <div className="flex flex-shrink-0 items-center justify-between border-b border-line px-4 py-2.5">
-              <span className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Notifications</span>
+            <div className={popoverHeaderClass}>
+              <span className={popoverTitleClass}>Notifications</span>
               {items.some((n) => !n.read) && (
                 <button type="button" onClick={onMarkAll} className={`text-xs font-semibold text-heading ${textButtonClass}`}>
                   Tout marquer lu

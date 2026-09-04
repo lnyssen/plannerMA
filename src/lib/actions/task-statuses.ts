@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 // Même repli que pour un studio : pas de couleur "de secours" vérifiée AA,
 // un placeholder neutre à corriger avant tout usage réel.
 const PLACEHOLDER_FILL = "#e5e5e5";
-const PLACEHOLDER_COLOR = "#444444";
+const PLACEHOLDER_COLOR = "#2d1592";
 
 function revalidateStatusViews() {
   revalidatePath("/reglages");

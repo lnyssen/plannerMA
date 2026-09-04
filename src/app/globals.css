@@ -36,8 +36,14 @@
 :root {
   /* Couleurs de marque et de surface — réelles (media-animation.be) */
   --color-paper: #ffffff;
-  --color-ink: #444444;
-  --color-ink-muted: rgba(68, 68, 68, 0.65);
+  /* Le texte courant n'est pas gris mais violet profond — #2D1592, l'ancienne
+   * teinte de marque, aussi celle de la barre en thème sombre. Un gris neutre
+   * (#444) ne venait de nulle part ; cette encre-là appartient à la charte et
+   * réchauffe les longues listes sans coûter en lisibilité : ≈ 12,9:1 sur
+   * blanc, contre ≈ 9,7:1 pour le gris qu'elle remplace. La variante atténuée
+   * garde ≈ 5,7:1, au-dessus du seuil AA de 4,5:1. */
+  --color-ink: #2d1592;
+  --color-ink-muted: rgba(45, 21, 146, 0.7);
   --color-heading: #612dfa;
   --color-rail: #612dfa;
   --color-rail-contrast: #ffffff;

@@ -31,6 +31,12 @@ import { NavOrderModal } from "@/components/modals/nav-order-modal";
 import { NotificationPrefsModal } from "@/components/modals/notification-prefs-modal";
 import { RequestModal } from "@/components/modals/request-modal";
 import { iconButtonOnRailClass, primaryOnRailButtonClass, secondaryOnRailButtonClass } from "@/components/ui/buttons";
+import {
+  popoverGroupClass,
+  popoverItemClass,
+  popoverSurfaceClass,
+  popoverTitleClass,
+} from "@/components/ui/popover";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { ToastProvider } from "@/components/ui/toast";
@@ -493,50 +499,59 @@ export function AppShell({
         <div ref={userMenuRef} className={`relative flex-shrink-0 px-3 pb-5 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
           {userMenuOpen && (
             <div
-              className={`absolute z-20 overflow-hidden rounded-lg border border-white/20 shadow-xl ${
-                isCollapsed ? "bottom-0 left-full ml-2 w-56" : "right-3 bottom-full left-3 mb-2"
+              className={`absolute z-20 ${popoverSurfaceClass} ${
+                isCollapsed ? "bottom-0 left-full ml-2 w-60" : "right-3 bottom-full left-3 mb-2"
               }`}
-              style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)", boxShadow: "0 10px 30px rgba(0,0,0,0.35)" }}
             >
-              <div className="px-3 pt-3 pb-2">
-                <p className="truncate text-sm font-semibold text-white">{userName}</p>
-                <p className="text-xs text-white/60">{ROLE_LABEL[role]}</p>
+              <div className="px-4 pt-3 pb-2.5">
+                <p className="truncate text-sm font-bold text-heading">{userName}</p>
+                <p className="text-2xs text-ink-muted">{ROLE_LABEL[role]}</p>
               </div>
-              <div className="flex items-center justify-between gap-2 px-3 pb-2">
-                <span className="text-xs font-medium text-white/70">Thème</span>
-                <div className="flex overflow-hidden rounded-md border border-white/20">
+              <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-2.5">
+                <span className={popoverTitleClass}>Thème</span>
+                <div
+                  role="group"
+                  aria-label="Thème"
+                  className="inline-flex items-center gap-0.5 rounded-full border-[1.5px] border-line bg-wash p-0.5"
+                >
                   <button
                     type="button"
                     onClick={() => currentTheme !== "LIGHT" && toggleTheme()}
                     aria-label="Thème clair"
                     aria-pressed={currentTheme === "LIGHT"}
-                    className="flex h-7 w-8 items-center justify-center transition-colors duration-100"
-                    style={{ background: currentTheme === "LIGHT" ? "rgba(255,255,255,0.9)" : "transparent" }}
+                    className="flex h-6 w-8 items-center justify-center rounded-full transition-colors duration-100"
+                    style={{
+                      background: currentTheme === "LIGHT" ? "var(--color-heading)" : "transparent",
+                      color: currentTheme === "LIGHT" ? "var(--color-paper)" : "var(--color-ink-muted)",
+                    }}
                   >
-                    <Sun size={14} color={currentTheme === "LIGHT" ? "var(--color-rail)" : "rgba(255,255,255,0.7)"} />
+                    <Sun size={14} />
                   </button>
                   <button
                     type="button"
                     onClick={() => currentTheme !== "DARK" && toggleTheme()}
                     aria-label="Thème sombre"
                     aria-pressed={currentTheme === "DARK"}
-                    className="flex h-7 w-8 items-center justify-center border-l border-white/20 transition-colors duration-100"
-                    style={{ background: currentTheme === "DARK" ? "rgba(255,255,255,0.9)" : "transparent" }}
+                    className="flex h-6 w-8 items-center justify-center rounded-full transition-colors duration-100"
+                    style={{
+                      background: currentTheme === "DARK" ? "var(--color-heading)" : "transparent",
+                      color: currentTheme === "DARK" ? "var(--color-paper)" : "var(--color-ink-muted)",
+                    }}
                   >
-                    <Moon size={14} color={currentTheme === "DARK" ? "var(--color-rail)" : "rgba(255,255,255,0.7)"} />
+                    <Moon size={14} />
                   </button>
                 </div>
               </div>
-              <div className="border-t border-white/10 py-1.5">
+              <div className={popoverGroupClass}>
                 <button
                   type="button"
                   onClick={() => {
                     setModal("password");
                     setUserMenuOpen(false);
                   }}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-white/85 transition-colors duration-100 hover:bg-white/10"
+                  className={popoverItemClass}
                 >
-                  <KeyRound size={15} aria-hidden="true" /> Changer de mot de passe
+                  <KeyRound size={15} aria-hidden="true" /> Mot de passe
                 </button>
                 <button
                   type="button"
@@ -544,7 +559,7 @@ export function AppShell({
                     setModal("notifications");
                     setUserMenuOpen(false);
                   }}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-white/85 transition-colors duration-100 hover:bg-white/10"
+                  className={popoverItemClass}
                 >
                   <Bell size={15} aria-hidden="true" /> Mes notifications
                 </button>
@@ -554,15 +569,15 @@ export function AppShell({
                     setModal("navOrder");
                     setUserMenuOpen(false);
                   }}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-white/85 transition-colors duration-100 hover:bg-white/10"
+                  className={popoverItemClass}
                 >
                   <ArrowUpDown size={15} aria-hidden="true" /> Réorganiser le menu
                 </button>
               </div>
-              <form action={signOutAction} className="border-t border-white/10 py-1.5">
+              <form action={signOutAction} className={popoverGroupClass}>
                 <button
                   type="submit"
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-white/85 transition-colors duration-100 hover:bg-white/10"
+                  className={popoverItemClass}
                 >
                   <LogOut size={15} aria-hidden="true" /> Déconnexion
                 </button>
