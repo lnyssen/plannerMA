@@ -618,7 +618,11 @@ export function AppShell({
     <CreateModalsProvider open={openCreateModal}>
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside
-        className={`hidden bg-rail transition-[width] duration-150 md:sticky md:top-0 md:flex md:h-screen md:flex-shrink-0 md:flex-col md:overflow-x-hidden ${collapsed ? "md:w-[76px]" : "md:w-[260px]"}`}
+        // `md:sticky` crée un contexte d'empilement : sans z-index explicite,
+        // la barre et tout ce qu'elle ouvre se peignent AVANT le contenu de
+        // la page, qui vient après elle dans le document — les filtres d'un
+        // écran passaient ainsi par-dessus le panneau de notifications.
+        className={`hidden bg-rail transition-[width] duration-150 md:sticky md:top-0 md:z-20 md:flex md:h-screen md:flex-shrink-0 md:flex-col md:overflow-x-hidden ${collapsed ? "md:w-[76px]" : "md:w-[260px]"}`}
       >
         {renderRail(collapsed, true)}
       </aside>

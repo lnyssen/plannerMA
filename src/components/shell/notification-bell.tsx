@@ -4,6 +4,7 @@ import type { Notification, NotificationType } from "@prisma/client";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -70,7 +71,7 @@ export function NotificationBell() {
   // `auto`) — un panneau plus large que la colonne de 260 px se retrouvait
   // tronqué au lieu de simplement déborder. `position: fixed` échappe à ce
   // clip d'ancêtre (aucun des parents n'a de transform/filter).
-  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,11 +90,19 @@ export function NotificationBell() {
   function computeCoords() {
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const left = Math.min(
-      Math.max(rect.right - PANEL_WIDTH, VIEWPORT_MARGIN),
-      window.innerWidth - PANEL_WIDTH - VIEWPORT_MARGIN,
-    );
-    setCoords({ top: rect.bottom + 8, left });
+    // Sur une fenêtre plus étroite que le panneau, le panneau rétrécit ; il
+    // n'a pas à déborder. L'ancien calcul bornait par
+    // `innerWidth - PANEL_WIDTH - marge`, qui devient négatif dans ce cas :
+    // le Math.min le retenait et le panneau partait hors écran par la
+    // gauche, tronqué.
+    // Le plancher ne mord jamais sur un vrai appareil (le plus étroit fait
+    // 320 px, soit 296 px disponibles) ; il protège des cas où la fenêtre
+    // se mesure à zéro, onglet en arrière-plan par exemple.
+    const width = Math.max(240, Math.min(PANEL_WIDTH, window.innerWidth - VIEWPORT_MARGIN * 2));
+    const souhaite = rect.right - width;
+    const maxGauche = window.innerWidth - width - VIEWPORT_MARGIN;
+    const left = Math.max(VIEWPORT_MARGIN, Math.min(souhaite, maxGauche));
+    setCoords({ top: rect.bottom + 8, left, width });
   }
 
   useEffect(() => {
@@ -148,11 +157,14 @@ export function NotificationBell() {
         )}
       </button>
 
-      {open && coords && (
+      {/* Rendu sur <body> : la barre latérale est `sticky`, donc un contexte
+          d'empilement — un panneau laissé à l'intérieur ne peut jamais passer
+          au-dessus du contenu de la page, quel que soit son z-index. */}
+      {open && coords && createPortal(
         <>
           <button type="button" aria-label="Fermer" className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div
-            style={{ top: coords.top, left: coords.left, width: PANEL_WIDTH }}
+            style={{ top: coords.top, left: coords.left, width: coords.width }}
             className={`fixed z-40 flex max-h-[70vh] flex-col ${popoverSurfaceClass}`}
           >
             <div className={popoverHeaderClass}>
@@ -200,7 +212,8 @@ export function NotificationBell() {
               </div>
             )}
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );

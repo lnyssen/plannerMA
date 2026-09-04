@@ -3,6 +3,7 @@
 import { Building2, ClipboardList, ListChecks, MessageSquare, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { globalSearch, type SearchResults } from "@/lib/actions/search";
 import { iconButtonOnRailClass } from "@/components/ui/buttons";
 import { fieldInputClass } from "@/components/modals/modal-shell";
@@ -99,7 +100,9 @@ export function GlobalSearch({ variant = "icon" }: { variant?: "icon" | "field" 
         </button>
       )}
 
-      {open && coords && (
+      {/* Même raison que pour la cloche : la barre latérale est `sticky`, donc
+          un contexte d'empilement dont un panneau interne ne peut pas sortir. */}
+      {open && coords && createPortal(
         <>
           <button type="button" aria-label="Fermer" className="fixed inset-0 z-30" onClick={close} />
           <div
@@ -199,7 +202,8 @@ export function GlobalSearch({ variant = "icon" }: { variant?: "icon" | "field" 
               </div>
             )}
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );
