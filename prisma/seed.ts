@@ -286,6 +286,9 @@ async function main() {
     /** Nul = travail hors projet (« AGENCE ») — Task.projectId est facultatif. */
     projet: string | null;
     title: string;
+    /** Quelques tâches en portent une : une fiche sans description ne montre
+     *  rien de ce que la fiche sait faire, en démonstration comme en capture. */
+    description?: string;
     studios: string[];
     qui: string | null;
     debut: number;
@@ -300,7 +303,7 @@ async function main() {
   }[] = [
     { projet: "vitrine", title: "Arborescence et wireframes", studios: ["web"], qui: "bilal", debut: -34, fin: -22, statut: "delivered", demiJours: 8, sousTaches: [["Page d’accueil", -30, true], ["Pages studios", -24, true]] },
     { projet: "vitrine", title: "Charte graphique déclinée au site", studios: ["graphisme"], qui: "amelie", debut: -20, fin: -6, statut: "delivered", demiJours: 10 },
-    { projet: "vitrine", title: "Intégration front", studios: ["web"], qui: "bilal", debut: -5, fin: 6, statut: "inProgress", demiJours: 12, sousTaches: [["Composants de base", 1, true], ["Pages de contenu", 5, false]] },
+    { projet: "vitrine", title: "Intégration front", description: "Intégration des maquettes validées, en commençant par les gabarits partagés (en-tête, pied de page, cartes). Le formulaire d’inscription attend la validation juridique, on le garde pour la fin.", studios: ["web"], qui: "bilal", debut: -5, fin: 6, statut: "inProgress", demiJours: 12, sousTaches: [["Composants de base", 1, true], ["Pages de contenu", 5, false]] },
     { projet: "vitrine", title: "Rédaction des contenus", studios: ["consultance"], qui: null, debut: -3, fin: 8, statut: "todo", demiJours: 6 },
     { projet: "oxfam", title: "Cadrage stratégique avec le client", studios: ["consultance"], qui: "driss", debut: -12, fin: -9, statut: "delivered", demiJours: 4 },
     { projet: "oxfam", title: "Écriture du scénario", studios: ["video"], qui: "chloe", debut: -8, fin: -2, statut: "validation", demiJours: 6 },
@@ -311,8 +314,8 @@ async function main() {
     { projet: "mediaEduc", title: "Maquettes des supports", studios: ["graphisme"], qui: "amelie", debut: -9, fin: -2, statut: "inProgress", demiJours: 8 },
     { projet: "mediaEduc", title: "Test en classe", studios: ["consultance"], qui: null, debut: 12, fin: 19, statut: "todo", demiJours: 6 },
     { projet: "digicit", title: "Kick-off consortium", studios: ["consultance"], qui: "elena", debut: -55, fin: -54, statut: "delivered", demiJours: 2 },
-    { projet: "digicit", title: "Écriture des capsules", studios: ["video", "consultance"], qui: "chloe", debut: -30, fin: -12, statut: "delivered", demiJours: 16 },
-    { projet: "digicit", title: "Tournage capsules 1 à 4", studios: ["video"], qui: "chloe", debut: -11, fin: -4, statut: "inProgress", demiJours: 12 },
+    { projet: "digicit", title: "Écriture des capsules", description: "Un script par capsule, relu par le partenaire allemand avant tournage. Ton direct, tutoiement, pas plus de 450 mots — au-delà, ça ne tient pas dans les 3 minutes.", studios: ["video", "consultance"], qui: "chloe", debut: -30, fin: -12, statut: "delivered", demiJours: 16 },
+    { projet: "digicit", title: "Tournage capsules 1 à 4", description: "Quatre capsules de 3 minutes, tournées en deux jours au studio et deux jours en extérieur. Prévoir le fond vert pour les séquences 2 et 4, et un micro-cravate de secours : la dernière captation en extérieur avait souffert du vent.", studios: ["video"], qui: "chloe", debut: -11, fin: -4, statut: "inProgress", demiJours: 12 },
     { projet: "digicit", title: "Habillage sonore", studios: ["son"], qui: "chloe", debut: -7, fin: -3, statut: "todo", demiJours: 6 },
     { projet: "digicit", title: "Sous-titrage multilingue", studios: ["web"], qui: null, debut: 1, fin: 12, statut: "todo", demiJours: 10 },
     { projet: "digicit", title: "Rapport intermédiaire", studios: ["consultance"], qui: "elena", debut: 14, fin: 20, statut: "todo", demiJours: 5 },
@@ -362,7 +365,7 @@ async function main() {
     { projet: "mediaEduc", title: "Comité de lecture", studios: ["consultance"], qui: "elena", debut: 6, fin: 6, statut: "todo", demiJours: 1 },
 
     // Sous-tâches partiellement faites, pour un avancement intermédiaire.
-    { projet: "vitrine", title: "Accessibilité et tests", studios: ["web"], qui: "bilal", debut: 2, fin: 12, statut: "todo", demiJours: 6, sousTaches: [["Contrastes", 4, true], ["Navigation clavier", 7, false], ["Lecteurs d’écran", 11, false]] },
+    { projet: "vitrine", title: "Accessibilité et tests", description: "Passe AA sur l’ensemble du site : contrastes, navigation au clavier, lecteurs d’écran. Les trois sous-tâches suivent chacun de ces axes.", studios: ["web"], qui: "bilal", debut: 2, fin: 12, statut: "todo", demiJours: 6, sousTaches: [["Contrastes", 4, true], ["Navigation clavier", 7, false], ["Lecteurs d’écran", 11, false]] },
   ];
 
   const tachesParTitre: Record<string, string> = {};
@@ -370,6 +373,7 @@ async function main() {
     const row = await db.task.create({
       data: {
         title: t.title,
+        description: t.description ?? null,
         projectId: t.projet ? projets[t.projet] : null,
         studios: { create: t.studios.map((s) => ({ studioId: studios[s] })) },
         assigneeId: t.qui ? people[t.qui] : null,
