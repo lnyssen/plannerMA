@@ -34,6 +34,9 @@ const STATUSES = [
   { key: "delivered", name: "Livré", fillHex: "#dcf3e3", colorHex: "#1c7a3d", isDone: true },
 ];
 
+/** Le compte avec lequel on ouvre la démonstration : c'est lui qui doit voir les notifications. */
+const COMPTE_DEMO = "admin@media-animation.be";
+
 async function main() {
   // Projets/tâches/absences ne sont pas des données nominatives réelles :
   // on repart de zéro à chaque semis plutôt que d'accumuler des doublons à
@@ -175,7 +178,7 @@ async function main() {
   const baseLocale = /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL ?? "");
 
   const COMPTES_DEMO = [
-    { email: "admin@media-animation.be", role: "ADMIN" as const, personKey: "elena" },
+    { email: COMPTE_DEMO, role: "ADMIN" as const, personKey: "elena" },
     { email: "bilal@media-animation.be", role: "COLLABORATOR" as const, personKey: "bilal" },
   ];
 
@@ -626,8 +629,21 @@ async function main() {
   // c'est celui avec lequel on ouvre la démonstration, et une notification
   // qu'on ne voit pas ne démontre rien. On relit son `personId` au lieu de le
   // supposer — il diffère d'un environnement à l'autre.
-  const compteAdmin = await db.user.findFirst({ where: { role: "ADMIN" }, select: { personId: true } });
-  const destinataire = compteAdmin?.personId ?? people.elena;
+  // `findFirst` sans `orderBy` laisse PostgreSQL choisir : avec deux comptes
+  // administrateurs, les notifications atterrissaient au hasard sur l'un ou
+  // sur l'autre — en ligne, elles étaient toutes allées au mauvais, et la
+  // démonstration s'ouvrait sur une boîte vide. On nomme donc explicitement
+  // le compte de démonstration, avec un repli déterministe.
+  const compteDemo = await db.user.findFirst({
+    where: { email: COMPTE_DEMO },
+    select: { personId: true },
+  });
+  const premierAdmin = await db.user.findFirst({
+    where: { role: "ADMIN" },
+    select: { personId: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const destinataire = compteDemo?.personId ?? premierAdmin?.personId ?? people.elena;
 
   const NOTIFICATIONS: { type: NotificationType; message: string; lien: string | null; lue: boolean; heures: number }[] = [
     {
