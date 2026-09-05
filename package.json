@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "docs:captures": "tsx scripts/captures-doc.ts"
+    "docs:captures": "tsx scripts/captures-doc.ts",
+    "db:debloque": "tsx scripts/debloque-migration.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",
