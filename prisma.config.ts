@@ -11,6 +11,14 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env.DATABASE_URL,
+    // Les migrations prennent un verrou d'avis PostgreSQL, qui est lié à la
+    // session. À travers PgBouncer, qui multiplexe les sessions, le verrou
+    // reste accroché à une connexion recyclée et n'est jamais relâché : les
+    // déploiements suivants échouaient tous en P1002 « Timed out trying to
+    // acquire a postgres advisory lock ». La CLI passe donc par la connexion
+    // directe quand elle existe (DATABASE_URL_UNPOOLED, posée par
+    // l'intégration Neon) ; l'application, elle, garde le pool — voir
+    // src/lib/db.ts.
+    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL,
   },
 });
