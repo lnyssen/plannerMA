@@ -65,7 +65,7 @@ export async function addComment(input: z.infer<typeof addCommentSchema>): Promi
     await createNotification({
       recipientId: personId,
       type: "MENTION",
-      message: `${authorName} vous a mentionné·e dans un commentaire sur « ${task.title} »`,
+      message: `${authorName} vous a mentionné·e sur « ${task.title} ».`,
       link: `/taches/${taskId}`,
     });
   }
@@ -78,7 +78,7 @@ export async function addComment(input: z.infer<typeof addCommentSchema>): Promi
     await createNotification({
       recipientId: task.assigneeId,
       type: "COMMENT",
-      message: `${authorName} a commenté « ${task.title} »`,
+      message: `${authorName} a commenté « ${task.title} ».`,
       link: `/taches/${taskId}`,
     });
   }

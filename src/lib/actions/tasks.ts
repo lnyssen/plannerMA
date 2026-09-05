@@ -217,7 +217,7 @@ async function notifyAssignee(
   await createNotification({
     recipientId: personId,
     type: "ASSIGNMENT",
-    message: `Vous avez été attribué·e à la tâche « ${task.title} »`,
+    message: `« ${task.title} » vous a été attribuée.`,
     link: `/taches/${task.id}`,
   });
 }

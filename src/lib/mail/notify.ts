@@ -201,7 +201,7 @@ export async function checkMilestoneAlerts(): Promise<{ alerted: number }> {
         createNotification({
           recipientId,
           type: "MILESTONE_LATE",
-          message: `Date clé dépassée depuis ${retard} jour${retard > 1 ? "s" : ""} : « ${echeance.title} » — ${echeance.project.client.name} — ${echeance.project.name}.`,
+          message: `${retard} jour${retard > 1 ? "s" : ""} de retard : « ${echeance.title} » — ${echeance.project.client.name} — ${echeance.project.name}.`,
           link,
         }),
       ),
@@ -247,7 +247,7 @@ export async function checkProjectPaceAlerts(): Promise<{ alerted: number }> {
         createNotification({
           recipientId,
           type: "PROJECT_BEHIND",
-          message: `Le projet « ${project.name} » consomme son budget de temps plus vite qu’il n’avance (${Math.round(project.consumedRatio * 100)}% consommé pour ${Math.round(project.progress * 100)}% avancé).`,
+          message: `« ${project.name} » : ${Math.round(project.consumedRatio * 100)} % du budget consommé pour ${Math.round(project.progress * 100)} % d’avancement.`,
           link,
         }),
       ),

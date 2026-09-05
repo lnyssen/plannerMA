@@ -55,7 +55,7 @@ export async function createRequest(input: CreateRequestInput): Promise<{ error?
     await createNotification({
       recipientId: admin.personId,
       type: "REQUEST",
-      message: `Nouvelle demande (${studio.name}) : « ${subject} »`,
+      message: `« ${subject} » — ${studio.name}.`,
     });
   }
 

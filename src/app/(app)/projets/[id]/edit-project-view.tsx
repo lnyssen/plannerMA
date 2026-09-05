@@ -338,7 +338,9 @@ export function EditProjectView({
               />
             </div>
             <div className="mt-1 flex justify-between text-2xs text-ink-muted tabular-nums">
-              <span>Budget {formatDurationFr(budgetMinutes!)}</span>
+              {/* La durée du budget est déjà dans la phrase juste au-dessus ;
+                  la répéter sous la barre n'ajoutait qu'un chiffre à lire. */}
+              <span>Budget</span>
               <span className="font-semibold text-alert">
                 +{Math.round(((loggedMinutes - budgetMinutes!) / budgetMinutes!) * 100)}%
               </span>

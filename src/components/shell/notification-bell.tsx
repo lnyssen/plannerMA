@@ -27,7 +27,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   MENTION: "Mention",
   REQUEST: "Demande",
   BUDGET_EXCEEDED: "Budget dépassé",
-  PROJECT_BEHIND: "Rythme budgétaire",
+  PROJECT_BEHIND: "Budget en avance",
   MILESTONE_LATE: "Date clé dépassée",
   COMMENT: "Commentaire",
 };
@@ -176,7 +176,7 @@ export function NotificationBell() {
               )}
             </div>
             {items.length === 0 ? (
-              <p className="px-4 py-5 text-sm text-ink-muted">Aucune notification.</p>
+              <p className="px-4 py-5 text-sm text-ink-muted">Rien de neuf. Les attributions, mentions et alertes de budget arrivent ici.</p>
             ) : (
               // Le défilement porte sur la liste seule : l'en-tête et « Tout
               // marquer lu » restent atteignables quand la liste est longue.

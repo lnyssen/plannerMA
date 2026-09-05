@@ -102,7 +102,7 @@ async function checkAndNotifyBudget(projectId: string | null): Promise<void> {
         createNotification({
           recipientId: a.personId,
           type: "BUDGET_EXCEEDED",
-          message: `Le projet « ${project.name} » dépasse son budget de temps (${formatDurationFr(totalMinutes)} sur ${formatDurationFr(budgetMinutes)} prévues).`,
+          message: `« ${project.name} » : ${formatDurationFr(totalMinutes)} enregistrées sur ${formatDurationFr(budgetMinutes)} prévues.`,
           link,
         }),
       ),
