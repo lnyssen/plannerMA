@@ -274,6 +274,7 @@ async function main() {
     { projet: "ep2026", title: "Dépôt du dossier EP", jours: 44, fait: false },
     { projet: "vitrine", title: "Recette technique", jours: -20, fait: true },
     { projet: "climat", title: "Bon à tirer affiches", jours: 4, fait: false },
+    { projet: "climat", title: "Validation du visuel par le comité", jours: -3, fait: false },
   ];
   for (const j of JALONS) {
     await db.milestone.create({
@@ -704,8 +705,8 @@ async function main() {
     },
     {
       type: "MILESTONE_LATE",
-      message: `Date clé dans 2 jours : « Dépôt du dossier EP » — Média Animation — Éducation permanente.`,
-      lien: `/projets/${projets.ep2026}`,
+      message: `3 jours de retard : « Validation du visuel par le comité » — CNCD-11.11.11 — Mobilisation climat.`,
+      lien: `/projets/${projets.climat}`,
       lue: false,
       heures: 11,
     },
