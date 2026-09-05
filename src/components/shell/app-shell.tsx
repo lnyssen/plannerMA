@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { updateThemePreference } from "@/lib/actions/account";
 import { ChangePasswordModal } from "@/components/modals/change-password-modal";
 import { CreateProjectModal } from "@/components/modals/create-project-modal";
@@ -143,16 +144,44 @@ export function AppShell({
   const [collapsed, setCollapsedState] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<ThemePreference>(theme);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuButtonRef = useRef<HTMLButtonElement>(null);
+  /**
+   * Le menu du profil est rendu sur <body>, pas dans la barre latérale.
+   * Replié, il s'ouvrait à `left-full`, donc hors de l'`aside` — qui porte
+   * `overflow-x: hidden` pour que le rail ne défile pas horizontalement. Le
+   * menu était bien monté, mais entièrement rogné : appuyer sur le profil ne
+   * faisait « rien ». Sorti du flux, il lui faut ses coordonnées.
+   */
+  const [userMenuCoords, setUserMenuCoords] = useState<{ bottom: number; left: number; width: number } | null>(null);
 
   useEffect(() => {
     if (!userMenuOpen) return;
-    function onPointerDown(e: PointerEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserMenuOpen(false);
+    function place() {
+      const rect = userMenuButtonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const marge = 12;
+      // Replié, le menu se déploie à droite du rail ; déplié, il monte
+      // au-dessus du bouton et en épouse la largeur.
+      const largeurVoulue = collapsed ? 240 : rect.width;
+      const width = Math.max(200, Math.min(largeurVoulue, window.innerWidth - marge * 2));
+      const gauche = collapsed ? rect.right + 8 : rect.left;
+      const left = Math.max(marge, Math.min(gauche, window.innerWidth - width - marge));
+      const bottom = window.innerHeight - (collapsed ? rect.bottom : rect.top - 8);
+      setUserMenuCoords({ bottom, left, width });
     }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [userMenuOpen]);
+    place();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setUserMenuOpen(false);
+    }
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [userMenuOpen, collapsed]);
 
   const userInitial = userName.trim().charAt(0).toUpperCase() || "?";
 
@@ -419,7 +448,16 @@ export function AppShell({
 
     return (
       <>
-        <div className={`flex flex-shrink-0 items-start gap-2 px-5 pt-5 pb-4 ${isCollapsed ? "flex-col items-center" : "justify-between"}`}>
+        {/* Une seule règle d'alignement : la version repliée émettait
+            `items-start` et `items-center` ensemble, et c'est la feuille de
+            style qui tranchait — `items-start` l'emportait, si bien que les
+            icônes se collaient à gauche au lieu d'être centrées sur l'axe de
+            la barre. */}
+        <div
+          className={`flex flex-shrink-0 gap-2 px-5 pt-5 pb-4 ${
+            isCollapsed ? "flex-col items-center" : "items-start justify-between"
+          }`}
+        >
           {!isCollapsed && (
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel, pas d'optimisation next/image nécessaire pour cette taille */}
@@ -512,12 +550,18 @@ export function AppShell({
           </div>
         </div>
 
-        <div ref={userMenuRef} className={`relative flex-shrink-0 px-3 pb-5 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
-          {userMenuOpen && (
+        <div className={`relative flex-shrink-0 px-3 pb-5 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
+          {userMenuOpen && userMenuCoords && createPortal(
+            <>
+              <button
+                type="button"
+                aria-label="Fermer"
+                className="fixed inset-0 z-30"
+                onClick={() => setUserMenuOpen(false)}
+              />
             <div
-              className={`absolute z-20 ${popoverSurfaceClass} ${
-                isCollapsed ? "bottom-0 left-full ml-2 w-60" : "right-3 bottom-full left-3 mb-2"
-              }`}
+              style={{ bottom: userMenuCoords.bottom, left: userMenuCoords.left, width: userMenuCoords.width }}
+              className={`fixed z-40 ${popoverSurfaceClass}`}
             >
               <div className="px-4 pt-3 pb-2.5">
                 <p className="truncate text-sm font-bold text-heading">{userName}</p>
@@ -599,9 +643,12 @@ export function AppShell({
                 </button>
               </form>
             </div>
+            </>,
+            document.body,
           )}
 
           <button
+            ref={userMenuButtonRef}
             type="button"
             onClick={() => setUserMenuOpen((v) => !v)}
             aria-expanded={userMenuOpen}

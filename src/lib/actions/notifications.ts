@@ -54,6 +54,18 @@ export async function markNotificationRead(id: string): Promise<void> {
   revalidatePath("/", "layout");
 }
 
+/**
+ * Repasser une notification en non lue : on la parcourt souvent d'un œil sans
+ * pouvoir la traiter tout de suite, et sans ce retour en arrière la seule
+ * façon de ne pas l'oublier était de ne pas y toucher.
+ */
+export async function setNotificationRead(id: string, read: boolean): Promise<void> {
+  const personId = await currentPersonId();
+  if (!personId) return;
+  await db.notification.updateMany({ where: { id, recipientId: personId }, data: { read } });
+  revalidatePath("/", "layout");
+}
+
 export async function markAllNotificationsRead(): Promise<void> {
   const personId = await currentPersonId();
   if (!personId) return;

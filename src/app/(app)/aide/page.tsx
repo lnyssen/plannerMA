@@ -473,8 +473,13 @@ export default function AidePage() {
             <li>Une mention (« @Nom ») dans un commentaire.</li>
             <li>Un nouveau commentaire sur une tâche qui vous est attribuée, même sans mention.</li>
             <li>Une nouvelle demande <Admin />.</li>
-            <li>Un budget de projet dépassé, ou un rythme de consommation qui dérive <Admin />.</li>
+            <li>Une date clé dépassée, ou un budget de projet dépassé <Admin />.</li>
           </Ul>
+          <P>
+            Le point à droite de chaque ligne dit si elle est traitée : plein tant qu’elle ne l’est pas, creux une
+            fois lue. Il se clique dans les deux sens — ouvrir une notification la marque lue, et ce point permet de
+            la remettre en attente quand on l’a seulement parcourue.
+          </P>
           <P>
             Le courriel correspondant à chacune de ces alertes se règle indépendamment dans « Mes notifications »
             (menu du compte, en bas de la barre latérale) — la cloche reste active même si tous les courriels sont

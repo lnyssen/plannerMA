@@ -9,6 +9,7 @@ import {
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  setNotificationRead,
   unreadNotificationCount,
 } from "@/lib/actions/notifications";
 import { quandFr } from "@/lib/planning/dates";
@@ -115,8 +116,15 @@ export function NotificationBell() {
   useEffect(() => {
     if (!open) return;
     computeCoords();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     window.addEventListener("resize", computeCoords);
-    return () => window.removeEventListener("resize", computeCoords);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("resize", computeCoords);
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   async function toggle() {
@@ -136,6 +144,13 @@ export function NotificationBell() {
       setCount((c) => Math.max(0, c - 1));
     }
     setOpen(false);
+  }
+
+  async function onToggleRead(n: Notification) {
+    const lue = !n.read;
+    setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: lue } : x)));
+    setCount((c) => Math.max(0, c + (lue ? -1 : 1)));
+    await setNotificationRead(n.id, lue);
   }
 
   async function onMarkAll() {
@@ -189,32 +204,55 @@ export function NotificationBell() {
               // marquer lu » restent atteignables quand la liste est longue.
               <div className="divide-y divide-line overflow-y-auto">
                 {items.map((n) => (
-                  <Link
+                  <div
                     key={n.id}
-                    href={n.link ?? "#"}
-                    onClick={() => onClickItem(n)}
                     // Le non-lu se signale par un filet à gauche sur un fond
-                    // très clair : l'aplat --color-tint qu'on avait avant
-                    // couvrait toute la ligne et rendait le message pénible à
-                    // lire, alors qu'il ne s'agit que de dire « celle-ci est
-                    // nouvelle ».
-                    className="flex flex-col gap-1 border-l-[3px] px-4 py-3 text-left transition-colors duration-100 hover:bg-wash active:bg-line"
+                    // très clair : l'aplat qu'on avait avant couvrait toute la
+                    // ligne et rendait le message pénible à lire, alors qu'il
+                    // ne s'agit que de dire « celle-ci est nouvelle ».
+                    className="group flex items-start border-l-[3px] transition-colors duration-100 hover:bg-wash"
                     style={{
                       borderLeftColor: n.read ? "transparent" : "var(--color-heading)",
                       background: n.read ? "transparent" : "var(--color-wash)",
                     }}
                   >
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="rounded-full px-2 py-0.5 text-2xs font-semibold tracking-wide uppercase"
-                        style={{ background: TYPE_BADGE_BG[n.type], color: TYPE_BADGE_TEXT[n.type] }}
-                      >
-                        {TYPE_LABEL[n.type]}
+                    <Link
+                      href={n.link ?? "#"}
+                      onClick={() => onClickItem(n)}
+                      className="flex min-w-0 flex-1 flex-col gap-1 py-3 pl-4 text-left active:opacity-70"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="rounded-full px-2 py-0.5 text-2xs font-semibold tracking-wide uppercase"
+                          style={{ background: TYPE_BADGE_BG[n.type], color: TYPE_BADGE_TEXT[n.type] }}
+                        >
+                          {TYPE_LABEL[n.type]}
+                        </span>
+                        <span className="text-2xs text-ink-muted">{quandFr(n.createdAt)}</span>
                       </span>
-                      <span className="text-2xs text-ink-muted">{quandFr(n.createdAt)}</span>
-                    </span>
-                    <span className="text-sm leading-snug text-ink">{n.message}</span>
-                  </Link>
+                      <span className={`text-sm leading-snug ${n.read ? "text-ink-muted" : "text-ink"}`}>{n.message}</span>
+                    </Link>
+
+                    {/* Ouvrir une notification la marquait lue, sans retour
+                        possible : on parcourt souvent la liste d'un œil sans
+                        pouvoir traiter, et la seule façon de ne pas oublier
+                        était de ne pas y toucher. Le point est cliquable dans
+                        les deux sens — plein tant que c'est à traiter, creux
+                        une fois lu. */}
+                    <button
+                      type="button"
+                      onClick={() => onToggleRead(n)}
+                      aria-pressed={!n.read}
+                      aria-label={n.read ? "Marquer comme non lue" : "Marquer comme lue"}
+                      title={n.read ? "Marquer comme non lue" : "Marquer comme lue"}
+                      className="flex flex-shrink-0 items-center justify-center self-stretch px-3 text-ink-muted transition-colors duration-100 hover:text-heading"
+                    >
+                      <span
+                        className="block h-2.5 w-2.5 rounded-full border-[1.5px] border-current"
+                        style={{ background: n.read ? "transparent" : "var(--color-heading)", borderColor: n.read ? undefined : "var(--color-heading)" }}
+                      />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
