@@ -41,11 +41,16 @@ export function useCardDrag(onDrop: (id: string, zone: string) => void) {
       setDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY, over: zoneAt(e.clientX, e.clientY) } : d));
     }
     function onUp(e: PointerEvent) {
+      // `onDrop` s'exécute hors de la fonction de mise à jour : React traite
+      // celle-ci comme du code de rendu, où il est interdit de déclencher un
+      // nouvel état. Comme le gestionnaire déposé appelle `startTransition`,
+      // React levait « Cannot call startTransition while rendering » et
+      // rejouait l'opération en boucle. L'état courant est déjà dans la
+      // portée : l'effet se réabonne à chaque changement de `drag`.
       const zone = zoneAt(e.clientX, e.clientY);
-      setDrag((d) => {
-        if (d && zone) onDrop(d.id, zone);
-        return null;
-      });
+      const encours = drag;
+      setDrag(null);
+      if (encours && zone) onDrop(encours.id, zone);
     }
     function onCancel() {
       setDrag(null);
