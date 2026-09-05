@@ -1,7 +1,7 @@
 "use client";
 
 import type { ProjectPole } from "@prisma/client";
-import { AlertTriangle, BookmarkCheck, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2, Users } from "lucide-react";
+import { AlertTriangle, BookmarkCheck, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -118,16 +118,17 @@ export function EditProjectView({
    * plus bas dans la page.
    */
   const consommation = useMemo(() => {
-    const lignes = project.tasks
-      .map((t) => ({ label: t.title, minutes: sumDurationMinutes(t.timeEntries) }))
+    type Ligne = { label: string; minutes: number; nature: "tache" | "horsTache" | "reste" };
+    const lignes: Ligne[] = project.tasks
+      .map((t) => ({ label: t.title, minutes: sumDurationMinutes(t.timeEntries), nature: "tache" as const }))
       .filter((l) => l.minutes > 0);
     const horsTache = sumDurationMinutes(project.timeEntries);
-    if (horsTache > 0) lignes.push({ label: "Hors tâche (rattaché au projet)", minutes: horsTache });
+    if (horsTache > 0) lignes.push({ label: "Hors tâche", minutes: horsTache, nature: "horsTache" });
     lignes.sort((a, b) => b.minutes - a.minutes);
     if (lignes.length <= 6) return lignes;
     const tete = lignes.slice(0, 5);
     const reste = lignes.slice(5).reduce((sum, l) => sum + l.minutes, 0);
-    return [...tete, { label: `${lignes.length - 5} autres tâches`, minutes: reste }];
+    return [...tete, { label: `${lignes.length - 5} autres tâches`, minutes: reste, nature: "reste" as const }];
   }, [project.tasks, project.timeEntries]);
 
   function toggleStudio(id: string) {
@@ -304,35 +305,97 @@ export function EditProjectView({
       )}
 
       {overBudget && (
-        <div className="mb-4 rounded-lg px-3 py-2.5" style={{ background: "var(--color-alert-wash)" }}>
-          <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--color-alert)" }}>
-            <AlertTriangle size={16} className="flex-shrink-0" />
-            Budget dépassé de {formatDurationFr(loggedMinutes - budgetMinutes!)} :{" "}
-            {formatDurationFr(loggedMinutes)} enregistrées sur {formatDurationFr(budgetMinutes!)} prévues.
+        /* L'alerte est une phrase ; la ventilation est un tableau. Peindre les
+           deux en rouge d'alerte, comme avant, faisait que plus rien ne
+           ressortait — et rendait les chiffres pénibles à lire sur le fond
+           rose. Le rouge tient donc la phrase et le dépassement, le reste
+           revient sur fond neutre. */
+        <div className="mb-4 overflow-hidden rounded-lg border border-line">
+          <div className="flex items-start gap-2.5 border-l-[3px] border-alert bg-alert-wash px-3 py-2.5">
+            <AlertTriangle size={16} className="mt-px flex-shrink-0 text-alert" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-alert">
+                Budget dépassé de {formatDurationFr(loggedMinutes - budgetMinutes!)}
+              </p>
+              <p className="text-xs text-ink">
+                {formatDurationFr(loggedMinutes)} enregistrées sur {formatDurationFr(budgetMinutes!)} prévues.
+              </p>
+            </div>
+          </div>
+
+          {/* La comparaison qui manquait : le budget comme piste, le
+              dépassement au-delà. On lisait deux durées côte à côte sans
+              jamais voir l'écart. */}
+          <div className="border-t border-line px-3 pt-3">
+            <div className="flex h-2 overflow-hidden rounded-full bg-line" aria-hidden="true">
+              <span
+                className="h-full bg-heading"
+                style={{ width: `${(budgetMinutes! / loggedMinutes) * 100}%` }}
+              />
+              <span
+                className="h-full bg-alert"
+                style={{ width: `${((loggedMinutes - budgetMinutes!) / loggedMinutes) * 100}%` }}
+              />
+            </div>
+            <div className="mt-1 flex justify-between text-2xs text-ink-muted tabular-nums">
+              <span>Budget {formatDurationFr(budgetMinutes!)}</span>
+              <span className="font-semibold text-alert">
+                +{Math.round(((loggedMinutes - budgetMinutes!) / budgetMinutes!) * 100)}%
+              </span>
+            </div>
           </div>
 
           {/* Annoncer un dépassement sans dire d'où il vient oblige à aller
               chercher l'information ailleurs, alors qu'elle est déjà à
-              l'écran. La ventilation par tâche répond à la seule question
-              qu'on se pose en lisant ce bandeau : où sont passées les heures. */}
+              l'écran. */}
           {consommation.length > 0 && (
-            <div className="mt-2.5 border-t pt-2.5" style={{ borderColor: "color-mix(in srgb, var(--color-alert) 25%, transparent)" }}>
-              <p className="mb-1.5 text-2xs font-semibold tracking-wide uppercase" style={{ color: "var(--color-alert)" }}>
+            <div className="px-3 pt-3 pb-3">
+              <p className="mb-2 text-2xs font-semibold tracking-wide text-ink-muted uppercase">
                 Où sont passées les heures
               </p>
-              <div className="flex flex-col gap-1">
-                {consommation.map((c) => (
-                  <div key={c.label} className="flex items-center gap-2.5 text-xs">
-                    <span className="min-w-0 flex-1 truncate text-ink">{c.label}</span>
-                    <span className="h-1.5 w-24 flex-shrink-0 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, var(--color-alert) 18%, transparent)" }}>
-                      <span className="block h-full rounded-full" style={{ width: `${(c.minutes / loggedMinutes) * 100}%`, background: "var(--color-alert)" }} />
-                    </span>
-                    <span className="w-16 flex-shrink-0 text-right font-semibold text-ink tabular-nums">{formatDurationFr(c.minutes)}</span>
-                    <span className="w-9 flex-shrink-0 text-right text-ink-muted tabular-nums">
-                      {Math.round((c.minutes / loggedMinutes) * 100)}%
-                    </span>
-                  </div>
-                ))}
+              <div className="flex flex-col gap-1.5">
+                {consommation.map((c) => {
+                  const partDuMax = c.minutes / consommation[0].minutes;
+                  const partDuTotal = c.minutes / loggedMinutes;
+                  return (
+                    <div key={c.label} className="flex items-center gap-3 text-xs">
+                      <span
+                        className={`min-w-0 flex-1 truncate ${c.nature === "tache" ? "text-ink" : "text-ink-muted italic"}`}
+                        title={c.label}
+                      >
+                        {c.label}
+                      </span>
+                      {/* Barres calées sur la plus grosse ligne, pas sur le
+                          total : à l'échelle du total, cinq lignes à 5-8 %
+                          donnaient cinq points de trois pixels, impossibles à
+                          comparer. Le pourcentage du total reste en clair
+                          dans la colonne de droite. */}
+                      <span
+                        className="h-1.5 w-28 flex-shrink-0 overflow-hidden rounded-full bg-line"
+                        aria-hidden="true"
+                      >
+                        <span
+                          className="block h-full rounded-full"
+                          style={{
+                            width: `${Math.max(3, partDuMax * 100)}%`,
+                            // Le ton clair ne marque que le regroupement
+                            // « N autres tâches » : l'appliquer à « Hors tâche »
+                            // donnait la barre la plus pâle à la plus grosse
+                            // ligne, ce qui la faisait passer pour secondaire
+                            // alors qu'elle est souvent le cœur du problème.
+                            background: c.nature === "reste" ? "var(--color-tint)" : "var(--color-heading)",
+                          }}
+                        />
+                      </span>
+                      <span className="w-16 flex-shrink-0 text-right font-semibold text-ink tabular-nums">
+                        {formatDurationFr(c.minutes)}
+                      </span>
+                      <span className="w-9 flex-shrink-0 text-right text-ink-muted tabular-nums">
+                        {Math.round(partDuTotal * 100)}%
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -418,21 +481,27 @@ export function EditProjectView({
               onChange={(e) => setBudgetHours(e.target.value)}
               placeholder="—"
             />
-            <p className="flex items-center gap-1.5 text-xs" style={{ color: overBudget ? "var(--color-alert)" : "var(--color-ink-muted)" }}>
-              {overBudget && <AlertTriangle size={13} className="flex-shrink-0" />}
+            {/* Aide du champ, pas seconde alerte : le bandeau en haut de page
+                dit déjà le dépassement, en rouge et avec sa ventilation. Le
+                répéter ici, avec deux icônes empilées, ne faisait qu'ajouter
+                du bruit sous un champ de saisie. */}
+            <p className="flex items-center gap-1.5 text-xs text-ink-muted">
               <Timer size={13} className="flex-shrink-0" aria-hidden="true" />
               {formatDurationFr(loggedMinutes)} enregistrées
               {budgetMinutes != null && ` sur ${formatDurationFr(budgetMinutes)} prévues`}
             </p>
             {isAdmin && byPerson.length > 0 && (
-              <div className="mt-1 flex flex-col gap-1">
+              /* Une liste de personnes, pas une répétition d'icônes : le même
+                 pictogramme sur chaque ligne n'apprenait rien et hachait la
+                 lecture des durées. */
+              <dl className="mt-1.5 flex flex-col gap-0.5 pl-[19px]">
                 {byPerson.map((p) => (
-                  <p key={p.name} className="flex items-center gap-1.5 pl-[19px] text-2xs text-ink-muted">
-                    <Users size={11} className="flex-shrink-0" aria-hidden="true" />
-                    {p.name} — {formatDurationFr(p.minutes)}
-                  </p>
+                  <div key={p.name} className="flex items-baseline justify-between gap-3 text-2xs">
+                    <dt className="min-w-0 truncate text-ink-muted">{p.name}</dt>
+                    <dd className="flex-shrink-0 font-semibold text-ink tabular-nums">{formatDurationFr(p.minutes)}</dd>
+                  </div>
                 ))}
-              </div>
+              </dl>
             )}
           </FieldSection>
         </div>
