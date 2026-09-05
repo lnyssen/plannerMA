@@ -27,8 +27,15 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   MENTION: "Mention",
   REQUEST: "Demande",
   BUDGET_EXCEEDED: "Budget dépassé",
-  PROJECT_BEHIND: "Budget en avance",
-  MILESTONE_LATE: "Date clé dépassée",
+  // « En avance » désigne ailleurs le bon état du rythme budgétaire
+  // (PACE_LABEL, tableau de bord et subventions) : l'employer ici nommait le
+  // mauvais état avec le mot du bon. « Rythme en retard » reprend le
+  // vocabulaire de cette échelle et se distingue du retard d'une date clé.
+  PROJECT_BEHIND: "Rythme en retard",
+  // Même mot que partout ailleurs pour une échéance dépassée — Aujourd'hui,
+  // Tâches, Projets, la fiche de tâche. Le message nomme la date clé juste
+  // en dessous, la pastille n'a pas à la renommer.
+  MILESTONE_LATE: "En retard",
   COMMENT: "Commentaire",
 };
 
