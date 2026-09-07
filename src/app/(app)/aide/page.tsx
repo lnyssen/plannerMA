@@ -111,11 +111,16 @@ export default function AidePage() {
           </nav>
         <section className="mb-8">
           <H2 id="aujourdhui">Aujourd’hui</H2>
-          <Shot src="/docs/aujourdhui.png" alt="Page d’accueil Aujourd’hui : tâches du jour, minuteur, absences à venir" />
+          <Shot src="/docs/aujourdhui.png" alt="Page d’accueil Aujourd’hui : une liste de tâches en retard, du jour, et de la semaine" />
           <P>
-            Page d’accueil personnelle pour un compte solo : vos tâches du jour, un minuteur, et vos prochaines
-            absences (les vôtres et celles de l’équipe). Rien à configurer — elle se construit toute seule à partir
-            de ce qui vous est attribué et de vos échéances proches.
+            Page d’accueil personnelle : une seule liste, vos tâches, dans l’ordre — ce qui a débordé, puis
+            aujourd’hui, puis les sept jours qui viennent. Rien à configurer, elle se construit à partir de ce qui
+            vous est attribué et de vos échéances.
+          </P>
+          <P>
+            Le filet rouge à gauche signale une échéance dépassée. Survolez une ligne pour lancer le minuteur
+            dessus — inutile de passer par « Temps ». Un minuteur en cours s’affiche en haut de l’écran, avec son
+            compteur et de quoi l’arrêter.
           </P>
         </section>
 

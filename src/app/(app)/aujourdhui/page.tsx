@@ -23,7 +23,7 @@ export default async function TodayPage() {
   const mine = { assigneeId: personId ?? "", trashedAt: null, status: { isDone: false } };
   const semaine = addDays(todayDate, 7);
 
-  const [lateTasks, myTasks, soonTasks, runningTimer, absences, person] = await Promise.all([
+  const [lateTasks, myTasks, soonTasks, runningTimer, absences] = await Promise.all([
     personId
       ? db.task.findMany({
           where: { ...mine, endDate: { lt: todayDate } },
@@ -57,7 +57,6 @@ export default async function TodayPage() {
     }),
     // Jamais session.user.name (figé au login, voir (app)/layout.tsx pour le
     // même correctif) : toujours relu depuis la fiche personne.
-    personId ? db.person.findUnique({ where: { id: personId }, select: { name: true } }) : Promise.resolve(null),
   ]);
 
   const toTask = (t: (typeof myTasks)[number]) => ({
@@ -72,7 +71,6 @@ export default async function TodayPage() {
 
   return (
     <TodayView
-      userName={person?.name ?? session?.user.email ?? "—"}
       lateTasks={lateTasks.map(toTask)}
       tasks={myTasks.map(toTask)}
       soonTasks={soonTasks.map(toTask)}
