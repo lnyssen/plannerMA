@@ -59,6 +59,7 @@ export function EditProjectView({
   const [studioIds, setStudioIds] = useState<string[]>(initialProject.studios.map((s) => s.studioId));
   const [budgetHours, setBudgetHours] = useState(initialProject.budgetHours != null ? String(initialProject.budgetHours) : "");
   const [error, setError] = useState<string | null>(null);
+  const [ajoutDateCle, setAjoutDateCle] = useState(false);
   const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
   const [newMilestoneDue, setNewMilestoneDue] = useState(today());
   const [milestoneError, setMilestoneError] = useState<string | null>(null);
@@ -145,6 +146,7 @@ export function EditProjectView({
         return;
       }
       setNewMilestoneTitle("");
+      setAjoutDateCle(false);
       await loadProject();
       router.refresh();
     });
@@ -287,14 +289,6 @@ export function EditProjectView({
           <Link href="/projets" className={`px-4 py-2 text-sm font-semibold ${secondaryButtonClass}`}>
             Retour à la liste
           </Link>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={save}
-            className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
-          >
-            {pending ? "Enregistrement…" : "Enregistrer"}
-          </button>
         </div>
       </div>
 
@@ -408,107 +402,12 @@ export function EditProjectView({
         <p className="mb-4 rounded-lg border border-line bg-wash px-3 py-2 text-xs text-ink-muted">Ce projet est archivé.</p>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="min-w-0">
-          <FieldSection title="Informations" first>
-            <FieldLabel htmlFor="edit-project-name">Nom du projet</FieldLabel>
-            <input
-              id="edit-project-name"
-              className={`${fieldInputClass} mb-3`}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-
-            <FieldLabel htmlFor="edit-project-code">Code (facultatif)</FieldLabel>
-            <input
-              id="edit-project-code"
-              className={`${fieldInputClass} mb-3`}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="BETTER-3, ONE-6…"
-            />
-
-            <ClientPicker
-              clients={clients}
-              clientId={clientId}
-              newClientName={newClientName}
-              onChange={(p) => {
-                setClientId(p.clientId);
-                setNewClientName(p.newClientName);
-              }}
-            />
-
-            {/* Interne/externe se saisit sur la fiche du client : c'est une
-                propriété du client, pas de chacun de ses projets. */}
-            <FieldLabel htmlFor="edit-project-pole">Pôle</FieldLabel>
-            <select
-              id="edit-project-pole"
-              className={`${fieldInputClass} mb-3`}
-              value={pole}
-              onChange={(e) => setPole(e.target.value as ProjectPole | "")}
-            >
-              <option value="">Aucun pôle particulier</option>
-              {Object.entries(PROJECT_POLE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-
-            <FieldLabel>Studios concernés</FieldLabel>
-            <div className="mb-4 flex flex-wrap gap-2">
-              {studios.map((s) => {
-                const checked = studioIds.includes(s.id);
-                return (
-                  <label
-                    key={s.id}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-heading/10"
-                    style={{ border: `1.5px solid ${checked ? "var(--color-heading)" : "var(--color-line)"}` }}
-                  >
-                    <input type="checkbox" checked={checked} onChange={() => toggleStudio(s.id)} />
-                    {s.name}
-                  </label>
-                );
-              })}
-            </div>
-
-            <FieldLabel htmlFor="edit-project-budget">Budget de temps (heures, facultatif)</FieldLabel>
-            <input
-              id="edit-project-budget"
-              type="number"
-              min={1}
-              step={1}
-              className={`${fieldInputClass} mb-1.5 max-w-[140px]`}
-              value={budgetHours}
-              onChange={(e) => setBudgetHours(e.target.value)}
-              placeholder="—"
-            />
-            {/* Aide du champ, pas seconde alerte : le bandeau en haut de page
-                dit déjà le dépassement, en rouge et avec sa ventilation. Le
-                répéter ici, avec deux icônes empilées, ne faisait qu'ajouter
-                du bruit sous un champ de saisie. */}
-            <p className="flex items-center gap-1.5 text-xs text-ink-muted">
-              <Timer size={13} className="flex-shrink-0" aria-hidden="true" />
-              {formatDurationFr(loggedMinutes)} enregistrées
-              {budgetMinutes != null && ` sur ${formatDurationFr(budgetMinutes)} prévues`}
-            </p>
-            {isAdmin && byPerson.length > 0 && (
-              /* Une liste de personnes, pas une répétition d'icônes : le même
-                 pictogramme sur chaque ligne n'apprenait rien et hachait la
-                 lecture des durées. */
-              <dl className="mt-1.5 flex flex-col gap-0.5 pl-[19px]">
-                {byPerson.map((p) => (
-                  <div key={p.name} className="flex items-baseline justify-between gap-3 text-2xs">
-                    <dt className="min-w-0 truncate text-ink-muted">{p.name}</dt>
-                    <dd className="flex-shrink-0 font-semibold text-ink tabular-nums">{formatDurationFr(p.minutes)}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </FieldSection>
-        </div>
-
-        <div className="flex flex-col gap-6">
+      {/* La lecture d'abord, en pleine largeur. Ces deux listes vivaient
+          dans une colonne de 320 px, à côté d'un formulaire qui prenait le
+          reste : quatre titres de tâche sur cinq étaient tronqués à une
+          quinzaine de caractères — « Arboresc… », « Intégr… ». On ouvre un
+          projet pour savoir où il en est, pas pour retaper son nom. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="rounded-lg border border-line p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="flex items-baseline gap-1.5 font-[family-name:var(--font-display)] text-base font-semibold tracking-[-0.1px] text-heading">
@@ -577,8 +476,22 @@ export function EditProjectView({
                 </div>
               ))}
             </div>
+            {/* Le formulaire d'ajout restait ouvert en permanence : deux champs
+                et un bouton posés sous la liste, même quand on ne fait que la
+                lire. Il s'ouvre à la demande, comme « Nouvelle tâche » juste
+                au-dessus. */}
+            {!ajoutDateCle ? (
+              <button
+                type="button"
+                onClick={() => setAjoutDateCle(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${secondaryButtonClass}`}
+              >
+                <Plus size={14} /> Ajouter une date clé
+              </button>
+            ) : (
             <div className="mb-2 flex flex-wrap gap-2">
               <input
+                autoFocus
                 type="text"
                 placeholder="Nouvelle date clé"
                 value={newMilestoneTitle}
@@ -600,7 +513,18 @@ export function EditProjectView({
               >
                 <Plus size={14} /> Ajouter
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAjoutDateCle(false);
+                  setNewMilestoneTitle("");
+                }}
+                className="px-2 text-sm font-semibold text-ink-muted hover:text-heading"
+              >
+                Annuler
+              </button>
             </div>
+            )}
             {milestoneError && (
               <p role="alert" className="text-xs font-semibold text-alert">
                 {milestoneError}
@@ -608,21 +532,146 @@ export function EditProjectView({
             )}
           </div>
 
-          <div className="rounded-lg border border-line p-4">
-            <h3 className="mb-3 text-2xs font-bold tracking-wide text-ink-muted uppercase">
-              Historique ({project.journalEntries.length})
-            </h3>
-            <div className="flex flex-col gap-1.5">
-              {project.journalEntries.map((entry) => (
-                <p key={entry.id} className="text-xs text-ink">
-                  {entry.action}
-                  <span className="text-ink-muted"> — {entry.actorName}, {quandFr(entry.createdAt)}</span>
-                </p>
+      </div>
+
+      {/* Le formulaire descend et se replie : on le modifie rarement, on le
+          consulte souvent. Il reste à un clic, avec son bouton d'enregistrement
+          au bout — plutôt que dans l'en-tête, où il annonçait un écran de
+          saisie alors que la page répond d'abord à « où en est ce projet ». */}
+      <details className="mt-6 rounded-lg border border-line">
+        <summary className="cursor-pointer list-none px-4 py-3 font-[family-name:var(--font-display)] text-base font-semibold text-heading marker:content-none">
+          Informations du projet
+        </summary>
+        <div className="border-t border-line px-4 pt-4 pb-4">
+        <FieldSection title="Informations" first>
+          <FieldLabel htmlFor="edit-project-name">Nom du projet</FieldLabel>
+          <input
+            id="edit-project-name"
+            className={`${fieldInputClass} mb-3`}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+
+          <FieldLabel htmlFor="edit-project-code">Code (facultatif)</FieldLabel>
+          <input
+            id="edit-project-code"
+            className={`${fieldInputClass} mb-3`}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="BETTER-3, ONE-6…"
+          />
+
+          <ClientPicker
+            clients={clients}
+            clientId={clientId}
+            newClientName={newClientName}
+            onChange={(p) => {
+              setClientId(p.clientId);
+              setNewClientName(p.newClientName);
+            }}
+          />
+
+          {/* Interne/externe se saisit sur la fiche du client : c'est une
+              propriété du client, pas de chacun de ses projets. */}
+          <FieldLabel htmlFor="edit-project-pole">Pôle</FieldLabel>
+          <select
+            id="edit-project-pole"
+            className={`${fieldInputClass} mb-3`}
+            value={pole}
+            onChange={(e) => setPole(e.target.value as ProjectPole | "")}
+          >
+            <option value="">Aucun pôle particulier</option>
+            {Object.entries(PROJECT_POLE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+
+          <FieldLabel>Studios concernés</FieldLabel>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {studios.map((s) => {
+              const checked = studioIds.includes(s.id);
+              return (
+                <label
+                  key={s.id}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-sm text-ink transition-colors duration-100 hover:bg-wash active:bg-heading/10"
+                  style={{ border: `1.5px solid ${checked ? "var(--color-heading)" : "var(--color-line)"}` }}
+                >
+                  <input type="checkbox" checked={checked} onChange={() => toggleStudio(s.id)} />
+                  {s.name}
+                </label>
+              );
+            })}
+          </div>
+
+          <FieldLabel htmlFor="edit-project-budget">Budget de temps (heures, facultatif)</FieldLabel>
+          <input
+            id="edit-project-budget"
+            type="number"
+            min={1}
+            step={1}
+            className={`${fieldInputClass} mb-1.5 max-w-[140px]`}
+            value={budgetHours}
+            onChange={(e) => setBudgetHours(e.target.value)}
+            placeholder="—"
+          />
+          {/* Aide du champ, pas seconde alerte : le bandeau en haut de page
+              dit déjà le dépassement, en rouge et avec sa ventilation. Le
+              répéter ici, avec deux icônes empilées, ne faisait qu'ajouter
+              du bruit sous un champ de saisie. */}
+          <p className="flex items-center gap-1.5 text-xs text-ink-muted">
+            <Timer size={13} className="flex-shrink-0" aria-hidden="true" />
+            {formatDurationFr(loggedMinutes)} enregistrées
+            {budgetMinutes != null && ` sur ${formatDurationFr(budgetMinutes)} prévues`}
+          </p>
+          {isAdmin && byPerson.length > 0 && (
+            /* Une liste de personnes, pas une répétition d'icônes : le même
+               pictogramme sur chaque ligne n'apprenait rien et hachait la
+               lecture des durées. */
+            <dl className="mt-1.5 flex flex-col gap-0.5 pl-[19px]">
+              {byPerson.map((p) => (
+                <div key={p.name} className="flex items-baseline justify-between gap-3 text-2xs">
+                  <dt className="min-w-0 truncate text-ink-muted">{p.name}</dt>
+                  <dd className="flex-shrink-0 font-semibold text-ink tabular-nums">{formatDurationFr(p.minutes)}</dd>
+                </div>
               ))}
-            </div>
+            </dl>
+          )}
+        </FieldSection>
+
+          <div className="mt-4 flex justify-end border-t border-line pt-4">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={save}
+              className={`px-4 py-2 text-sm font-semibold ${primaryButtonClass}`}
+            >
+              {pending ? "Enregistrement…" : "Enregistrer"}
+            </button>
           </div>
         </div>
-      </div>
+      </details>
+
+      {/* Une carte pour annoncer qu'il ne s'est rien passé n'apprend rien :
+          l'historique ne s'affiche que s'il en a un. */}
+      {project.journalEntries.length > 0 && (
+        <div className="mt-6">
+        <div className="rounded-lg border border-line p-4">
+          <h3 className="mb-3 text-2xs font-bold tracking-wide text-ink-muted uppercase">
+            Historique ({project.journalEntries.length})
+          </h3>
+          <div className="flex flex-col gap-1.5">
+            {project.journalEntries.map((entry) => (
+              <p key={entry.id} className="text-xs text-ink">
+                {entry.action}
+                <span className="text-ink-muted"> — {entry.actorName}, {quandFr(entry.createdAt)}</span>
+              </p>
+            ))}
+          </div>
+        </div>
+        </div>
+      )}
 
       {creatingTask && (
         <CreateTaskModal
