@@ -48,7 +48,6 @@ import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskOption } from "@/lib/data/tasks";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import { signOutAction } from "./actions";
-import { CommandPalette } from "./command-palette";
 import { CreateModalsProvider, type CreateModalKind, type CreateModalPrefill } from "./create-modals-context";
 import { GlobalSearch } from "./global-search";
 import { applyNavOrder, NAV_COUNT_META, NAV_ENTRIES, type NavCounts } from "./nav-entries";
@@ -472,7 +471,7 @@ export function AppShell({
               ne suivrait plus l'ordre visible. */}
           <div className={`flex items-center gap-1 ${isCollapsed ? "flex-col" : ""}`}>
             {isCollapsed && collapseToggle}
-            {isCollapsed && showHeaderActions && <GlobalSearch />}
+            {isCollapsed && showHeaderActions && <GlobalSearch navEntries={orderedEntries} />}
             {showHeaderActions && <NotificationBell />}
             {!isCollapsed && collapseToggle}
             <button
@@ -491,7 +490,7 @@ export function AppShell({
             gauche. */}
         {!isCollapsed && showHeaderActions && (
           <div className="flex-shrink-0 px-3 pb-3">
-            <GlobalSearch variant="field" />
+            <GlobalSearch variant="field" navEntries={orderedEntries} />
           </div>
         )}
 
@@ -730,7 +729,7 @@ export function AppShell({
             autres. Ce rond blanc sans libellé faisait donc doublon tout en
             prenant la moitié de l'en-tête. */}
         <div className="flex items-center gap-1">
-          <GlobalSearch />
+          <GlobalSearch navEntries={orderedEntries} />
           <NotificationBell />
         </div>
       </header>
@@ -791,7 +790,6 @@ export function AppShell({
       )}
       {modal === "navOrder" && <NavOrderModal role={role} initialOrder={navOrder} onClose={() => setModal(null)} />}
       {modal === "password" && <ChangePasswordModal onClose={() => setModal(null)} />}
-      <CommandPalette navEntries={orderedEntries} />
     </div>
     </CreateModalsProvider>
     </ConfirmProvider>

@@ -37,7 +37,21 @@ const STATUSES = [
 /** Le compte avec lequel on ouvre la démonstration : c'est lui qui doit voir les notifications. */
 const COMPTE_DEMO = "admin@media-animation.be";
 
+/**
+ * Sur quelle base travaille-t-on ? La question a coûté une journée : le
+ * `.env.production` local pointait vers une branche Neon que l'application ne
+ * lit pas, et rien ne le disait — migrations et semis partaient dans le vide
+ * sans le moindre signe. Une ligne au démarrage suffit à le voir.
+ */
+function hoteDeLaBase(): string {
+  const url = process.env.DATABASE_URL ?? "";
+  const m = url.match(/@([^/:?]+)/);
+  return m ? m[1] : "(DATABASE_URL absente)";
+}
+
 async function main() {
+  console.log(`Base : ${hoteDeLaBase()}`);
+
   // Projets/tâches/absences ne sont pas des données nominatives réelles :
   // on repart de zéro à chaque semis plutôt que d'accumuler des doublons à
   // chaque exécution. Studios, personnes et comptes restent stables (upsert

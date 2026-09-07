@@ -447,17 +447,19 @@ export default function AidePage() {
         </section>
 
         <section className="mb-8">
-          <H2 id="recherche">Recherche et palette de commandes</H2>
-          <Shot src="/docs/recherche.png" alt="Résultats de recherche : tâches, commentaires, projets" />
+          <H2 id="recherche">Recherche et actions rapides</H2>
+          <Shot src="/docs/recherche.png" alt="Résultats de recherche : tâches, projets, commentaires" />
           <P>
-            Le champ « Rechercher… » (en haut de la barre latérale) ouvre une recherche rapide : tâches (titre et
-            description), commentaires (avec un extrait du texte trouvé), projets (nom et code), clients.
+            Le champ « Rechercher… », en haut de la barre latérale, cherche dans les tâches (titre et description),
+            les commentaires (avec un extrait du texte trouvé), les projets (nom et code) et les clients. On y tape
+            directement ; les résultats se déroulent en dessous.
           </P>
-          <Shot src="/docs/palette.png" alt="Palette de commandes ouverte, avec actions rapides" />
+          <Shot src="/docs/palette.png" alt="Champ de recherche vide : actions rapides et pages récentes" />
           <P>
-            <Kbd>⌘</Kbd>/<Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> depuis n’importe où ouvre la palette de commandes : la même
-            recherche, plus des actions rapides (nouvelle tâche/projet/demande, aller à une page) et vos éléments
-            récemment consultés.
+            <Kbd>⌘</Kbd>/<Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> y place le curseur depuis n’importe où. Champ vide, le
+            panneau propose les créations (tâche, projet, demande) et ce que vous avez consulté récemment ; dès que
+            vous tapez, tout est filtré ensemble — une page à ouvrir et une tâche à retrouver se cherchent au même
+            endroit.
           </P>
         </section>
 

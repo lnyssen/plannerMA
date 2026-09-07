@@ -109,13 +109,14 @@ async function main() {
       },
     },
     {
-      // La recherche et la palette sont le même écran : vide, il propose des
-      // actions ; rempli, il cherche. Une capture pour chaque état.
+      // Recherche et actions rapides sont le même panneau : vide, il propose
+      // des actions et les pages récentes ; rempli, il cherche. Une capture
+      // pour chaque état.
       nom: "recherche",
       url: "/projets",
       avant: async (page) => {
         await page.keyboard.press("Meta+k");
-        await page.locator('[aria-label="Palette de commandes"] input').waitFor();
+        await page.locator('aside input[aria-label="Rechercher"]').waitFor();
         await page.keyboard.type("capsule", { delay: 40 });
         await page.waitForTimeout(1200);
       },
@@ -125,8 +126,8 @@ async function main() {
       url: "/projets",
       avant: async (page) => {
         await page.keyboard.press("Meta+k");
-        await page.locator('[aria-label="Palette de commandes"] input').waitFor();
-        await page.waitForTimeout(600);
+        await page.locator('aside input[aria-label="Rechercher"]').waitFor();
+        await page.waitForTimeout(700);
       },
     },
   ];
