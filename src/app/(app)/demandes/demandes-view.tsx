@@ -16,7 +16,6 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { RequestSummary } from "@/lib/data/requests";
 import type { StudioSummary } from "@/lib/data/studios";
-import type { TaskOption } from "@/lib/data/tasks";
 import { quandFr, today, toIsoDate } from "@/lib/planning/dates";
 
 export function DemandesView({
@@ -24,13 +23,11 @@ export function DemandesView({
   studios,
   people,
   projects,
-  tasks,
 }: {
   requests: RequestSummary[];
   studios: StudioSummary[];
   people: PersonSummary[];
   projects: ProjectOption[];
-  tasks: TaskOption[];
 }) {
   const router = useRouter();
   const ask = useConfirm();
@@ -134,7 +131,6 @@ export function DemandesView({
           studios={studios}
           projects={projects}
           people={people}
-          tasks={tasks}
           initialValues={initialValues}
           onClose={() => setConverting(null)}
           onCreated={() => afterConvert(converting.id)}

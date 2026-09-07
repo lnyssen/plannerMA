@@ -38,6 +38,7 @@ export function TaskFormFields({
   people,
   statuses = [],
   tasks = [],
+  tasksLoading = false,
   showStatus,
   excludeTaskId,
 }: {
@@ -49,6 +50,8 @@ export function TaskFormFields({
   statuses?: TaskStatusSummary[];
   /** Candidates pour "Dépend de" — la tâche elle-même déjà exclue par l'appelant en édition. */
   tasks?: TaskOption[];
+  /** La liste arrive après l'ouverture : on annonce l'attente au lieu de masquer le champ. */
+  tasksLoading?: boolean;
   showStatus?: boolean;
   /** La tâche en cours d'édition — exclue du calcul de charge pour ne pas se compter elle-même. */
   excludeTaskId?: string;
@@ -244,7 +247,16 @@ export function TaskFormFields({
         </summary>
 
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {tasks.length > 0 && (
+          {tasksLoading && (
+            <div className="sm:col-span-2">
+              <FieldLabel>Dépend de</FieldLabel>
+              <p className="flex h-10 items-center rounded-md border-[1.5px] border-line px-2.5 text-sm text-ink-muted">
+                Chargement des tâches…
+              </p>
+            </div>
+          )}
+
+          {!tasksLoading && tasks.length > 0 && (
             <div className="sm:col-span-2">
               <FieldLabel>Dépend de</FieldLabel>
               <TaskCascadeFields

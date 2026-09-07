@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { MonthlyRecurrenceMode, RecurrenceFrequency } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { listActiveTasksForForms, type TaskOption } from "@/lib/data/tasks";
 import { notifyAssignment } from "@/lib/mail/notify";
 import {
   addDays,
@@ -20,6 +21,23 @@ import { currentActorName } from "./actor";
 import { createNotification } from "./notifications";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
+
+/**
+ * Les tâches proposées au champ « Dépend de », chargées à l'ouverture de la
+ * modale.
+ *
+ * Cette liste vivait dans le shell, donc sur chaque page de l'application. Les
+ * cinq autres listes qu'il charge sont bornées par la taille de
+ * l'organisation — studios, statuts, collègues, clients, projets en cours —
+ * mais celle-ci grandit sans limite avec les tâches actives : mesurée à 12 Ko
+ * pour 45 tâches, elle atteindrait 130 Ko par page à 500, pour un menu
+ * déroulant que la plupart des visites n'ouvrent jamais.
+ */
+export async function listTaskOptions(): Promise<TaskOption[]> {
+  const session = await auth();
+  if (!session?.user) return [];
+  return listActiveTasksForForms();
+}
 
 export async function getTaskDetail(taskId: string) {
   const session = await auth();

@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { createTask } from "@/lib/actions/tasks";
+import { useEffect, useState, useTransition } from "react";
+import { createTask, listTaskOptions } from "@/lib/actions/tasks";
 import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
@@ -17,7 +17,6 @@ export function CreateTaskModal({
   studios,
   projects,
   people,
-  tasks = [],
   statuses = [],
   initialValues,
   onClose,
@@ -26,7 +25,6 @@ export function CreateTaskModal({
   studios: StudioSummary[];
   projects: ProjectOption[];
   people: PersonSummary[];
-  tasks?: TaskOption[];
   statuses?: TaskStatusSummary[];
   /** Pré-remplissage (ex. conversion d'une demande en tâche) — fusionné sur les valeurs par défaut. */
   initialValues?: Partial<TaskFormValues>;
@@ -35,6 +33,28 @@ export function CreateTaskModal({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+
+  /**
+   * Les tâches du champ « Dépend de » sont chargées à l'ouverture, pas
+   * portées par le shell : elles n'ont pas à peser sur chaque page de
+   * l'application pour un menu que la plupart des visites n'ouvrent jamais
+   * (voir listTaskOptions).
+   */
+  const [tasks, setTasks] = useState<TaskOption[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  useEffect(() => {
+    let annule = false;
+    listTaskOptions()
+      .then((r) => {
+        if (!annule) setTasks(r);
+      })
+      .finally(() => {
+        if (!annule) setTasksLoading(false);
+      });
+    return () => {
+      annule = true;
+    };
+  }, []);
   const auj = today();
   const [values, setValues] = useState<TaskFormValues>({
     ...EMPTY_TASK_FORM,
@@ -92,6 +112,7 @@ export function CreateTaskModal({
         projects={projects}
         people={people}
         tasks={tasks}
+        tasksLoading={tasksLoading}
         statuses={statuses}
         showStatus={!!initialValues?.statusId}
       />
