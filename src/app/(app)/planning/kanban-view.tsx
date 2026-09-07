@@ -16,6 +16,7 @@ import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
 import type { TaskListItem } from "@/lib/data/tasks";
 import { formatShortFr, toIsoDate } from "@/lib/planning/dates";
+import { popoverSurfaceClass } from "@/components/ui/popover";
 
 function TaskCard({
   task,
@@ -74,7 +75,7 @@ function TaskCard({
       </button>
       {menuOuvert && (
         <div
-          className="absolute top-8 right-1 z-20 w-44 overflow-hidden rounded-lg border-[1.5px] border-heading bg-paper shadow-lg sm:hidden"
+          className={`absolute top-8 right-1 z-20 w-44 sm:hidden ${popoverSurfaceClass}`}
           onClick={(e) => e.stopPropagation()}
         >
           <p className="px-2.5 pt-2 pb-1 text-2xs font-semibold tracking-wide text-ink-muted uppercase">Déplacer vers</p>

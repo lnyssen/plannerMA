@@ -67,7 +67,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       </div>
 
       {error && (
-        <p role="alert" className="border border-alert bg-alert-wash px-3 py-2 text-sm text-alert">
+        <p role="alert" className="rounded-lg border border-alert bg-alert-wash px-3 py-2 text-sm text-alert">
           {error}
         </p>
       )}

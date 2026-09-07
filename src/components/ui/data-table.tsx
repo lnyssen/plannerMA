@@ -2,6 +2,7 @@
 
 import { ArrowDown, ArrowUp, Columns3, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { popoverSurfaceClass } from "@/components/ui/popover";
 
 export interface Column<T> {
   key: string;
@@ -152,7 +153,7 @@ export function DataTable<T>({
           </button>
 
           {panneauOuvert && (
-            <div className="absolute top-full right-0 z-30 mt-1 w-64 rounded-lg border-[1.5px] border-heading bg-paper p-2 shadow-lg">
+            <div className={`absolute top-full right-0 z-30 mt-1 w-64 p-2 ${popoverSurfaceClass}`}>
               <p className="mb-1.5 px-1 text-2xs font-semibold tracking-wide text-ink-muted uppercase">
                 Colonnes affichées
               </p>

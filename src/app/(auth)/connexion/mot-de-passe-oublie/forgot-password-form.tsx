@@ -27,7 +27,7 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="border border-heading bg-wash px-3 py-3 text-sm text-ink">
+        <p className="rounded-lg border border-line bg-wash px-3 py-3 text-sm text-ink">
           Si un compte existe pour <strong>{email}</strong>, un courriel avec un lien de réinitialisation vient de
           lui être envoyé. Le lien expire dans une heure.
         </p>
@@ -61,7 +61,7 @@ export function ForgotPasswordForm() {
       </div>
 
       {error && (
-        <p role="alert" className="border border-alert bg-alert-wash px-3 py-2 text-sm text-alert">
+        <p role="alert" className="rounded-lg border border-alert bg-alert-wash px-3 py-2 text-sm text-alert">
           {error}
         </p>
       )}

@@ -2,6 +2,7 @@
 
 import { Info } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { popoverSurfaceClass } from "@/components/ui/popover";
 
 /**
  * Explication repliée derrière un « i ».
@@ -46,7 +47,7 @@ export function InfoHint({ label, children }: { label: string; children: React.R
       {open && (
         <div
           role="note"
-          className="absolute top-7 left-0 z-30 w-[min(28rem,calc(100vw-3rem))] rounded-lg border-[1.5px] border-heading bg-paper p-3 text-xs leading-relaxed text-ink shadow-lg"
+          className={`absolute top-7 left-0 z-30 w-[min(28rem,calc(100vw-3rem))] p-3 text-xs leading-relaxed text-ink ${popoverSurfaceClass}`}
         >
           {children}
         </div>

@@ -15,14 +15,14 @@ export default async function ConnexionPage({
   const redirectTo = depuis && depuis.startsWith("/") ? depuis : "/";
 
   return (
-    <div className="w-full max-w-sm border border-heading bg-paper p-8">
+    <div className="w-full max-w-sm rounded-2xl border border-line bg-paper p-8 shadow-[0_16px_40px_-12px_rgba(45,21,146,0.18)]">
       {/* eslint-disable-next-line @next/next/no-img-element -- logo bitmap fourni tel quel */}
       <img src="/logo/media-animation-couleur.png" alt="Média Animation" className="mb-4 h-9 w-auto" />
       <h1 className="mb-6 font-[family-name:var(--font-display)] text-lg font-semibold tracking-[-0.1px] text-heading">
         Studio planner
       </h1>
       {reinitialise && (
-        <p className="mb-4 border border-heading bg-wash px-3 py-2 text-sm text-ink">
+        <p className="mb-4 rounded-lg border border-line bg-wash px-3 py-2 text-sm text-ink">
           Mot de passe mis à jour — connectez-vous avec votre nouveau mot de passe.
         </p>
       )}
