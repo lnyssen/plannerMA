@@ -4,6 +4,7 @@ import type { ProjectPole } from "@prisma/client";
 import { AlertTriangle, BookmarkCheck, Archive, Copy, Flag, ListChecks, Plus, RotateCcw, Timer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -59,6 +60,7 @@ export function EditProjectView({
   const [studioIds, setStudioIds] = useState<string[]>(initialProject.studios.map((s) => s.studioId));
   const [budgetHours, setBudgetHours] = useState(initialProject.budgetHours != null ? String(initialProject.budgetHours) : "");
   const [error, setError] = useState<string | null>(null);
+  const [axeHeures, setAxeHeures] = useState<"tache" | "personne">("tache");
   const [ajoutDateCle, setAjoutDateCle] = useState(false);
   const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
   const [newMilestoneDue, setNewMilestoneDue] = useState(today());
@@ -341,60 +343,76 @@ export function EditProjectView({
             </div>
           </div>
 
-          {/* Annoncer un dépassement sans dire d'où il vient oblige à aller
-              chercher l'information ailleurs, alors qu'elle est déjà à
-              l'écran. */}
-          {consommation.length > 0 && (
-            <div className="px-3 pt-3 pb-3">
-              <p className="mb-2 text-2xs font-semibold tracking-wide text-ink-muted uppercase">
-                Où sont passées les heures
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {consommation.map((c) => {
-                  const partDuMax = c.minutes / consommation[0].minutes;
-                  const partDuTotal = c.minutes / loggedMinutes;
-                  return (
-                    <div key={c.label} className="flex items-center gap-3 text-xs">
-                      <span
-                        className={`min-w-0 flex-1 truncate ${c.nature === "tache" ? "text-ink" : "text-ink-muted italic"}`}
-                        title={c.label}
-                      >
-                        {c.label}
-                      </span>
-                      {/* Barres calées sur la plus grosse ligne, pas sur le
-                          total : à l'échelle du total, cinq lignes à 5-8 %
-                          donnaient cinq points de trois pixels, impossibles à
-                          comparer. Le pourcentage du total reste en clair
-                          dans la colonne de droite. */}
-                      <span
-                        className="h-1.5 w-28 flex-shrink-0 overflow-hidden rounded-full bg-line"
-                        aria-hidden="true"
-                      >
-                        <span
-                          className="block h-full rounded-full"
-                          style={{
-                            width: `${Math.max(3, partDuMax * 100)}%`,
-                            // Le ton clair ne marque que le regroupement
-                            // « N autres tâches » : l'appliquer à « Hors tâche »
-                            // donnait la barre la plus pâle à la plus grosse
-                            // ligne, ce qui la faisait passer pour secondaire
-                            // alors qu'elle est souvent le cœur du problème.
-                            background: c.nature === "reste" ? "var(--color-tint)" : "var(--color-heading)",
-                          }}
-                        />
-                      </span>
-                      <span className="w-16 flex-shrink-0 text-right font-semibold text-ink tabular-nums">
-                        {formatDurationFr(c.minutes)}
-                      </span>
-                      <span className="w-9 flex-shrink-0 text-right text-ink-muted tabular-nums">
-                        {Math.round(partDuTotal * 100)}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        </div>
+      )}
+
+      {/* Deux découpages du même total vivaient à deux endroits : la
+          ventilation par tâche dans le bandeau d'alerte, les heures par
+          personne sous le champ Budget, dans le formulaire. C'est la même
+          question — où sont passées les heures — posée sur deux axes. Un
+          seul bloc, une bascule.
+
+          Il quitte aussi le bandeau : l'alerte ne s'affiche qu'en
+          dépassement, alors que savoir où part le temps vaut tout autant
+          quand le budget tient. */}
+      {loggedMinutes > 0 && (consommation.length > 0 || byPerson.length > 0) && (
+        <div className="mb-4 rounded-lg border border-line px-3 py-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">
+              Où sont passées les heures
+            </p>
+            {isAdmin && byPerson.length > 0 && (
+              <SegmentedControl
+                size="sm"
+                ariaLabel="Ventilation des heures"
+                value={axeHeures}
+                onChange={setAxeHeures}
+                options={[
+                  { id: "tache" as const, label: "Par tâche" },
+                  { id: "personne" as const, label: "Par personne" },
+                ]}
+              />
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            {(axeHeures === "personne" && isAdmin
+              ? byPerson.map((p) => ({ label: p.name, minutes: p.minutes, nature: "tache" as const }))
+              : consommation
+            ).map((c, i, tout) => {
+              const partDuMax = c.minutes / tout[0].minutes;
+              const partDuTotal = c.minutes / loggedMinutes;
+              return (
+                <div key={c.label} className="flex items-center gap-3 text-xs">
+                  <span
+                    className={`min-w-0 flex-1 truncate ${c.nature === "tache" ? "text-ink" : "text-ink-muted italic"}`}
+                    title={c.label}
+                  >
+                    {c.label}
+                  </span>
+                  {/* Barres calées sur la plus grosse ligne, pas sur le total :
+                      à l'échelle du total, cinq lignes à 5-8 % donnaient cinq
+                      points de trois pixels, impossibles à comparer. Le
+                      pourcentage du total reste en clair à droite. */}
+                  <span className="h-1.5 w-28 flex-shrink-0 overflow-hidden rounded-full bg-line" aria-hidden="true">
+                    <span
+                      className="block h-full rounded-full"
+                      style={{
+                        width: `${Math.max(3, partDuMax * 100)}%`,
+                        background: c.nature === "reste" ? "var(--color-tint)" : "var(--color-heading)",
+                      }}
+                    />
+                  </span>
+                  <span className="w-16 flex-shrink-0 text-right font-semibold text-ink tabular-nums">
+                    {formatDurationFr(c.minutes)}
+                  </span>
+                  <span className="w-9 flex-shrink-0 text-right text-ink-muted tabular-nums">
+                    {Math.round(partDuTotal * 100)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -625,19 +643,6 @@ export function EditProjectView({
             {formatDurationFr(loggedMinutes)} enregistrées
             {budgetMinutes != null && ` sur ${formatDurationFr(budgetMinutes)} prévues`}
           </p>
-          {isAdmin && byPerson.length > 0 && (
-            /* Une liste de personnes, pas une répétition d'icônes : le même
-               pictogramme sur chaque ligne n'apprenait rien et hachait la
-               lecture des durées. */
-            <dl className="mt-1.5 flex flex-col gap-0.5 pl-[19px]">
-              {byPerson.map((p) => (
-                <div key={p.name} className="flex items-baseline justify-between gap-3 text-2xs">
-                  <dt className="min-w-0 truncate text-ink-muted">{p.name}</dt>
-                  <dd className="flex-shrink-0 font-semibold text-ink tabular-nums">{formatDurationFr(p.minutes)}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
         </FieldSection>
 
           <div className="mt-4 flex justify-end border-t border-line pt-4">
