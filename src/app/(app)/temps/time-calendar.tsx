@@ -15,7 +15,6 @@ import { entryContextLabel, formatHourMinute } from "@/lib/planning/labels";
 import { FieldLabel, fieldInputClass, ModalShell } from "@/components/modals/modal-shell";
 import { dangerButtonClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/buttons";
 import { EntryContextFields, type EntryContextValue } from "@/components/temps/entry-context-fields";
-import { EntryContextLabelParts } from "@/components/ui/task-context-label";
 
 const HOUR_HEIGHT = 88; // px par heure — assez grand pour distinguer le quart d'heure au pixel près
 const GRID_START_HOUR = 6;
@@ -332,10 +331,22 @@ export function TimeCalendar({
                       className="absolute left-0.5 right-0.5 cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-2xs font-semibold text-paper active:cursor-grabbing"
                       style={{ top, height, background: "var(--color-heading)" }}
                     >
-                      <span className="block truncate">
-                        <EntryContextLabelParts entry={e} />
+                      {/* Le bloc disait l'heure et rien d'autre : sur quoi ces
+                          deux heures étaient passées n'apparaissait pas. En
+                          cause, EntryContextLabelParts, qui met le client en
+                          `text-heading` — la couleur même du fond du bloc. Le
+                          nom disparaissait par construction.
+
+                          Ici le libellé est écrit à la main, en blanc, et
+                          dans l'ordre où on le lit : d'abord ce qu'on a fait,
+                          puis pour qui, puis quand. */}
+                      <span className="block truncate font-bold">
+                        {e.task ? e.task.title : (e.category?.name ?? "Sans catégorie")}
                       </span>
-                      <span className="block truncate opacity-80 tabular-nums">
+                      <span className="block truncate font-normal opacity-85">
+                        {e.project ? `${e.project.client.name} — ${e.project.name}` : "Agence"}
+                      </span>
+                      <span className="block truncate font-normal opacity-70 tabular-nums">
                         {formatHourMinute(e.startedAt)}–{formatHourMinute(e.endedAt)}
                       </span>
                       <div

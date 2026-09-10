@@ -22,6 +22,13 @@ export function TaskContextLabelParts({
 }
 
 /**
+ * Attention : le client est rendu en `text-heading`. Ce composant suppose donc
+ * un fond clair — posé sur un aplat `--color-heading` (les blocs du
+ * calendrier des temps, par exemple), le nom du client disparaît, puisqu'il
+ * prend exactement la couleur du fond. Sur fond coloré, écrivez le libellé à
+ * la main en distinguant les paliers par la graisse et l'opacité, pas par la
+ * teinte.
+ *
  * Rendu visuel d'une écriture de temps — comme TaskContextLabelParts, mais
  * pour un TimeEntry (qui n'est plus forcément liée à une Task, voir
  * prisma/schema.prisma) : sans tâche, la queue du libellé est la Catégorie
