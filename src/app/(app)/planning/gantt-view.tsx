@@ -118,6 +118,8 @@ export function GanttView({
   // pour remplir le cadre (jusqu'à MIN_DAY_WIDTH, en dessous duquel la vue
   // défile plutôt que de continuer à rétrécir).
   const scrollRef = useRef<HTMLDivElement>(null);
+  /** Le bandeau des dates, à recaler horizontalement sur la grille. */
+  const headerScrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   useEffect(() => {
     const el = scrollRef.current;
@@ -544,95 +546,117 @@ export function GanttView({
           titreParId={titreParId}
         />
       ) : (
-      <div className="flex border border-line">
-        <div style={{ width: labelWidth, flexShrink: 0 }} className="border-r border-line">
+      <div className="border border-line">
+        {/* Le bandeau vit hors du conteneur défilant. Il y était `sticky top-0`,
+            mais en vain : `overflow-x-auto` force l'autre axe en `auto` (règle
+            CSS : un seul axe non-`visible` bascule l'autre), si bien que le
+            collage s'ancrait sur ce conteneur — qui ne défile jamais
+            verticalement — au lieu de la page. Seule la colonne des libellés,
+            qui n'a pas ce conteneur, collait vraiment. Sorti de là, il colle
+            en entier ; son défilement horizontal suit celui de la grille. */}
+        <div className="sticky top-0 z-20 flex border-b border-line bg-wash">
           <div
-            style={{ height: HEADER_HEIGHT }}
-            className="sticky top-0 z-10 flex items-center border-b border-line bg-wash px-3"
+            style={{ width: labelWidth, height: HEADER_HEIGHT, flexShrink: 0 }}
+            className="flex items-center border-r border-line px-3"
           >
             <span className="text-2xs font-semibold tracking-wide text-ink-muted uppercase">Projets · tâches</span>
           </div>
-          {rows.length === 0 ? (
-            <div style={{ height }} className="flex items-center px-3 text-sm text-ink-muted">
-              Aucune tâche.
+          {/* Même largeur que la poignée de redimensionnement, pour que les
+              colonnes du bandeau tombent sur celles de la grille. */}
+          <div className="w-1.5 flex-shrink-0 bg-line" aria-hidden="true" />
+          <div ref={headerScrollRef} className="flex-1 overflow-hidden">
+            <div className="relative" style={{ width, height: HEADER_HEIGHT }}>
+                {days.map((d, i) => {
+                  if (i % 7 !== 0) return null;
+                  // L'année n'est pas répétée ici : la plage affichée en toutes
+                  // lettres au-dessus du Gantt (rangeLabel) la porte déjà —
+                  // l'an prochain aurait sinon accolé "2026" au mois sans
+                  // espace dès la première colonne.
+                  return (
+                    <div
+                      key={i}
+                      style={{ position: "absolute", left: i * dayWidth, top: 0, width: 7 * dayWidth, height: MONTH_ROW_HEIGHT }}
+                      className="flex items-center overflow-hidden border-l border-line pl-1.5 text-xs font-bold whitespace-nowrap text-ink"
+                    >
+                      {d.getUTCDate()} {MOIS[d.getUTCMonth()]}
+                    </div>
+                  );
+                })}
+                {days.map((d, i) => {
+                  const h = holidayName(d, holidays);
+                  const isToday = toIsoDate(d) === todayIso;
+                  return (
+                    <div
+                      key={i}
+                      title={h ?? ""}
+                      style={{
+                        position: "absolute",
+                        left: i * dayWidth,
+                        top: MONTH_ROW_HEIGHT,
+                        width: dayWidth,
+                        height: DAY_ROW_HEIGHT,
+                        background: h ? "var(--color-alert-wash)" : "transparent",
+                        opacity: isWeekend(d) ? 0.5 : 1,
+                      }}
+                      className="flex flex-col items-center justify-center gap-0.5"
+                    >
+                      <span className="text-[10px] font-semibold tracking-wide text-ink-muted uppercase">
+                        {JOURS1[d.getUTCDay()]}
+                      </span>
+                      <span
+                        className="text-sm font-bold tabular-nums"
+                        style={{ color: isToday ? "var(--color-heading)" : "var(--color-ink)" }}
+                      >
+                        {d.getUTCDate()}
+                      </span>
+                    </div>
+                  );
+                })}
             </div>
-          ) : (
-            rows.map((r, i) => (
-              <div
-                key={i}
-                style={{ height: ROW_HEIGHT }}
-                className={`flex items-center overflow-hidden border-b border-line px-3 text-sm text-ellipsis whitespace-nowrap ${
-                  r.type === "projet" ? "bg-wash font-bold text-heading" : "pl-6 text-ink"
-                }`}
-              >
-                {r.label}
-              </div>
-            ))
-          )}
+          </div>
         </div>
 
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Redimensionner la colonne des libellés"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            labelResizeRef.current = { startX: e.clientX, startWidth: labelWidth };
-            setResizingLabel(true);
-          }}
-          className="w-1.5 flex-shrink-0 cursor-col-resize bg-line hover:bg-heading"
-        />
+        <div className="flex">
+          <div style={{ width: labelWidth, flexShrink: 0 }} className="border-r border-line">
+            {rows.length === 0 ? (
+              <div style={{ height }} className="flex items-center px-3 text-sm text-ink-muted">
+                Aucune tâche.
+              </div>
+            ) : (
+              rows.map((r, i) => (
+                <div
+                  key={i}
+                  style={{ height: ROW_HEIGHT }}
+                  className={`flex items-center overflow-hidden border-b border-line px-3 text-sm text-ellipsis whitespace-nowrap ${
+                    r.type === "projet" ? "bg-wash font-bold text-heading" : "pl-6 text-ink"
+                  }`}
+                >
+                  {r.label}
+                </div>
+              ))
+            )}
+          </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-x-auto">
-          <div style={{ width }}>
-            <div style={{ height: HEADER_HEIGHT }} className="sticky top-0 z-10 border-b border-line bg-wash">
-              {days.map((d, i) => {
-                if (i % 7 !== 0) return null;
-                // L'année n'est pas répétée ici : la plage affichée en toutes
-                // lettres au-dessus du Gantt (rangeLabel) la porte déjà —
-                // l'an prochain aurait sinon accolé "2026" au mois sans
-                // espace dès la première colonne.
-                return (
-                  <div
-                    key={i}
-                    style={{ position: "absolute", left: i * dayWidth, top: 0, width: 7 * dayWidth, height: MONTH_ROW_HEIGHT }}
-                    className="flex items-center overflow-hidden border-l border-line pl-1.5 text-xs font-bold whitespace-nowrap text-ink"
-                  >
-                    {d.getUTCDate()} {MOIS[d.getUTCMonth()]}
-                  </div>
-                );
-              })}
-              {days.map((d, i) => {
-                const h = holidayName(d, holidays);
-                const isToday = toIsoDate(d) === todayIso;
-                return (
-                  <div
-                    key={i}
-                    title={h ?? ""}
-                    style={{
-                      position: "absolute",
-                      left: i * dayWidth,
-                      top: MONTH_ROW_HEIGHT,
-                      width: dayWidth,
-                      height: DAY_ROW_HEIGHT,
-                      background: h ? "var(--color-alert-wash)" : "transparent",
-                      opacity: isWeekend(d) ? 0.5 : 1,
-                    }}
-                    className="flex flex-col items-center justify-center gap-0.5"
-                  >
-                    <span className="text-[10px] font-semibold tracking-wide text-ink-muted uppercase">
-                      {JOURS1[d.getUTCDay()]}
-                    </span>
-                    <span
-                      className="text-sm font-bold tabular-nums"
-                      style={{ color: isToday ? "var(--color-heading)" : "var(--color-ink)" }}
-                    >
-                      {d.getUTCDate()}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Redimensionner la colonne des libellés"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              labelResizeRef.current = { startX: e.clientX, startWidth: labelWidth };
+              setResizingLabel(true);
+            }}
+            className="w-1.5 flex-shrink-0 cursor-col-resize bg-line hover:bg-heading"
+          />
+
+          <div
+            ref={scrollRef}
+            onScroll={(e) => {
+              if (headerScrollRef.current) headerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+            }}
+            className="flex-1 overflow-x-auto"
+          >
+            <div style={{ width }}>
 
             {/* overflow-hidden : une tâche hors de la plage affichée ne doit
                 pas élargir la zone défilable — sinon changer le nombre de
@@ -768,6 +792,7 @@ export function GanttView({
                   }}
                 />
               )}
+            </div>
             </div>
           </div>
         </div>
