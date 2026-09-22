@@ -725,7 +725,14 @@ export function AppShell({
             « Nouveau projet » sur Projets), et le menu latéral couvre les
             autres. Ce rond blanc sans libellé faisait donc doublon tout en
             prenant la moitié de l'en-tête. */}
-        <div className="flex items-center gap-1">
+        {/* Le tiroir ouvert ne couvre que ses 280px : au-delà, le voile
+            translucide (bg-rail/70) laisse deviner ces deux icônes — même
+            teinte que le fond, la dilution se voit à peine. Rien à cliquer
+            (le voile les intercepte déjà), mais elles restent visibles,
+            comme un bandeau « fermé » qui traînerait sous le tiroir
+            « ouvert ». `invisible` les efface sans décaler le bouton
+            burger, qui garde sa place dans le flex. */}
+        <div className={`flex items-center gap-1 ${drawerOpen ? "invisible" : ""}`}>
           <GlobalSearch navEntries={orderedEntries} />
           <NotificationBell />
         </div>
