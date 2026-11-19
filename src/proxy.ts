@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { nextAuth } from "@/auth";
+import { ACCES_DIRECT } from "@/lib/auth/acces-direct";
 
 const PUBLIC_PATHS = ["/connexion"];
 
-export default auth((req) => {
+export default nextAuth((req) => {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const isLoggedIn = !!req.auth;
+
+  // Accès direct (voir src/lib/auth/acces-direct.ts) : plus d'écran de
+  // connexion, et pas de session exigée — `auth()` fournit un compte par
+  // défaut côté serveur.
+  if (ACCES_DIRECT && isPublic) {
+    return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+  }
+  if (ACCES_DIRECT && !isLoggedIn) {
+    return NextResponse.next();
+  }
 
   if (!isLoggedIn && !isPublic) {
     const url = new URL("/connexion", req.nextUrl.origin);
