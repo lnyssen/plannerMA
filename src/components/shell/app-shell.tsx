@@ -46,6 +46,7 @@ import type { PersonSummary } from "@/lib/data/people";
 import type { ProjectOption } from "@/lib/data/projects";
 import type { StudioSummary } from "@/lib/data/studios";
 import type { TaskStatusSummary } from "@/lib/data/task-statuses";
+import { ACCES_DIRECT } from "@/lib/auth/acces-direct";
 import { signOutAction } from "./actions";
 import { CreateModalsProvider, type CreateModalKind, type CreateModalPrefill } from "./create-modals-context";
 import { GlobalSearch } from "./global-search";
@@ -630,14 +631,16 @@ export function AppShell({
                   <ArrowUpDown size={15} aria-hidden="true" /> Réorganiser le menu
                 </button>
               </div>
-              <form action={signOutAction} className={popoverGroupClass}>
-                <button
-                  type="submit"
-                  className={popoverItemClass}
-                >
-                  <LogOut size={15} aria-hidden="true" /> Déconnexion
-                </button>
-              </form>
+              {!ACCES_DIRECT && (
+                <form action={signOutAction} className={popoverGroupClass}>
+                  <button
+                    type="submit"
+                    className={popoverItemClass}
+                  >
+                    <LogOut size={15} aria-hidden="true" /> Déconnexion
+                  </button>
+                </form>
+              )}
             </div>
             </>,
             document.body,

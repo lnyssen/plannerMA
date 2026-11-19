@@ -5,9 +5,11 @@
 // données requis pour des identifiants seuls.
 
 import bcrypt from "bcryptjs";
-import NextAuth from "next-auth";
+import NextAuth, { type Session } from "next-auth";
+import { cache } from "react";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
+import { ACCES_DIRECT } from "@/lib/auth/acces-direct";
 import { db } from "@/lib/db";
 
 const credentialsSchema = z.object({
@@ -15,7 +17,7 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth: nextAuth, signIn, signOut } = NextAuth({
   // Sans ça, Auth.js v5 refuse l'en-tête d'hôte fourni par la plateforme
   // (Vercel, ou tout hébergeur derrière un proxy) et échoue avec une erreur
   // de configuration générique — sûr ici : c'est Vercel/le proxy amont qui
@@ -73,3 +75,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+/**
+ * Compte utilisé quand l'accès direct est actif et qu'aucune session n'existe
+ * (voir src/lib/auth/acces-direct.ts). Mis en cache le temps d'une requête :
+ * `auth()` est appelé des dizaines de fois par rendu.
+ */
+const defaultSession = cache(async (): Promise<Session | null> => {
+  const email = process.env.ACCES_DIRECT_EMAIL?.trim().toLowerCase();
+  const user =
+    (email ? await db.user.findUnique({ where: { email }, include: { person: true } }) : null) ??
+    (await db.user.findFirst({ where: { role: "ADMIN" }, orderBy: { createdAt: "asc" }, include: { person: true } })) ??
+    (await db.user.findFirst({ orderBy: { createdAt: "asc" }, include: { person: true } }));
+  if (!user) return null;
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.person?.name ?? user.email,
+      role: user.role,
+      personId: user.personId,
+    },
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  };
+});
+
+/**
+ * Session courante. Avec l'accès direct actif, retombe sur le compte par
+ * défaut au lieu de renvoyer null — tout le reste de l'application (pages,
+ * actions, exports) continue donc de fonctionner sans modification.
+ */
+export async function auth(): Promise<Session | null> {
+  const session = await nextAuth();
+  if (session?.user || !ACCES_DIRECT) return session;
+  return defaultSession();
+}
